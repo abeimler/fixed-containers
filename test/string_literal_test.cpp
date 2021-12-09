@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <atomic>
+#include <map>
 
 namespace fixed_containers
 {
@@ -68,6 +69,44 @@ TEST(Utilities, StringLiteral_CStr)
     const char* as_auto_converted_char = s;
     EXPECT_TRUE((std::string{as_auto_converted_char} == no_string_interning));
     EXPECT_TRUE((std::string{s.c_str()} == no_string_interning));
+}
+
+TEST(Utilities, StringLiteral_UsageInMap)
+{
+    {
+        std::map<StringLiteral, int> my_map{{StringLiteral{"a"}, 1}};
+        StringLiteral s1 = "a";
+        StringLiteral s2 = "b";
+
+        my_map[s1] = 1;
+        my_map[s2] = 2;
+        my_map["c"] = 3;
+
+        ASSERT_EQ("a", my_map.begin()->first);
+        ASSERT_EQ("b", std::next(my_map.begin(), 1)->first);
+        ASSERT_EQ("c", std::next(my_map.begin(), 2)->first);
+    }
+
+    {
+        // Transparent
+        std::map<StringLiteral, int, std::less<>> my_map{{StringLiteral{"a"}, 1}};
+        StringLiteral s1 = "a";
+        StringLiteral s2 = "b";
+
+        my_map[s1] = 1;
+        my_map[s2] = 2;
+        my_map["c"] = 3;
+
+        auto it = my_map.find(std::string_view{"c"});
+        ASSERT_EQ(it->first, "c");
+
+        auto it2 = my_map.find("c");
+        ASSERT_EQ(it2->first, "c");
+
+        ASSERT_EQ("a", my_map.begin()->first);
+        ASSERT_EQ("b", std::next(my_map.begin(), 1)->first);
+        ASSERT_EQ("c", std::next(my_map.begin(), 2)->first);
+    }
 }
 
 }  // namespace fixed_containers
