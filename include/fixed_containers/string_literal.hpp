@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <compare>
 #include <cstddef>
 #include <string_view>
 
@@ -28,29 +29,47 @@ class StringLiteral
 public:
     template <std::size_t N>
     /*implicit*/ consteval StringLiteral(const char (&str)[N]) noexcept
-      : size_(N - 1)
-      , cstr_(str)
+      : storage_(str, N - 1)
     {
-        assert(cstr_[N - 1] == '\0');
+        assert(c_str()[N - 1] == '\0');
     }
 
     constexpr StringLiteral() noexcept
-      : size_(0)
-      , cstr_("")
+      : storage_("", 0)
     {
     }
 
-    [[nodiscard]] constexpr std::size_t size() const { return size_; }
+    [[nodiscard]] constexpr std::size_t size() const { return storage_.size(); }
 
-    [[nodiscard]] constexpr const char* c_str() const { return cstr_; }
+    [[nodiscard]] constexpr const char* c_str() const { return storage_.data(); }
     /*implicit*/ constexpr operator const char*() const { return c_str(); }
 
-    [[nodiscard]] constexpr std::string_view as_view() const { return {cstr_, size_}; }
+    [[nodiscard]] constexpr std::string_view as_view() const { return storage_; }
     /*implicit*/ constexpr operator std::string_view() const { return as_view(); }
 
+    constexpr bool operator==(const StringLiteral& other) const
+    {
+        return storage_ == other.storage_;
+    }
+    constexpr std::strong_ordering operator<=>(const StringLiteral& other) const
+    {
+        return storage_ <=> other.storage_;
+    }
+
+    constexpr bool operator==(const std::string_view& other) const { return storage_ == other; }
+    constexpr std::strong_ordering operator<=>(const std::string_view& other) const
+    {
+        return storage_ <=> other;
+    }
+
+    constexpr bool operator==(const char* const other) const { return storage_ == other; }
+    constexpr std::strong_ordering operator<=>(const char* const other) const
+    {
+        return storage_ <=> other;
+    }
+
 private:
-    std::size_t size_;
-    const char* cstr_;
+    std::string_view storage_;
 };
 
 }  // namespace fixed_containers
