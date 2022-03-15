@@ -19,16 +19,14 @@ static_assert(IsRichEnumStorage<RichEnumStorage<TestRichEnumBoolBackingEnum>>);
 
 TEST(RichEnum, DirectFieldAccess)
 {
-    static_assert(consteval_compare::equal<
-                  rich_enums::TestRichEnum1::C_ONE().PRIVATE_backing_enum_.PRIVATE_value_,
-                  TestRichEnum1BackingEnum::C_ONE>);
+    static_assert(consteval_compare::equal<rich_enums::TestRichEnum1::C_ONE().storage.val,
+                                           TestRichEnum1BackingEnum::C_ONE>);
 }
 
 TEST(RichEnum, DirectFieldAccessBool)
 {
-    static_assert(consteval_compare::equal<
-                  rich_enums::TestRichEnumBool::TRUE_VALUE().PRIVATE_backing_enum_.PRIVATE_value_,
-                  TestRichEnumBoolBackingEnum::TRUE_VALUE>);
+    static_assert(consteval_compare::equal<rich_enums::TestRichEnumBool::TRUE_VALUE().storage.val,
+                                           TestRichEnumBoolBackingEnum::TRUE_VALUE>);
 }
 
 }  // namespace fixed_containers::rich_enums_detail
