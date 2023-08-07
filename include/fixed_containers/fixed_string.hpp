@@ -64,7 +64,7 @@ public:
         null_terminate();
     }
 
-    explicit(false) constexpr FixedString(const std::string_view& view) noexcept
+    explicit(false) constexpr FixedString(std::string_view view) noexcept
       : FixedString{}
     {
         assert(view.size() <= MAXIMUM_LENGTH);

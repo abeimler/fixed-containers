@@ -5,6 +5,9 @@
 #include "fixed_containers/erase_if.hpp"
 #include "fixed_containers/index_range_predicate_iterator.hpp"
 
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+#include "bit_set.hpp"
+#endif
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -101,6 +104,9 @@ template <class K>
 class EnumSet
 {
     using Self = EnumSet<K>;
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+    using Block = std::size_t;
+#endif
 
 public:
     using key_type = K;
@@ -115,6 +121,12 @@ private:
     static constexpr std::size_t ENUM_COUNT = EnumAdapterType::count();
     using KeyArrayType = std::array<K, ENUM_COUNT>;
     static constexpr const KeyArrayType& ENUM_VALUES = EnumAdapterType::values();
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+    using ValueArrayType = xstd::bit_set<ENUM_COUNT, Block>;
+#else
+    // std::bitset is not sufficiently constexpr to use here, using a std::array instead.
+    using ValueArrayType = std::array<bool, ENUM_COUNT>;
+#endif
 
     struct ReferenceProvider
     {
@@ -125,8 +137,13 @@ private:
 
     struct IndexPredicate
     {
-        const std::array<bool, ENUM_COUNT>* array_set_;
-        constexpr bool operator()(const std::size_t i) const { return (*array_set_)[i]; }
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+      const ValueArrayType* array_set_;
+      constexpr bool operator()(const int i) const { return array_set_->contains(i); }
+#else
+      const ValueArrayType* array_set_;
+      constexpr bool operator()(const std::size_t i) const { return (*array_set_)[i]; }
+#endif
     };
 
     template <IteratorDirection DIRECTION>
@@ -181,11 +198,18 @@ public:
         return output;
     }
 
-    static constexpr std::size_t max_size() noexcept { return ENUM_COUNT; }
+    static constexpr std::size_t max_size() noexcept 
+    {
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        return ValueArrayType::max_size();
+#else
+        return ENUM_COUNT;
+#endif
+    }
 
 public:  // Public so this type is a structural type and can thus be used in template parameters
     // std::bitset is not sufficiently constexpr to use here, using a std::array instead.
-    std::array<bool, ENUM_COUNT> IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
+    ValueArrayType IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
     std::size_t IMPLEMENTATION_DETAIL_DO_NOT_USE_size_;
 
 public:
@@ -208,6 +232,16 @@ public:
         insert(list);
     }
 
+    constexpr EnumSet(std::initializer_list<std::pair<K, bool>> list) noexcept
+        : EnumSet()
+    {
+      for(const auto& [key, value] : list) {
+        if(value) {
+          insert(key);
+        }
+      }
+    }
+
 public:
     constexpr const_iterator cbegin() const noexcept { return create_const_iterator(0); }
     constexpr const_iterator cend() const noexcept { return create_const_iterator(ENUM_COUNT); }
@@ -225,15 +259,28 @@ public:
     constexpr const_reverse_iterator rbegin() const noexcept { return crbegin(); }
     constexpr const_reverse_iterator rend() const noexcept { return crend(); }
 
-    [[nodiscard]] constexpr bool empty() const noexcept { return size() == 0; }
-
-    [[nodiscard]] constexpr std::size_t size() const noexcept
+    [[nodiscard]] constexpr bool empty() const noexcept 
     {
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.empty();
+#else
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_size_ == 0;
+#endif
+    }
+
+    [[nodiscard]] constexpr std::size_t size() const noexcept {
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.size();
+#else
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_size_;
+#endif
     }
 
     constexpr void clear() noexcept
     {
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.clear();
+#else
         const std::size_t sz = array_set().size();
         for (std::size_t i = 0; i < sz; i++)
         {
@@ -242,10 +289,15 @@ public:
                 reset_at(i);
             }
         }
+#endif
     }
     constexpr std::pair<const_iterator, bool> insert(const K& key) noexcept
     {
         const std::size_t ordinal = EnumAdapterType::ordinal(key);
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        const auto ret = IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.insert(ordinal);
+        return {create_const_iterator(ordinal), ret.second};
+#else
         if (contains_at(ordinal))
         {
             return {create_const_iterator(ordinal), false};
@@ -254,6 +306,7 @@ public:
         increment_size();
         array_set_unchecked_at(EnumAdapterType::ordinal(key)) = true;
         return {create_const_iterator(ordinal), true};
+#endif
     }
     constexpr const_iterator insert(const_iterator /*hint*/, const K& key) noexcept
     {
@@ -276,9 +329,14 @@ public:
     {
         assert(pos != cend());
         const std::size_t i = EnumAdapterType::ordinal(*pos);
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
+        return create_const_iterator(i);
+#else
         assert(contains_at(i));
         reset_at(i);
         return create_const_iterator(i);
+#endif
     }
 
     constexpr const_iterator erase(const_iterator first, const_iterator last) noexcept
@@ -289,10 +347,14 @@ public:
 
         for (std::size_t i = from; i < to; i++)
         {
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+            IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
+#else
             if (contains_at(i))
             {
                 reset_at(i);
             }
+#endif
         }
 
         return create_const_iterator(to);
@@ -301,6 +363,9 @@ public:
     constexpr size_type erase(const K& key) noexcept
     {
         const std::size_t i = EnumAdapterType::ordinal(key);
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
+#else
         if (!contains_at(i))
         {
             return 0;
@@ -308,11 +373,16 @@ public:
 
         reset_at(i);
         return 1;
+#endif
     }
 
     [[nodiscard]] constexpr bool contains(const K& key) const noexcept
     {
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(EnumAdapterType::ordinal(key));
+#else
         return contains_at(EnumAdapterType::ordinal(key));
+#endif
     }
 
     constexpr bool operator==(const EnumSet<K>& other) const
@@ -320,12 +390,43 @@ public:
         return array_set() == other.array_set();
     }
 
+    static constexpr auto keys() noexcept
+    {
+        return magic_enum::enum_values<K>();
+    }
+
+    template <class Container>
+    constexpr void set(const Container& container)
+    {
+        insert(container.begin(), container.end());
+    }
+    constexpr void set(std::initializer_list<K> list) noexcept
+    {
+        insert(list.begin(), list.end());
+    }
+    constexpr void set(const K& key, bool value) noexcept
+    {
+        if (value) {
+            insert(key);
+        } else {
+            erase(key);
+        }
+    }
+
+
+    [[nodiscard]] constexpr const auto& data() const noexcept {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
+    }
+    constexpr void reset(const ValueArrayType& data) noexcept {
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_ = data;
+    }
+
 private:
-    constexpr const std::array<bool, ENUM_COUNT>& array_set() const
+    constexpr const auto& array_set() const
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
     }
-    constexpr std::array<bool, ENUM_COUNT>& array_set()
+    constexpr auto& array_set()
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
     }
@@ -360,14 +461,22 @@ private:
 
     [[nodiscard]] constexpr bool contains_at(const std::size_t i) const noexcept
     {
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(i);
+#else
         return array_set_unchecked_at(i);
+#endif
     }
 
     constexpr void reset_at(const std::size_t i) noexcept
     {
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
+#else
         assert(contains_at(i));
         array_set_unchecked_at(i) = false;
         decrement_size();
+#endif
     }
 };
 

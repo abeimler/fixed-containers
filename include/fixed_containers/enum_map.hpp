@@ -11,6 +11,9 @@
 #include "fixed_containers/source_location.hpp"
 #include "fixed_containers/type_name.hpp"
 
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+#include "bit_set.hpp"
+#endif
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -188,8 +191,18 @@ private:
 
     struct IndexPredicate
     {
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        const xstd::bit_set<ENUM_COUNT, std::size_t>* array_set_;
+#else
         const std::array<bool, ENUM_COUNT>* array_set_;
-        constexpr bool operator()(const std::size_t i) const { return (*array_set_)[i]; }
+#endif
+        constexpr bool operator()(const std::size_t i) const {
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+          return array_set_->contains(i);
+#else
+          return (*array_set_)[i];
+#endif
+        }
     };
 
     template <IteratorConstness CONSTNESS, IteratorDirection DIRECTION>
@@ -220,6 +233,29 @@ public:
             output[k] = value;
         }
         return output;
+    }
+
+    template <class CollectionOfPairs, class EnumMapType>
+    static constexpr EnumMapType create_with_entries(const CollectionOfPairs& pairs,
+                                                     const std_transition::source_location& loc)
+    {
+        EnumMapType output{};
+        for (const auto& pair : pairs)
+        {
+            auto [_, was_inserted] = output.insert(pair);
+            if (preconditions::test(was_inserted))
+            {
+                Checking::duplicate_enum_entries(loc);
+            }
+        }
+
+        return output;
+    }
+    template <class EnumMapType>
+    static constexpr EnumMapType create_with_entries(std::initializer_list<value_type> pairs,
+                                                         const std_transition::source_location& loc)
+    {
+        return create_with_entries<std::initializer_list<value_type>, EnumMapType>(pairs, loc);
     }
 
     template <class CollectionOfPairs, class EnumMapType>
@@ -298,11 +334,24 @@ public:
         return create_with_all_entries<EnumMapType, AS_ARRAY>();
     }
 
+    template <class EnumMapType>
+    static constexpr EnumMapType create_with_value(const V& value) {
+      EnumMapType output{};
+      output.fill(value);
+      return output;
+    }
+
     static constexpr std::size_t max_size() noexcept { return ENUM_COUNT; }
+
+    static constexpr auto keys() noexcept { return magic_enum::enum_values<K>(); }
 
 public:  // Public so this type is a structural type and can thus be used in template parameters
     ValueArrayType IMPLEMENTATION_DETAIL_DO_NOT_USE_values_;
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+    xstd::bit_set<ENUM_COUNT, std::size_t> IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
+#else
     std::array<bool, ENUM_COUNT> IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
+#endif
     std::size_t IMPLEMENTATION_DETAIL_DO_NOT_USE_size_;
 
 public:
@@ -332,7 +381,11 @@ public:
                                       std_transition::source_location::current()) noexcept
     {
         const std::size_t ordinal = EnumAdapterType::ordinal(key);
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        if (preconditions::test(IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(ordinal)))
+#else
         if (preconditions::test(array_set_unchecked_at(ordinal)))
+#endif
         {
             CheckingType::out_of_range(key, size(), loc);
         }
@@ -344,7 +397,11 @@ public:
             std_transition::source_location::current()) const noexcept
     {
         const std::size_t ordinal = EnumAdapterType::ordinal(key);
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        if (preconditions::test(IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(ordinal)))
+#else
         if (preconditions::test(array_set_unchecked_at(ordinal)))
+#endif
         {
             CheckingType::out_of_range(key, size(), loc);
         }
@@ -395,7 +452,11 @@ public:
         const std::size_t sz = values().size();
         for (std::size_t i = 0; i < sz; i++)
         {
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+            if (IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(i))
+#else
             if (array_set_unchecked_at(i))
+#endif
             {
                 reset_at(i);
             }
@@ -404,26 +465,43 @@ public:
     constexpr std::pair<iterator, bool> insert(const value_type& value) noexcept
     {
         const std::size_t ordinal = EnumAdapterType::ordinal(value.first);
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        if (IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(ordinal))
+#else
         if (array_set_unchecked_at(ordinal))
+#endif
         {
             return {create_iterator(ordinal), false};
         }
 
         increment_size();
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.insert(ordinal);
+#else
         array_set_unchecked_at(ordinal) = true;
+#endif
         std::construct_at(&values_unchecked_at(ordinal), value.second);
         return {create_iterator(ordinal), true};
     }
     constexpr std::pair<iterator, bool> insert(value_type&& value) noexcept
     {
         const std::size_t ordinal = EnumAdapterType::ordinal(value.first);
+
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        if (IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(ordinal))
+#else
         if (array_set_unchecked_at(ordinal))
+#endif
         {
             return {create_iterator(ordinal), false};
         }
 
         increment_size();
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.insert(ordinal);
+#else
         array_set_unchecked_at(ordinal) = true;
+#endif
         std::construct_at(&values_unchecked_at(ordinal), std::move(value.second));
         return {create_iterator(ordinal), true};
     }
@@ -446,11 +524,19 @@ public:
         requires std::is_assignable_v<mapped_type&, M&&>
     {
         const std::size_t ordinal = EnumAdapterType::ordinal(key);
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        const bool is_insertion = !IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(ordinal);
+#else
         const bool is_insertion = !array_set_unchecked_at(ordinal);
+#endif
         if (is_insertion)
         {
             increment_size();
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+            IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.insert(ordinal);
+#else
             array_set_unchecked_at(ordinal) = true;
+#endif
         }
         values_unchecked_at(ordinal) = OptionalV(std::forward<M>(obj));
         return {create_iterator(ordinal), is_insertion};
@@ -466,13 +552,21 @@ public:
     constexpr std::pair<iterator, bool> try_emplace(const K& key, Args&&... args) noexcept
     {
         const std::size_t ordinal = EnumAdapterType::ordinal(key);
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        if (IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(ordinal))
+#else
         if (array_set_unchecked_at(ordinal))
+#endif
         {
             return {create_iterator(ordinal), false};
         }
 
         increment_size();
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.insert(ordinal);
+#else
         array_set_unchecked_at(ordinal) = true;
+#endif
         std::construct_at(
             &values_unchecked_at(ordinal), std::in_place, std::forward<Args>(args)...);
         return {create_iterator(ordinal), true};
@@ -582,12 +676,20 @@ public:
     {
         for (std::size_t i = 0; i < ENUM_COUNT; i++)
         {
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+            if (this->IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(i) != other.IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(i))
+#else
             if (this->array_set_unchecked_at(i) != other.array_set_unchecked_at(i))
+#endif
             {
                 return false;
             }
 
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+            if (!this->IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(i))
+#else
             if (!this->array_set_unchecked_at(i))
+#endif
             {
                 continue;
             }
@@ -601,6 +703,49 @@ public:
         return true;
     }
 
+    constexpr auto& fill(const V& value) {
+      for (std::size_t i = 0; i < ENUM_COUNT; i++) {
+        this->touch_if_not_present(i);
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[i].value = value;
+      }
+      return *this;
+    }
+
+    template <class Compare>
+    [[nodiscard]] constexpr std::array<std::pair<K, V>, ENUM_COUNT>
+    sorted_pairs(Compare comp) const noexcept requires TriviallyMoveAssignable<V> && TriviallyDestructible<V> {
+      std::array<std::pair<K, V>, ENUM_COUNT> ret;
+      for (const auto& key : ENUM_VALUES) {
+        const std::size_t ordinal = EnumAdapterType::ordinal(key);
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        if (IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(ordinal)) {
+#else
+        if (IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_[ordinal]) {
+#endif
+          ret[ordinal] = std::pair<K, V>(key, IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[ordinal].value);
+        }
+      }
+      std::sort(ret.begin(), ret.end(), comp);
+      return ret;
+    }
+
+    constexpr auto& set(std::initializer_list<value_type> pairs,
+                        const std_transition::source_location& loc = std_transition::source_location::current()) {
+      for (const auto& [key, value] : pairs) {
+        const std::size_t ordinal = EnumAdapterType::ordinal(key);
+        touch_if_not_present(ordinal);
+        at(key, loc) = value;
+      }
+      return *this;
+    }
+
+    [[nodiscard]] constexpr auto&
+    set(const K& key, const V& value,
+        const std_transition::source_location& loc = std_transition::source_location::current()) noexcept {
+      at(key, loc) = value;
+      return *this;
+    }
+
 private:
     constexpr void touch_if_not_present(const std::size_t ordinal) noexcept
     {
@@ -610,7 +755,11 @@ private:
         }
 
         increment_size();
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.insert(ordinal);
+#else
         array_set_unchecked_at(ordinal) = true;
+#endif
         std::construct_at(&values_unchecked_at(ordinal), std::in_place);
     }
 
@@ -646,19 +795,25 @@ private:
         {
             std::destroy_at(&unchecked_at(i));
         }
+
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
+#else
         array_set_unchecked_at(i) = false;
+#endif
         decrement_size();
     }
 
 protected:  // [WORKAROUND-1]
-    constexpr const std::array<bool, ENUM_COUNT>& array_set() const
+    constexpr const auto& array_set() const
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
     }
-    constexpr std::array<bool, ENUM_COUNT>& array_set()
+    constexpr auto& array_set()
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
     }
+#ifndef USE_BIT_SET_IN_ENUM_MAP
     constexpr const bool& array_set_unchecked_at(const std::size_t i) const
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_[i];
@@ -667,6 +822,7 @@ protected:  // [WORKAROUND-1]
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_[i];
     }
+#endif
 
     constexpr const ValueArrayType& values() const
     {
@@ -691,7 +847,11 @@ protected:  // [WORKAROUND-1]
     }
     [[nodiscard]] constexpr bool contains_at(const std::size_t i) const noexcept
     {
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(i);
+#else
         return array_set_unchecked_at(i);
+#endif
     }
 
     constexpr void increment_size(const std::size_t n = 1)
@@ -928,6 +1088,11 @@ public:
         return create_with_all_entries<Self, Arg0, Args...>();
     }
 
+    template <class EnumMapType = Self>
+    static constexpr EnumMapType create_with_value(const V& value) {
+        return Base::template create_with_value<EnumMapType>(value);
+    }
+
     constexpr EnumMap() noexcept
       : Base()
     {
@@ -1010,6 +1175,12 @@ public:
     static consteval auto create_with_all_entries()
     {
         return create_with_all_entries<Self, Arg0, Args...>();
+    }
+
+    template <class EnumMapType = Self>
+    static consteval auto create_with_value(const V& value)
+    {
+        return Base::template create_with_value<EnumMapType>(value);
     }
 
     constexpr EnumMap() noexcept

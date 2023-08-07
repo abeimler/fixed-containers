@@ -1,0 +1,28 @@
+---
+Checks: "*,-fuchsia-*,-google-*,-zircon-*,-abseil-*,-linuxkernel*,-llvm*,-android-*,
+                  -modernize-use-trailing-return-type,
+                  -readability-magic-numbers,-cppcoreguidelines-avoid-magic-numbers,-readability-else-after-return,
+                  -readability-static-accessed-through-instance,
+                  -readability-avoid-const-params-in-decls,
+                  -cppcoreguidelines-non-private-member-variables-in-classes,
+                  -misc-non-private-member-variables-in-classes,
+                  -altera-struct-pack-align,
+                  -altera-unroll-loops,
+                  -altera-id-dependent-backward-branch,
+                  -readability-identifier-length,
+                  readability-identifier-naming,
+                  llvm-include-order,
+                  -llvm-header-guard,
+                  bugprone-*,
+                  cert-*,
+                  modernize-*
+                  -modernize-use-trailing-return-type,
+                  -readability-else-after-return,
+                  -readability-static-accessed-through-instance,
+                  -readability-avoid-const-params-in-decls,
+                  -cppcoreguidelines-non-private-member-variables-in-classes,
+                  -misc-non-private-member-variables-in-classes,
+"
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle: file
