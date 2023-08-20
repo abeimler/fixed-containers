@@ -53,14 +53,12 @@ public:
     using value_type = std::remove_cvref_t<reference>;
     using pointer = std::add_pointer_t<reference>;
     using difference_type = typename std::iterator_traits<IteratorType>::difference_type;
-    using iterator_category = std::conditional_t<
-        std::contiguous_iterator<IteratorType>,
-        std::contiguous_iterator_tag, std::random_access_iterator_tag
-    >;
-    using element_type = std::conditional_t<
-        std::contiguous_iterator<IteratorType>,
-        std::remove_reference_t<reference>, void
-    >;
+    using iterator_category = std::conditional_t<std::contiguous_iterator<IteratorType>,
+                                                 std::contiguous_iterator_tag,
+                                                 std::random_access_iterator_tag>;
+    using element_type = std::conditional_t<std::contiguous_iterator<IteratorType>,
+                                            std::remove_reference_t<reference>,
+                                            void>;
 
 private:
     IteratorType iterator_;
@@ -118,7 +116,7 @@ public:
     constexpr Self operator--(int) & noexcept
     {
         Self tmp = *this;
-        --iterator_;
+        std::advance(iterator_, -1);
         return tmp;
     }
 

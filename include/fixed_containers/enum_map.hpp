@@ -1,10 +1,11 @@
 #pragma once
 
+#include "fixed_containers/bidirectional_iterator.hpp"
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/enum_utils.hpp"
 #include "fixed_containers/erase_if.hpp"
+#include "fixed_containers/filtered_integer_range_iterator.hpp"
 #include "fixed_containers/fixed_vector.hpp"
-#include "fixed_containers/index_range_predicate_iterator.hpp"
 #include "fixed_containers/optional_storage.hpp"
 #include "fixed_containers/pair.hpp"
 #include "fixed_containers/preconditions.hpp"
@@ -138,8 +139,25 @@ protected:  // [WORKAROUND-1] - Needed by the non-trivially-copyable flavor of E
     using OptionalV = optional_storage_detail::OptionalStorage<V>;
     using ValueArrayType = std::array<OptionalV, ENUM_COUNT>;
     static constexpr const KeyArrayType& ENUM_VALUES = EnumAdapterType::values();
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+    using ArraySetType = xstd::bit_set<ENUM_COUNT, std::size_t>;
+#else
+    using ArraySetType = std::array<bool, ENUM_COUNT>;
+#endif
 
 private:
+    struct IndexPredicate
+    {
+        const ArraySetType* array_set_;
+        constexpr bool operator()(const std::size_t i) const {
+#ifdef USE_BIT_SET_IN_ENUM_MAP
+            return (*array_set_).contains(i);
+#else
+            return (*array_set_)[i];
+#endif
+        }
+    };
+
     template <bool IS_CONST>
     struct PairProvider
     {
@@ -148,17 +166,22 @@ private:
         using ConstOrMutablePair =
             std::conditional_t<IS_CONST, std::pair<const K&, const V&>, std::pair<const K&, V&>>;
 
+        FilteredIntegerRangeIterator<IndexPredicate,
+                                     IteratorDirection::FORWARD,
+                                     CompileTimeIntegerRange<0, ENUM_COUNT>>
+            present_indices_;
         ConstOrMutableValueArray* values_;
-        std::size_t current_index_;
 
         constexpr PairProvider() noexcept
-          : PairProvider{nullptr}
+          : PairProvider{nullptr, nullptr, ENUM_COUNT}
         {
         }
 
-        constexpr PairProvider(ConstOrMutableValueArray* const values) noexcept
-          : values_{values}
-          , current_index_{}
+        constexpr PairProvider(const ArraySetType* array_set_,
+                               ConstOrMutableValueArray* const values,
+                               const std::size_t current_index) noexcept
+          : present_indices_{{}, current_index, IndexPredicate{array_set_}}
+          , values_{values}
         {
         }
 
@@ -171,46 +194,30 @@ private:
         template <bool IS_CONST_2>
         constexpr PairProvider(const PairProvider<IS_CONST_2>& m) noexcept
             requires(IS_CONST and !IS_CONST_2)
-          : PairProvider{m.values_}
+          : present_indices_{m.present_indices_}
+          , values_{m.values_}
         {
         }
 
-        constexpr void update_to_index(const std::size_t i) noexcept { current_index_ = i; }
+        constexpr void advance() noexcept { ++present_indices_; }
+        constexpr void recede() noexcept { --present_indices_; }
 
         constexpr const_reference get() const noexcept
             requires IS_CONST
         {
-            return {ENUM_VALUES[current_index_], (*values_)[current_index_].get()};
+            return {ENUM_VALUES[*present_indices_], (*values_)[*present_indices_].get()};
         }
         constexpr reference get() const noexcept
             requires(not IS_CONST)
         {
-            return {ENUM_VALUES[current_index_], (*values_)[current_index_].get()};
+            return {ENUM_VALUES[*present_indices_], (*values_)[*present_indices_].get()};
         }
-    };
-
-    struct IndexPredicate
-    {
-#ifdef USE_BIT_SET_IN_ENUM_MAP
-        const xstd::bit_set<ENUM_COUNT, std::size_t>* array_set_;
-#else
-        const std::array<bool, ENUM_COUNT>* array_set_;
-#endif
-        constexpr bool operator()(const std::size_t i) const {
-#ifdef USE_BIT_SET_IN_ENUM_MAP
-          return array_set_->contains(i);
-#else
-          return (*array_set_)[i];
-#endif
-        }
+        constexpr bool operator==(const PairProvider&) const = default;
     };
 
     template <IteratorConstness CONSTNESS, IteratorDirection DIRECTION>
-    using IteratorImpl = IndexRangePredicateIterator<IndexPredicate,
-                                                     PairProvider<true>,
-                                                     PairProvider<false>,
-                                                     CONSTNESS,
-                                                     DIRECTION>;
+    using IteratorImpl =
+        BidirectionalIterator<PairProvider<true>, PairProvider<false>, CONSTNESS, DIRECTION>;
 
 public:
     using const_iterator =
@@ -347,11 +354,7 @@ public:
 
 public:  // Public so this type is a structural type and can thus be used in template parameters
     ValueArrayType IMPLEMENTATION_DETAIL_DO_NOT_USE_values_;
-#ifdef USE_BIT_SET_IN_ENUM_MAP
-    xstd::bit_set<ENUM_COUNT, std::size_t> IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
-#else
-    std::array<bool, ENUM_COUNT> IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
-#endif
+    ArraySetType IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
     std::size_t IMPLEMENTATION_DETAIL_DO_NOT_USE_size_;
 
 public:
@@ -765,27 +768,23 @@ private:
 
     constexpr iterator create_iterator(const std::size_t start_index) noexcept
     {
-        return iterator{
-            IndexPredicate{&array_set()}, PairProvider<false>{&values()}, start_index, ENUM_COUNT};
+        return iterator{PairProvider<false>{&array_set(), &values(), start_index}};
     }
 
     constexpr const_iterator create_const_iterator(const std::size_t start_index) const noexcept
     {
-        return const_iterator{
-            IndexPredicate{&array_set()}, PairProvider<true>{&values()}, start_index, ENUM_COUNT};
+        return const_iterator{PairProvider<true>{&array_set(), &values(), start_index}};
     }
 
     constexpr reverse_iterator create_reverse_iterator(const std::size_t start_index) noexcept
     {
-        return reverse_iterator{
-            IndexPredicate{&array_set()}, PairProvider<false>{&values()}, start_index, ENUM_COUNT};
+        return reverse_iterator{PairProvider<false>{&array_set(), &values(), start_index}};
     }
 
     constexpr const_reverse_iterator create_const_reverse_iterator(
         const std::size_t start_index) const noexcept
     {
-        return const_reverse_iterator{
-            IndexPredicate{&array_set()}, PairProvider<true>{&values()}, start_index, ENUM_COUNT};
+        return const_reverse_iterator{PairProvider<true>{&array_set(), &values(), start_index}};
     }
 
     constexpr void reset_at(const std::size_t i) noexcept

@@ -16,7 +16,7 @@ cpmaddpackage(
         project_options
         GITHUB_REPOSITORY
         aminya/project_options
-        VERSION           0.30.0
+        VERSION           0.32.0
         #GIT_TAG
         #main
         DOWNLOAD_ONLY)
@@ -120,7 +120,10 @@ cpmaddpackage(
         "CMAKE_FORMAT_EXCLUDE patches")
 
 
-find_package(magic_enum CONFIG REQUIRED)
+if(NOT TARGET magic_enum)
+    find_package(magic_enum CONFIG REQUIRED)
+endif()
+
 add_library(fixed_containers INTERFACE)
 add_library(fixed_containers::fixed_containers ALIAS fixed_containers)
 target_include_directories(fixed_containers INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
@@ -173,6 +176,8 @@ if(ENABLE_TESTING)
 
     add_executable(enum_utils_test test/enum_utils_test.cpp)
     add_test_dependencies(enum_utils_test)
+    add_executable(filtered_integer_range_iterator_test test/filtered_integer_range_iterator_test.cpp)
+    add_test_dependencies(filtered_integer_range_iterator_test)
     add_executable(fixed_deque_test test/fixed_deque_test.cpp)
     add_test_dependencies(fixed_deque_test)
     add_executable(fixed_map_test test/fixed_map_test.cpp)
@@ -193,10 +198,10 @@ if(ENABLE_TESTING)
     add_test_dependencies(fixed_vector_test)
     add_executable(in_out_test test/in_out_test.cpp)
     add_test_dependencies(in_out_test)
-    add_executable(index_range_predicate_iterator_test test/index_range_predicate_iterator_test.cpp)
-    add_test_dependencies(index_range_predicate_iterator_test)
     add_executable(instance_counter_test test/instance_counter_test.cpp)
     add_test_dependencies(instance_counter_test)
+    add_executable(integer_range_test test/integer_range_test.cpp)
+    add_test_dependencies(integer_range_test)
     add_executable(macro_countermeasures_test test/macro_countermeasures_test.cpp)
     add_test_dependencies(macro_countermeasures_test)
     add_executable(out_test test/out_test.cpp)

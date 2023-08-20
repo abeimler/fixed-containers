@@ -59,11 +59,12 @@ cc_library(
     hdrs = ["include/fixed_containers/enum_map.hpp"],
     includes = ["include"],
     deps = [
+        ":bidirectional_iterator",
         ":concepts",
         ":enum_utils",
         ":erase_if",
+        ":filtered_integer_range_iterator",
         ":fixed_vector",
-        ":index_range_predicate_iterator",
         ":optional_storage",
         ":pair",
         ":preconditions",
@@ -78,10 +79,11 @@ cc_library(
     hdrs = ["include/fixed_containers/enum_set.hpp"],
     includes = ["include"],
     deps = [
+        ":bidirectional_iterator",
         ":concepts",
         ":enum_utils",
         ":erase_if",
-        ":index_range_predicate_iterator",
+        ":filtered_integer_range_iterator",
     ],
     copts = ["-std=c++20"],
 )
@@ -100,6 +102,17 @@ cc_library(
     name = "erase_if",
     hdrs = ["include/fixed_containers/erase_if.hpp"],
     includes = ["include"],
+    copts = ["-std=c++20"],
+)
+
+cc_library(
+    name = "filtered_integer_range_iterator",
+    hdrs = ["include/fixed_containers/filtered_integer_range_iterator.hpp"],
+    includes = ["include"],
+    deps = [
+        ":integer_range",
+        ":iterator_utils",
+    ],
     copts = ["-std=c++20"],
 )
 
@@ -248,13 +261,9 @@ cc_library(
 )
 
 cc_library(
-    name = "index_range_predicate_iterator",
-    hdrs = ["include/fixed_containers/index_range_predicate_iterator.hpp"],
+    name = "integer_range",
+    hdrs = ["include/fixed_containers/integer_range.hpp"],
     includes = ["include"],
-    deps = [
-        ":arrow_proxy",
-        ":iterator_utils",
-    ],
     copts = ["-std=c++20"],
 )
 
@@ -329,6 +338,7 @@ cc_library(
     includes = ["include"],
     deps = [
         ":concepts",
+        ":fixed_stack",
         ":fixed_vector",
         ":in_out",
     ],
@@ -493,6 +503,18 @@ cc_test(
 )
 
 cc_test(
+    name = "filtered_integer_range_iterator_test",
+    srcs = ["test/filtered_integer_range_iterator_test.cpp"],
+    deps = [
+        ":concepts",
+        ":filtered_integer_range_iterator",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = ["-std=c++20"],
+)
+
+cc_test(
     name = "fixed_deque_test",
     srcs = ["test/fixed_deque_test.cpp"],
     deps = [
@@ -632,10 +654,11 @@ cc_test(
 )
 
 cc_test(
-    name = "index_range_predicate_iterator_test",
-    srcs = ["test/index_range_predicate_iterator_test.cpp"],
+    name = "integer_range_test",
+    srcs = ["test/integer_range_test.cpp"],
     deps = [
-        ":index_range_predicate_iterator",
+        ":concepts",
+        ":integer_range",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],

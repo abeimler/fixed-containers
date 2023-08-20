@@ -1,9 +1,10 @@
 #pragma once
 
+#include "fixed_containers/bidirectional_iterator.hpp"
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/enum_utils.hpp"
 #include "fixed_containers/erase_if.hpp"
-#include "fixed_containers/index_range_predicate_iterator.hpp"
+#include "fixed_containers/filtered_integer_range_iterator.hpp"
 
 #ifdef USE_BIT_SET_FOR_ENUM_SET
 #include "bit_set.hpp"
@@ -128,13 +129,6 @@ private:
     using ValueArrayType = std::array<bool, ENUM_COUNT>;
 #endif
 
-    struct ReferenceProvider
-    {
-        std::size_t i_{};
-        constexpr void update_to_index(const std::size_t i) noexcept { i_ = i; }
-        constexpr const K& get() const { return ENUM_VALUES[i_]; }
-    };
-
     struct IndexPredicate
     {
 #ifdef USE_BIT_SET_FOR_ENUM_SET
@@ -146,12 +140,35 @@ private:
 #endif
     };
 
+    struct ReferenceProvider
+    {
+        FilteredIntegerRangeIterator<IndexPredicate,
+                                     IteratorDirection::FORWARD,
+                                     CompileTimeIntegerRange<0, ENUM_COUNT>>
+            present_indices_;
+
+        constexpr ReferenceProvider()
+          : ReferenceProvider(nullptr, ENUM_COUNT)
+        {
+        }
+
+        constexpr ReferenceProvider(const ValueArrayType* array_set,
+                                    const std::size_t current_index)
+          : present_indices_{{}, current_index, IndexPredicate{array_set}}
+        {
+        }
+
+        constexpr void advance() noexcept { ++present_indices_; }
+        constexpr void recede() noexcept { --present_indices_; }
+        constexpr const_reference get() const noexcept { return ENUM_VALUES[*present_indices_]; }
+        constexpr bool operator==(const ReferenceProvider&) const = default;
+    };
+
     template <IteratorDirection DIRECTION>
-    using IteratorImpl = IndexRangePredicateIterator<IndexPredicate,
-                                                     ReferenceProvider,
-                                                     ReferenceProvider,
-                                                     IteratorConstness::CONSTANT_ITERATOR,
-                                                     DIRECTION>;
+    using IteratorImpl = BidirectionalIterator<ReferenceProvider,
+                                               ReferenceProvider,
+                                               IteratorConstness::CONSTANT_ITERATOR,
+                                               DIRECTION>;
 
 public:
     using const_iterator = IteratorImpl<IteratorDirection::FORWARD>;
@@ -325,6 +342,17 @@ public:
         }
     }
 
+    template <class... Args>
+    constexpr std::pair<const_iterator, bool> emplace(Args&&... args)
+    {
+        return insert(K{std::forward<Args>(args)...});
+    }
+    template <class... Args>
+    constexpr iterator emplace_hint(const_iterator hint, Args&&... args)
+    {
+        return insert(hint, K{std::forward<Args>(args)...});
+    }
+
     constexpr const_iterator erase(const_iterator pos) noexcept
     {
         assert(pos != cend());
@@ -449,14 +477,12 @@ private:
 
     [[nodiscard]] constexpr const_iterator create_const_iterator(const std::size_t start_index) const noexcept
     {
-        return const_iterator{
-            IndexPredicate{&array_set()}, ReferenceProvider{}, start_index, ENUM_COUNT};
+        return const_iterator{ReferenceProvider{&array_set(), start_index}};
     }
     [[nodiscard]] constexpr const_reverse_iterator create_const_reverse_iterator(
         const std::size_t start_index) const noexcept
     {
-        return const_reverse_iterator{
-            IndexPredicate{&array_set()}, ReferenceProvider{}, start_index, ENUM_COUNT};
+        return const_reverse_iterator{ReferenceProvider{&array_set(), start_index}};
     }
 
     [[nodiscard]] [[nodiscard]] constexpr bool contains_at(const std::size_t i) const noexcept
