@@ -90,7 +90,7 @@ union OptionalStorage<T>
     reference_storage_detail::ReferenceStorage<T> value;
     // clang-format off
     constexpr OptionalStorage() noexcept : dummy_ref{} { }
-    constexpr OptionalStorage(T v) : value{v} { }
+    constexpr explicit(false) OptionalStorage(T v) : value{v} { }
     constexpr OptionalStorage(std::in_place_t, T v) : value(v) { }
 
     // clang-format on

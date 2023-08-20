@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 #include <tuple>
 #include <type_traits>
@@ -106,18 +107,30 @@ public:
     template <std::size_t N>
     [[nodiscard]] constexpr const auto& get() const
     {
+        static_assert(N == 0 || N == 1);
         if constexpr (N == 0)
+        {
             return first();
-        else if constexpr (N == 1)
+        } else if constexpr (N == 1) {
             return second();
+        }
+        assert(false && "unreachable");
+        //return first();
     }
     template <std::size_t N>
     [[nodiscard]] constexpr auto& get()
     {
+        static_assert(N == 0 || N == 1);
         if constexpr (N == 0)
+        {
             return first();
+        }
         else if constexpr (N == 1)
+        {
             return second();
+        }
+        assert(false && "unreachable");
+        //return first();
     }
 };
 }  // namespace fixed_containers

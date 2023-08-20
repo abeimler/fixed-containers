@@ -19,7 +19,7 @@ template <class K, class EnumSetType>
 class EnumSetBuilder
 {
 public:
-    constexpr EnumSetBuilder() {}
+    constexpr EnumSetBuilder() = default;
 
     constexpr EnumSetBuilder& insert(const K& key) & noexcept
     {
@@ -422,19 +422,19 @@ public:
     }
 
 private:
-    constexpr const auto& array_set() const
+    [[nodiscard]] constexpr const auto& array_set() const
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
     }
-    constexpr auto& array_set()
+    [[nodiscard]] constexpr auto& array_set()
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
     }
-    constexpr const bool& array_set_unchecked_at(const std::size_t i) const
+    [[nodiscard]] constexpr const bool& array_set_unchecked_at(const std::size_t i) const
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_[i];
     }
-    constexpr bool& array_set_unchecked_at(const std::size_t i)
+    [[nodiscard]] constexpr bool& array_set_unchecked_at(const std::size_t i)
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_[i];
     }
@@ -447,19 +447,19 @@ private:
         IMPLEMENTATION_DETAIL_DO_NOT_USE_size_ -= n;
     }
 
-    constexpr const_iterator create_const_iterator(const std::size_t start_index) const noexcept
+    [[nodiscard]] constexpr const_iterator create_const_iterator(const std::size_t start_index) const noexcept
     {
         return const_iterator{
             IndexPredicate{&array_set()}, ReferenceProvider{}, start_index, ENUM_COUNT};
     }
-    constexpr const_reverse_iterator create_const_reverse_iterator(
+    [[nodiscard]] constexpr const_reverse_iterator create_const_reverse_iterator(
         const std::size_t start_index) const noexcept
     {
         return const_reverse_iterator{
             IndexPredicate{&array_set()}, ReferenceProvider{}, start_index, ENUM_COUNT};
     }
 
-    [[nodiscard]] constexpr bool contains_at(const std::size_t i) const noexcept
+    [[nodiscard]] [[nodiscard]] constexpr bool contains_at(const std::size_t i) const noexcept
     {
 #ifdef USE_BIT_SET_FOR_ENUM_SET
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(i);

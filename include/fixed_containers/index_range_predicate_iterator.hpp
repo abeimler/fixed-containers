@@ -116,7 +116,7 @@ public:
     }
 
     // Mutable iterator needs to be convertible to const iterator
-    constexpr IndexRangePredicateIterator(const Sibling& other) noexcept
+    constexpr explicit(false) IndexRangePredicateIterator(const Sibling& other) noexcept
         requires(CONSTNESS == IteratorConstness::CONSTANT_ITERATOR)
       : IndexRangePredicateIterator{
             other.predicate_, other.reference_provider_, other.current_index_, other.end_index_}

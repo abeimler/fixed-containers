@@ -33,7 +33,7 @@ class NodeIndexWithColorEmbeddedInTheMostSignificantBit
 {
     static constexpr std::size_t SHIFT_TO_MOST_SIGNIFICANT_BIT = sizeof(NodeIndex) * 8ULL - 1ULL;
     static constexpr NodeIndex MASK = 1ULL << SHIFT_TO_MOST_SIGNIFICANT_BIT;
-    static constexpr NodeIndex LOCAL_NULL_INDEX = NULL_INDEX >> 1;
+    static constexpr NodeIndex LOCAL_NULL_INDEX = NULL_INDEX >> 1U;
 
 public:  // Public so this type is a structural type and can thus be used in template parameters
     NodeIndex IMPLEMENTATION_DETAIL_DO_NOT_USE_index_and_color_;

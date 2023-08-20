@@ -474,11 +474,11 @@ private:
     }
 
 private:
-    constexpr std::size_t index_of(iterator it) const
+    [[nodiscard]] constexpr std::size_t index_of(iterator it) const
     {
         return static_cast<std::size_t>(it - begin());
     }
-    constexpr std::size_t index_of(const_iterator it) const
+    [[nodiscard]] constexpr std::size_t index_of(const_iterator it) const
     {
         return static_cast<std::size_t>(it - cbegin());
     }
@@ -509,13 +509,13 @@ protected:
         index_j_ = (index_j_ - n) % (MAXIMUM_SIZE + 1);
     }
 
-    constexpr const OptionalT& array_unchecked_at(const std::size_t i) const { return array_[i]; }
-    constexpr OptionalT& array_unchecked_at(const std::size_t i) { return array_[i]; }
-    constexpr const T& unchecked_at(const std::size_t i) const
+    [[nodiscard]] constexpr const OptionalT& array_unchecked_at(const std::size_t i) const { return array_[i]; }
+    [[nodiscard]] constexpr OptionalT& array_unchecked_at(const std::size_t i) { return array_[i]; }
+    [[nodiscard]] constexpr const T& unchecked_at(const std::size_t i) const
     {
         return optional_storage_detail::get(array_[i]);
     }
-    constexpr T& unchecked_at(const std::size_t i)
+    [[nodiscard]] constexpr T& unchecked_at(const std::size_t i)
     {
         return optional_storage_detail::get(array_[i]);
     }

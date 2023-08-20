@@ -770,7 +770,7 @@ private:
                 } else if constexpr (num_logical_blocks >= 3) {
                         auto n = num_bits - 1;
                         for (auto i = 0; i < num_storage_blocks - 1; ++i, n -= block_size) {
-                                if (auto const block = m_data[i]; block) {
+                                if (std::unsigned_integral auto const block = m_data[i]; block) {
                                         return n - std::countr_zero(block);
                                 }
                         }
@@ -1104,4 +1104,4 @@ using bit_set_fast = bit_set<((N - 1 + D) / D) * D, Block>;
 
 }       // namespace xstd
 
-#endif  // include guard
+#endif  // XSTD_BIT_SET_HPP

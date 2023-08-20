@@ -24,12 +24,9 @@ public:
     static constexpr ComparisonChain start() { return ComparisonChain{}; }
 
 private:
-    int8_t result_;
+    int8_t result_{0};
 
-    constexpr ComparisonChain()
-      : result_{0}
-    {
-    }
+    constexpr ComparisonChain() = default;
 
 public:
     // Type is trivially copyable, so return by value instead of r-value.
