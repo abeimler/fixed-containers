@@ -1,0 +1,43 @@
+#find_package(range-v3 CONFIG REQUIRED)
+find_package(benchmark CONFIG REQUIRED)
+
+macro(add_benchmark_dependencies BENCHMARK_TARGET)
+    #target_link_system_libraries(${BENCHMARK_TARGET} PRIVATE range-v3::meta range-v3::concepts range-v3::range-v3)
+    target_link_system_libraries(${BENCHMARK_TARGET} PRIVATE benchmark::benchmark benchmark::benchmark_main)
+    target_link_libraries(${BENCHMARK_TARGET} PRIVATE fixed_containers project_options)
+endmacro()
+
+add_executable(vector_benchmark vector_benchmark.cpp)
+add_benchmark_dependencies(vector_benchmark)
+add_executable(vector_push_back_benchmark vector_push_back_benchmark.cpp)
+add_benchmark_dependencies(vector_push_back_benchmark)
+
+add_executable(map_insert_benchmark map_insert_benchmark.cpp)
+add_benchmark_dependencies(map_insert_benchmark)
+add_executable(map_benchmark map_benchmark.cpp)
+add_benchmark_dependencies(map_benchmark)
+
+add_executable(enum_map_benchmark enum_map_benchmark.cpp)
+add_benchmark_dependencies(enum_map_benchmark)
+add_executable(enum_map_bit_set_benchmark enum_map_benchmark.cpp)
+target_compile_definitions(enum_map_bit_set_benchmark PRIVATE USE_BIT_SET_IN_ENUM_MAP)
+add_benchmark_dependencies(enum_map_bit_set_benchmark)
+
+add_executable(enum_set_benchmark enum_set_benchmark.cpp)
+add_benchmark_dependencies(enum_set_benchmark)
+add_executable(enum_set_bit_set_benchmark enum_set_benchmark.cpp)
+target_compile_definitions(enum_set_bit_set_benchmark PRIVATE USE_BIT_SET_FOR_ENUM_SET)
+add_benchmark_dependencies(enum_set_bit_set_benchmark)
+
+
+add_executable(enum_map_construct_benchmark enum_map_construct_benchmark.cpp)
+add_benchmark_dependencies(enum_map_construct_benchmark)
+add_executable(enum_map_construct_bit_set_benchmark enum_map_construct_benchmark.cpp)
+target_compile_definitions(enum_map_construct_bit_set_benchmark PRIVATE USE_BIT_SET_IN_ENUM_MAP)
+add_benchmark_dependencies(enum_map_construct_bit_set_benchmark)
+
+add_executable(enum_set_construct_benchmark enum_set_construct_benchmark.cpp)
+add_benchmark_dependencies(enum_set_construct_benchmark)
+add_executable(enum_set_construct_bit_set_benchmark enum_set_construct_benchmark.cpp)
+target_compile_definitions(enum_set_construct_bit_set_benchmark PRIVATE USE_BIT_SET_FOR_ENUM_SET)
+add_benchmark_dependencies(enum_set_construct_bit_set_benchmark)
