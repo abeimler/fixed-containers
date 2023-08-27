@@ -3,6 +3,7 @@
   "name": "fixed-containers",
   "version-string": "0.1.0",
   "dependencies": [
+    "benchmark",
     "magic-enum",
     "range-v3",
     "gtest"
