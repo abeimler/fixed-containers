@@ -217,6 +217,80 @@ TEST(FixedCircularBuffer, PushFull)
     static_assert(v1.front() == 99);
 
     EXPECT_TRUE(is_full(v1));
+    EXPECT_EQ(99, v1[0]);
+    EXPECT_EQ(100, v1[1]);
+    EXPECT_EQ(100, v1[2]);
+    EXPECT_EQ(100, v1[3]);
+}
+
+TEST(FixedCircularBuffer, PushFull2)
+{
+    constexpr auto v1 = []()
+    {
+        FixedCircularBuffer<int, 4> v{};
+        v.push(100);
+        v.push(101);
+        v.push(102);
+        v.push(103);
+        v.push(99);
+        v.push(77);
+        return v;
+    }();
+
+    static_assert(is_full(v1));
+    static_assert(v1.size() == 4);
+    static_assert(v1.max_size() == 4);
+    static_assert(v1.front() == 99);
+
+    EXPECT_TRUE(is_full(v1));
+    EXPECT_EQ(99, v1[0]);
+    EXPECT_EQ(77, v1[1]);
+    EXPECT_EQ(102, v1[2]);
+    EXPECT_EQ(103, v1[3]);
+}
+
+TEST(FixedCircularBuffer, EmplaceFull)
+{
+    constexpr FixedCircularBuffer<int, 4> s1 = []()
+    {
+        FixedCircularBuffer<int, 4> v{};
+        v.push(101);
+        v.push(102);
+        v.push(103);
+        v.push(104);
+        int my_int = 77;
+        v.emplace(my_int);
+        v.emplace(99);
+        return v;
+    }();
+
+    static_assert(s1.front() == 77);
+    static_assert(s1.back() == 104);
+    static_assert(s1.size() == 4);
+
+    EXPECT_TRUE(is_full(s1));
+    EXPECT_EQ(77, s1[0]);
+    EXPECT_EQ(99, s1[1]);
+    EXPECT_EQ(103, s1[2]);
+    EXPECT_EQ(104, s1[3]);
+}
+
+TEST(FixedCircularBuffer, PopFull)
+{
+    constexpr FixedCircularBuffer<int, 3> s1 = []()
+    {
+        FixedVector<int, 3> v1{77, 99, 88};
+        FixedCircularBuffer<int, 3> out{v1.begin(), v1.end()};
+        out.pop();
+        return out;
+    }();
+
+    static_assert(s1.front() == 99);
+    static_assert(s1.size() == 2);
+
+    EXPECT_FALSE(is_full(s1));
+    EXPECT_EQ(99, s1[0]);
+    EXPECT_EQ(88, s1[1]);
 }
 
 TEST(FixedCircularBuffer, ClassTemplateArgumentDeduction)

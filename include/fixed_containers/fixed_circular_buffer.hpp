@@ -18,6 +18,8 @@ public:
     using size_type = typename container_type::size_type;
     using reference = typename container_type::reference;
     using const_reference = typename container_type::const_reference;
+    using iterator = typename container_type::iterator;
+    using const_iterator = typename container_type::const_iterator;
 
 public:  // Public so this type is a structural type and can thus be used in template parameters
     container_type IMPLEMENTATION_DETAIL_DO_NOT_USE_data_;
@@ -42,6 +44,44 @@ public:
     }
 
 public:
+    constexpr iterator begin() noexcept
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.begin();
+    }
+    constexpr const_iterator begin() const noexcept { return cbegin(); }
+    constexpr const_iterator cbegin() const noexcept
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.cbegin();
+    }
+    constexpr iterator end() noexcept
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.end();
+    }
+    constexpr const_iterator end() const noexcept { return cend(); }
+    constexpr const_iterator cend() const noexcept
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.cend();
+    }
+
+    constexpr iterator rbegin() noexcept
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.rebing();
+    }
+    constexpr const_iterator rbegin() const noexcept { return crbegin(); }
+    constexpr const_iterator crbegin() const noexcept
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.crbegin();
+    }
+    constexpr iterator rend() noexcept
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.rend();
+    }
+    constexpr const_iterator rend() const noexcept { return crend(); }
+    constexpr const_iterator crend() const noexcept
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.crend();
+    }
+
     [[nodiscard]] constexpr std::size_t max_size() const noexcept { return MAXIMUM_SIZE; }
     [[nodiscard]] constexpr std::size_t size() const noexcept
     {
@@ -50,6 +90,32 @@ public:
     [[nodiscard]] constexpr bool empty() const noexcept
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.empty();
+    }
+
+    constexpr reference operator[](size_type i) noexcept
+    {
+        // Cannot capture real source_location for operator[]
+        // This operator should not range-check according to the spec, but we want the extra safety.
+        return at(i, std_transition::source_location::current());
+    }
+    constexpr const_reference operator[](size_type i) const noexcept
+    {
+        // Cannot capture real source_location for operator[]
+        // This operator should not range-check according to the spec, but we want the extra safety.
+        return at(i, std_transition::source_location::current());
+    }
+
+    constexpr reference at(size_type i,
+                           const std_transition::source_location& loc =
+                               std_transition::source_location::current()) noexcept
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.at(i, loc);
+    }
+    constexpr const_reference at(size_type i,
+                                 const std_transition::source_location& loc =
+                                     std_transition::source_location::current()) const noexcept
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.at(i, loc);
     }
 
     constexpr reference front(
@@ -113,8 +179,8 @@ public:
         }
         else
         {
-            IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.emplace_at(IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_, std::forward<Args>(args)...);
             IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ = (IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ + 1) % IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.max_size();
+            IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.emplace_at(IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_, std::forward<Args>(args)...);
         }
     }
 
@@ -125,7 +191,7 @@ public:
         if (!is_full(IMPLEMENTATION_DETAIL_DO_NOT_USE_data_))
         {
             IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ =
-                (IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ <= 0)
+                (IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ == 0)
                     ? IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.size() - 1
                     : (IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ - 1) %
                           IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.size();
@@ -133,7 +199,7 @@ public:
         else
         {
             IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ =
-                (IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ <= 0)
+                (IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ == 0)
                     ? IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.max_size() - 1
                     : (IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ - 1) %
                           IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.max_size();
@@ -150,10 +216,10 @@ public:
     template <std::size_t MAXIMUM_SIZE_2, customize::SequenceContainerChecking CheckingType2>
     constexpr auto operator<=>(const FixedCircularBuffer<T, MAXIMUM_SIZE_2, CheckingType2>& other) const
     {
-        if (auto cmp = IMPLEMENTATION_DETAIL_DO_NOT_USE_data_ <=> other.IMPLEMENTATION_DETAIL_DO_NOT_USE_data_; cmp != 0)
-            return cmp;
-        if (auto cmp = IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ <=> other.IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_; cmp != 0)
-            return cmp;
+        //if (auto cmp = IMPLEMENTATION_DETAIL_DO_NOT_USE_data_ <=> other.IMPLEMENTATION_DETAIL_DO_NOT_USE_data_; cmp != 0)
+        //    return cmp;
+        //if (auto cmp = IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ <=> other.IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_; cmp != 0)
+        //    return cmp;
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_ <=>
                other.IMPLEMENTATION_DETAIL_DO_NOT_USE_data_;
     }
