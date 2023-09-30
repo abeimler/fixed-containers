@@ -1,0 +1,182 @@
+name: ci
+on:
+  pull_request:
+  release:
+    types: [published]
+  push:
+    branches:
+      - main
+      - main-2
+      - feature/ci-2
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
+
+jobs:
+  Test:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+
+      # Recommendations:
+      #   * support at least 2 operating systems
+      #   * support at least 2 compilers
+      #   * make sure all supported configurations for your project are built
+      #
+      # Disable/enable builds in this list to meet the above recommendations
+      # and your own projects needs
+      matrix:
+        os:
+          - ubuntu-22.04
+          - macos-11
+          - windows-2022
+        compiler:
+          # you can specify the version after `-` like "llvm-16".
+          - llvm-13
+          - gcc-11
+          - gcc-13
+          - llvm-16
+        CMAKE_GENERATOR:
+          - "Ninja Multi-Config"
+        CMAKE_BUILD_TYPE:
+          - RelWithDebInfo
+          - Release
+
+        include:
+          # Inject GCOV variable for gcc
+          - compiler: gcc
+            GCOV: gcov
+          - compiler: gcc-11
+            GCOV: gcov-11
+          - compiler: gcc-13
+            GCOV: gcov-13
+          # Inject GCOV variable for llvm
+          - compiler: llvm
+            GCOV: "llvm-cov gcov"
+          - compiler: llvm-13
+            GCOV: "llvm-cov gcov"
+          - compiler: llvm-16
+            GCOV: "llvm-cov gcov"
+
+          # Only to test non-multiconfig builds
+          - os: ubuntu-22.04
+            compiler: gcc
+            CMAKE_GENERATOR: "Unix Makefiles"
+            GCOV: gcov
+          - os: ubuntu-22.04
+            compiler: gcc-11
+            CMAKE_GENERATOR: "Unix Makefiles"
+            GCOV: gcov-11
+          - os: ubuntu-22.04
+            compiler: gcc-13
+            CMAKE_GENERATOR: "Unix Makefiles"
+            GCOV: gcov-13
+
+          - os: windows-2022
+            compiler: msvc
+            CMAKE_GENERATOR: "Visual Studio 17 2022"
+
+        # To exclude a specific job from the matrix (e.g gcc on Windows), you can use this syntax.
+        # exclude:
+        #   - os: windows-2022
+        #     compiler: gcc
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/vcpkg
+            ./build/vcpkg_installed
+            ${{ env.CONAN_USER_HOME }}
+            ~/.cache/pip
+            ${{ env.HOME }}/.cache/vcpkg/archives
+            ${{ env.XDG_CACHE_HOME }}/vcpkg/archives
+            ${{ env.LOCALAPPDATA }}\vcpkg\archives
+            ${{ env.APPDATA }}\vcpkg\archives
+          key: ${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('./vcpkg.json')}}-${{ matrix.CMAKE_GENERATOR }}-${{ matrix.CMAKE_BUILD_TYPE }}-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('./vcpkg.json') }}-
+
+      - name: Setup Cpp
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+          vcvarsall: ${{ contains(matrix.os, 'windows' )}}
+
+          cmake: true
+          ninja: true
+          vcpkg: true
+          ccache: true
+          clangtidy: true
+          task: true
+
+          cppcheck: true
+
+          gcovr: true
+          opencppcoverage: true
+
+      - name: Initialize CodeQL
+        if: ${{ contains(matrix.os, 'ubuntu') && contains(matrix.compiler, 'gcc') }}
+        uses: github/codeql-action/init@v2
+        with:
+          languages: "cpp"
+
+      - name: Perform CodeQL Analysis
+        if: ${{ contains(matrix.os, 'ubuntu') && contains(matrix.compiler, 'gcc') }}
+        uses: github/codeql-action/analyze@v2
+
+      - name: Build
+        run: |
+          cmake -S ./ -B ./build -G '${{matrix.CMAKE_GENERATOR}}' -DCMAKE_BUILD_TYPE:STRING=${{matrix.CMAKE_BUILD_TYPE}}
+          cmake --build ./build --config ${{matrix.CMAKE_BUILD_TYPE}}
+        env:
+          CMAKE_GENERATOR: ${{matrix.CMAKE_GENERATOR}}
+          CMAKE_BUILD_TYPE: ${{matrix.CMAKE_BUILD_TYPE}}
+
+      - name: Test
+        if: ${{ contains(matrix.CMAKE_BUILD_TYPE, 'Deb') }}
+        run: |
+          cd ./build
+          ctest
+        env:
+          CMAKE_GENERATOR: ${{matrix.CMAKE_GENERATOR}}
+          CMAKE_BUILD_TYPE: ${{matrix.CMAKE_BUILD_TYPE}}
+
+      - name: Coverage
+        if: ${{ contains(matrix.os, 'ubuntu') && contains(matrix.CMAKE_BUILD_TYPE, 'Deb') }}
+        run: |
+          cd ./build
+          ctest -C ${{matrix.CMAKE_BUILD_TYPE}} --output-on-failure
+          cd ..
+          mkdir -p ./build/coverage/
+          gcovr --delete --filter "src/" --root ./ --print-summary --html-details ./build/coverage/index.html --xml-pretty --xml ./build/coverage.xml ./build
+        env:
+          CMAKE_GENERATOR: ${{matrix.CMAKE_GENERATOR}}
+          CMAKE_BUILD_TYPE: ${{matrix.CMAKE_BUILD_TYPE}}
+          GCOV: ${{matrix.GCOV}}
+      - name: Coverage
+        if: ${{ contains(matrix.os, 'ubuntu') && contains(matrix.CMAKE_BUILD_TYPE, 'Deb') }}
+        run: |
+          cd ./build
+          OpenCppCoverage.exe --export_type html:./coverage --export_type cobertura:./coverage.xml --cover_children --sources "../src\*" --modules "*" -- ctest -C ${{matrix.CMAKE_BUILD_TYPE}} --output-on-failure
+        env:
+          CMAKE_GENERATOR: ${{matrix.CMAKE_GENERATOR}}
+          CMAKE_BUILD_TYPE: ${{matrix.CMAKE_BUILD_TYPE}}
+          GCOV: ${{matrix.GCOV}}
+
+      - name: Publish to codecov
+        uses: codecov/codecov-action@v3
+        with:
+          flags: ${{ runner.os }}
+          name: ${{ runner.os }}-coverage
+          files: ./build/coverage.xml
