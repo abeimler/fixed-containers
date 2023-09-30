@@ -69,6 +69,9 @@ add_test_dependencies(string_literal_test)
 add_executable(type_name_test type_name_test.cpp)
 add_test_dependencies(type_name_test)
 
+add_executable(fixed_circular_buffer_test fixed_circular_buffer_test.cpp)
+add_test_dependencies(fixed_circular_buffer_test)
+
 add_executable(enum_map_bit_set_test enum_map_test.cpp)
 target_compile_definitions(enum_map_bit_set_test PRIVATE USE_BIT_SET_IN_ENUM_MAP)
 add_test_dependencies(enum_map_bit_set_test)
