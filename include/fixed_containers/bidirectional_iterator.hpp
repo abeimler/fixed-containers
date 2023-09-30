@@ -86,7 +86,7 @@ public:
     }
 
     // Mutable iterator needs to be convertible to const iterator
-    constexpr explicit(false) BidirectionalIterator(const Sibling& other) noexcept
+    constexpr BidirectionalIterator(const Sibling& other) noexcept
         requires(CONSTNESS == IteratorConstness::CONSTANT_ITERATOR)
       : BidirectionalIterator{other.reference_provider_}
     {
