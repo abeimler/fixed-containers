@@ -342,9 +342,11 @@ public:
     }
 
     template <class EnumMapType>
-    static constexpr EnumMapType create_with_value(const V& value) {
+    static constexpr EnumMapType create_with_value(const V& v) {
       EnumMapType output{};
-      output.fill(value);
+      for (const K& key : EnumMapType::ENUM_VALUES) {
+          output[key] = v;
+      }
       return output;
     }
 
@@ -706,10 +708,12 @@ public:
         return true;
     }
 
-    constexpr auto& fill(const V& value) {
-      for (std::size_t i = 0; i < ENUM_COUNT; i++) {
-        this->touch_if_not_present(i);
-        IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[i].value = value;
+    constexpr auto& fill(const V& value,
+                         const std_transition::source_location& loc = std_transition::source_location::current()) {
+      for (const K& key : ENUM_VALUES) {
+          const std::size_t ordinal = EnumAdapterType::ordinal(key);
+          touch_if_not_present(ordinal);
+          at(key, loc) = value;
       }
       return *this;
     }

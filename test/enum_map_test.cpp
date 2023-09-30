@@ -210,6 +210,38 @@ TEST(EnumMap, StaticFactory_CreateWithKeys)
     static_assert(s1.at(TestEnum1::FOUR) == -17);
 }
 
+TEST(EnumMap, StaticFactory_CreateWithValue)
+{
+    constexpr EnumMap<TestEnum1, int> s1 = EnumMap<TestEnum1, int>::create_with_value(0);
+    static_assert(s1.size() == 4);
+
+    static_assert(s1.contains(TestEnum1::ONE));
+    static_assert(s1.contains(TestEnum1::TWO));
+    static_assert(s1.contains(TestEnum1::THREE));
+    static_assert(s1.contains(TestEnum1::FOUR));
+
+    static_assert(s1.at(TestEnum1::ONE) == 0);
+    static_assert(s1.at(TestEnum1::FOUR) == 0);
+}
+
+TEST(EnumMap, Fill)
+{
+    constexpr auto s1 = []() {
+        EnumMap<TestEnum1, int> s{};
+        s.fill(42);
+        return s;
+    }();
+    static_assert(s1.size() == 4);
+
+    static_assert(s1.contains(TestEnum1::ONE));
+    static_assert(s1.contains(TestEnum1::TWO));
+    static_assert(s1.contains(TestEnum1::THREE));
+    static_assert(s1.contains(TestEnum1::FOUR));
+
+    static_assert(s1.at(TestEnum1::ONE) == 42);
+    static_assert(s1.at(TestEnum1::FOUR) == 42);
+}
+
 TEST(EnumMap, CreateWithAllEntries)
 {
     constexpr auto s1 = EnumMap<TestEnum1, int>::create_with_all_entries({
