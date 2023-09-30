@@ -20,6 +20,8 @@ public:
     using const_reference = typename container_type::const_reference;
     using iterator = typename container_type::iterator;
     using const_iterator = typename container_type::const_iterator;
+    using reverse_iterator = typename container_type::reverse_iterator;
+    using const_reverse_iterator = typename container_type::const_reverse_iterator;
 
 public:  // Public so this type is a structural type and can thus be used in template parameters
     container_type IMPLEMENTATION_DETAIL_DO_NOT_USE_data_;
@@ -48,6 +50,7 @@ public:
     {
         IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.clear();
     }
+
     constexpr iterator begin() noexcept
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.begin();
@@ -67,21 +70,21 @@ public:
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.cend();
     }
 
-    constexpr iterator rbegin() noexcept
+    constexpr reverse_iterator rbegin() noexcept
     {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.rebing();
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.rbegin();
     }
-    constexpr const_iterator rbegin() const noexcept { return crbegin(); }
-    constexpr const_iterator crbegin() const noexcept
+    constexpr const_reverse_iterator rbegin() const noexcept { return crbegin(); }
+    constexpr const_reverse_iterator crbegin() const noexcept
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.crbegin();
     }
-    constexpr iterator rend() noexcept
+    constexpr reverse_iterator rend() noexcept
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.rend();
     }
-    constexpr const_iterator rend() const noexcept { return crend(); }
-    constexpr const_iterator crend() const noexcept
+    constexpr const_reverse_iterator rend() const noexcept { return crend(); }
+    constexpr const_reverse_iterator crend() const noexcept
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.crend();
     }
