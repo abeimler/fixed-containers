@@ -35,15 +35,19 @@ public:
 
     template <InputIterator InputIt>
     constexpr FixedCircularBuffer(InputIt first,
-                         InputIt last,
-                         const std_transition::source_location& loc =
-                             std_transition::source_location::current()) noexcept
+                                  InputIt last,
+                                  const std_transition::source_location& loc =
+                                      std_transition::source_location::current()) noexcept
       : IMPLEMENTATION_DETAIL_DO_NOT_USE_data_(first, last, loc)
       , IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_(IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.size()-1)
     {
     }
 
 public:
+    constexpr void clear() noexcept
+    {
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.clear();
+    }
     constexpr iterator begin() noexcept
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.begin();
@@ -210,7 +214,7 @@ public:
     constexpr bool operator==(const FixedCircularBuffer<T, MAXIMUM_SIZE_2, CheckingType2>& other) const
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_data_ ==
-               other.IMPLEMENTATION_DETAIL_DO_NOT_USE_data_ && IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ == other.IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_;
+                   other.IMPLEMENTATION_DETAIL_DO_NOT_USE_data_ && IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_ == other.IMPLEMENTATION_DETAIL_DO_NOT_USE_cursor_;
     }
 
     template <std::size_t MAXIMUM_SIZE_2, customize::SequenceContainerChecking CheckingType2>
