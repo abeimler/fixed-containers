@@ -2,7 +2,7 @@ name: ci
 on:
   pull_request:
   release:
-    types: [published]
+    types: [ published ]
   push:
     branches:
       - main
@@ -136,11 +136,11 @@ jobs:
 
       - name: Build
         run: |
-          cmake -S ./ -B ./build -G '${{matrix.CMAKE_GENERATOR}}' -DCMAKE_BUILD_TYPE:STRING=${{matrix.CMAKE_BUILD_TYPE}}
-          cmake --build ./build --config ${{matrix.CMAKE_BUILD_TYPE}}
+          cmake -S ./ -B ./build -G '${{ matrix.CMAKE_GENERATOR }}' -DCMAKE_BUILD_TYPE:STRING=${{ matrix.CMAKE_BUILD_TYPE }}
+          cmake --build ./build --config ${{ matrix.CMAKE_BUILD_TYPE }}
         env:
-          CMAKE_GENERATOR: ${{matrix.CMAKE_GENERATOR}}
-          CMAKE_BUILD_TYPE: ${{matrix.CMAKE_BUILD_TYPE}}
+          CMAKE_GENERATOR: ${{ matrix.CMAKE_GENERATOR }}
+          CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE }}
 
       - name: Test
         if: ${{ contains(matrix.CMAKE_BUILD_TYPE, 'Deb') }}
@@ -148,34 +148,31 @@ jobs:
           cd ./build
           ctest
         env:
-          CMAKE_GENERATOR: ${{matrix.CMAKE_GENERATOR}}
-          CMAKE_BUILD_TYPE: ${{matrix.CMAKE_BUILD_TYPE}}
+          CMAKE_GENERATOR: ${{ matrix.CMAKE_GENERATOR }}
+          CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE }}
 
       - name: Coverage
         if: ${{ contains(matrix.os, 'ubuntu') && contains(matrix.CMAKE_BUILD_TYPE, 'Deb') }}
         run: |
-          cd ./build
-          ctest -C ${{matrix.CMAKE_BUILD_TYPE}} --output-on-failure
           cd ..
           mkdir -p ./build/coverage/
           gcovr --delete --filter "src/" --root ./ --print-summary --html-details ./build/coverage/index.html --xml-pretty --xml ./build/coverage.xml ./build
         env:
-          CMAKE_GENERATOR: ${{matrix.CMAKE_GENERATOR}}
-          CMAKE_BUILD_TYPE: ${{matrix.CMAKE_BUILD_TYPE}}
-          GCOV: ${{matrix.GCOV}}
+          CMAKE_GENERATOR: ${{ matrix.CMAKE_GENERATOR }}
+          CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE }}
+          GCOV: ${{ matrix.GCOV }}
       - name: Coverage
         if: ${{ contains(matrix.os, 'ubuntu') && contains(matrix.CMAKE_BUILD_TYPE, 'Deb') }}
         run: |
-          cd ./build
           OpenCppCoverage.exe --export_type html:./coverage --export_type cobertura:./coverage.xml --cover_children --sources "../src\*" --modules "*" -- ctest -C ${{matrix.CMAKE_BUILD_TYPE}} --output-on-failure
         env:
-          CMAKE_GENERATOR: ${{matrix.CMAKE_GENERATOR}}
-          CMAKE_BUILD_TYPE: ${{matrix.CMAKE_BUILD_TYPE}}
-          GCOV: ${{matrix.GCOV}}
+          CMAKE_GENERATOR: ${{ matrix.CMAKE_GENERATOR }}
+          CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE }}
+          GCOV: ${{ matrix.GCOV }}
 
       - name: Publish to codecov
         uses: codecov/codecov-action@v3
         with:
           flags: ${{ runner.os }}
           name: ${{ runner.os }}-coverage
-          files: ./build/coverage.xml
+          files: ./coverage.xml
