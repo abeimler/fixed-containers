@@ -4,33 +4,12 @@
 #include "fixed_containers/erase_if.hpp"
 #include "fixed_containers/fixed_red_black_tree.hpp"
 #include "fixed_containers/preconditions.hpp"
+#include "fixed_containers/set_checking.hpp"
 #include "fixed_containers/source_location.hpp"
 
 #include <algorithm>
 #include <cstddef>
 #include <functional>
-
-namespace fixed_containers::fixed_set_customize
-{
-template <class T, class K>
-concept FixedSetChecking =
-    requires(K key, std::size_t size, const std_transition::source_location& loc) {
-        T::length_error(size, loc);  // ~ std::length_error
-    };
-
-template <class K, std::size_t MAXIMUM_SIZE>
-struct AbortChecking
-{
-    static constexpr auto KEY_TYPE_NAME = fixed_containers::type_name<K>();
-
-    [[noreturn]] static void length_error(const std::size_t /*target_capacity*/,
-                                          const std_transition::source_location& /*loc*/)
-    {
-        std::abort();
-    }
-};
-
-}  // namespace fixed_containers::fixed_set_customize
 
 namespace fixed_containers
 {
@@ -53,8 +32,7 @@ template <class K,
                     ,
                     std::size_t>
           typename StorageTemplate = FixedIndexBasedPoolStorage,
-          fixed_set_customize::FixedSetChecking<K> CheckingType =
-              fixed_set_customize::AbortChecking<K, MAXIMUM_SIZE>>
+          customize::SetChecking<K> CheckingType = customize::SetAbortChecking<K, MAXIMUM_SIZE>>
 class FixedSet
 {
 public:
@@ -72,10 +50,22 @@ private:
     using Tree = fixed_red_black_tree_detail::
         FixedRedBlackTreeSet<K, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate>;
 
-    struct ReferenceProvider
+    class ReferenceProvider
     {
-        const Tree* tree_{nullptr};
-        NodeIndex current_index_{MAXIMUM_SIZE};
+        const Tree* tree_;
+        NodeIndex current_index_;
+
+    public:
+        constexpr ReferenceProvider() noexcept
+          : ReferenceProvider{nullptr, MAXIMUM_SIZE}
+        {
+        }
+
+        constexpr ReferenceProvider(const Tree* const tree, const NodeIndex& current_index) noexcept
+          : tree_{tree}
+          , current_index_{current_index}
+        {
+        }
 
         constexpr void advance() noexcept
         {
@@ -106,10 +96,7 @@ private:
             return tree_->node_at(current_index_).key();
         }
 
-        constexpr bool operator==(const ReferenceProvider& other) const noexcept
-        {
-            return current_index_ == other.current_index_;
-        }
+        constexpr bool operator==(const ReferenceProvider& other) const noexcept = default;
     };
 
     template <IteratorDirection DIRECTION>
@@ -387,7 +374,7 @@ public:
                         ,
                         std::size_t>
               typename StorageTemplate2,
-              fixed_set_customize::FixedSetChecking<K> CheckingType2>
+              customize::SetChecking<K> CheckingType2>
     [[nodiscard]] constexpr bool operator==(
         const FixedSet<K, MAXIMUM_SIZE_2, Compare2, COMPACTNESS_2, StorageTemplate2, CheckingType2>&
             other) const
@@ -449,10 +436,12 @@ here. clang accepts it */
                     ,
                     std::size_t>
           typename StorageTemplate,
-          fixed_set_customize::FixedSetChecking<K> CheckingType>
-constexpr typename FixedSet<K, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>::
-    size_type
-    is_full(const FixedSet<K, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>& c)
+          customize::SetChecking<K> CheckingType>
+[[nodiscard]] constexpr
+    typename FixedSet<K, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>::
+        size_type
+        is_full(
+            const FixedSet<K, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>& c)
 {
     return c.size() >= c.max_size();
 }
@@ -466,7 +455,7 @@ here. clang accepts it */
                     ,
                     std::size_t>
           typename StorageTemplate,
-          fixed_set_customize::FixedSetChecking<K> CheckingType,
+          customize::SetChecking<K> CheckingType,
           class Predicate>
 constexpr typename FixedSet<K, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>::
     size_type
@@ -484,7 +473,7 @@ template <typename K,
           fixed_red_black_tree_detail::RedBlackTreeNodeColorCompactness COMPACTNESS =
               fixed_red_black_tree_detail::RedBlackTreeNodeColorCompactness::EMBEDDED_COLOR,
           template <typename, std::size_t> typename StorageTemplate = FixedIndexBasedPoolStorage,
-          fixed_set_customize::FixedSetChecking<K> CheckingType,
+          customize::SetChecking<K> CheckingType,
           std::size_t MAXIMUM_SIZE,
           // Exposing this as a template parameter is useful for customization (for example with
           // child classes that set the CheckingType)
@@ -515,7 +504,7 @@ template <typename K,
                                             const std_transition::source_location& loc =
                                                 std_transition::source_location::current()) noexcept
 {
-    using CheckingType = fixed_set_customize::AbortChecking<K, MAXIMUM_SIZE>;
+    using CheckingType = customize::SetAbortChecking<K, MAXIMUM_SIZE>;
     using FixedSetType =
         FixedSet<K, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>;
     return make_fixed_set<K,

@@ -391,22 +391,6 @@ TEST(FixedVector, Builder_MultipleOuts)
     }
 }
 
-TEST(FixedVector, InitializerConstructor)
-{
-    constexpr FixedVector<int, 3> v1{77, 99};
-    static_assert(v1[0] == 77);
-    static_assert(v1[1] == 99);
-    static_assert(v1.size() == 2);
-
-    constexpr FixedVector<int, 3> v2{{66, 55}};
-    static_assert(v2[0] == 66);
-    static_assert(v2[1] == 55);
-    static_assert(v2.size() == 2);
-
-    EXPECT_TRUE(std::ranges::equal(v1, std::array{77, 99}));
-    EXPECT_TRUE(std::ranges::equal(v2, std::array{66, 55}));
-}
-
 TEST(FixedVector, MaxSizeDeduction)
 {
     constexpr auto v1 = make_fixed_vector({10, 11, 12, 13, 14});
@@ -464,10 +448,26 @@ TEST(FixedVector, IteratorConstructor)
 
 TEST(FixedVector, InputIteratorConstructor)
 {
-    MockIntStream stream{3};
+    MockIntegraStream<int> stream{3};
     FixedVector<int, 14> v{stream.begin(), stream.end()};
     ASSERT_EQ(3, v.size());
     EXPECT_TRUE(std::ranges::equal(v, std::array{3, 2, 1}));
+}
+
+TEST(FixedVector, InitializerConstructor)
+{
+    constexpr FixedVector<int, 3> v1{77, 99};
+    static_assert(v1[0] == 77);
+    static_assert(v1[1] == 99);
+    static_assert(v1.size() == 2);
+
+    constexpr FixedVector<int, 3> v2{{66, 55}};
+    static_assert(v2[0] == 66);
+    static_assert(v2[1] == 55);
+    static_assert(v2.size() == 2);
+
+    EXPECT_TRUE(std::ranges::equal(v1, std::array{77, 99}));
+    EXPECT_TRUE(std::ranges::equal(v2, std::array{66, 55}));
 }
 
 TEST(FixedVector, PushBack)
@@ -494,6 +494,15 @@ TEST(FixedVector, PushBack)
         return aaa;
     }();
     static_assert(v2.size() == 1);
+}
+
+TEST(FixedVector, PushBack_ExceedsCapacity)
+{
+    FixedVector<int, 2> v{};
+    v.push_back(0);
+    const char value = 1;
+    v.push_back(value);
+    EXPECT_DEATH(v.push_back(2), "");
 }
 
 TEST(FixedVector, EmplaceBack)
@@ -581,7 +590,7 @@ TEST(FixedVector, ExceedCapacity)
     EXPECT_DEATH(v1.push_back(value), "");
 }
 
-TEST(FixedVector, Popback)
+TEST(FixedVector, PopBack)
 {
     constexpr auto v1 = []()
     {
@@ -600,7 +609,7 @@ TEST(FixedVector, Popback)
     EXPECT_TRUE(std::ranges::equal(v2, std::array{10, 11}));
 }
 
-TEST(FixedVector, PushBackAll_Popback_Empty)
+TEST(FixedVector, PopBack_Empty)
 {
     FixedVector<int, 5> v1{};
     EXPECT_DEATH(v1.pop_back(), "");
@@ -689,34 +698,12 @@ TEST(FixedVector, At_OutOfBounds)
 
 TEST(FixedVector, Equality)
 {
-    constexpr auto v1 = []()
-    {
-        FixedVector<int, 12> v{0, 1, 2};
-        return v;
-    }();
-
-    constexpr auto v2 = []() {  // Capacity difference should not affect equality
-        FixedVector<int, 11> v{0, 1, 2};
-        return v;
-    }();
-
-    constexpr auto v3 = []()
-    {
-        FixedVector<int, 12> v{0, 101, 2};
-        return v;
-    }();
-
-    constexpr auto v4 = []()
-    {
-        FixedVector<int, 12> v{0, 1};
-        return v;
-    }();
-
-    constexpr auto v5 = []()
-    {
-        FixedVector<int, 12> v{0, 1, 2, 3, 4, 5};
-        return v;
-    }();
+    constexpr auto v1 = FixedVector<int, 12>{0, 1, 2};
+    // Capacity difference should not affect equality
+    constexpr auto v2 = FixedVector<int, 11>{0, 1, 2};
+    constexpr auto v3 = FixedVector<int, 12>{0, 101, 2};
+    constexpr auto v4 = FixedVector<int, 12>{0, 1};
+    constexpr auto v5 = FixedVector<int, 12>{0, 1, 2, 3, 4, 5};
 
     static_assert(v1 == v1);
     static_assert(v1 == v2);
@@ -876,7 +863,7 @@ TEST(FixedVector, IteratorAssignment)
     FixedVector<int, 8>::iterator it;              // Default construction
     FixedVector<int, 8>::const_iterator const_it;  // Default construction
 
-    const_it = it;  // Non-const needs to assignable to const
+    const_it = it;  // Non-const needs to be assignable to const
 }
 
 TEST(FixedVector, TrivialIterators)
@@ -956,7 +943,7 @@ TEST(FixedVector, NonTrivialIterators)
         {
         }
         int i_;
-        std::vector<int> v_;  // unused, but makes S non-trivial
+        MockNonTrivialInt v_;  // unused, but makes S non-trivial
     };
     static_assert(!std::is_trivially_copyable_v<S>);
     {
@@ -1175,7 +1162,6 @@ TEST(FixedVector, Resize)
     EXPECT_TRUE(std::ranges::equal(v3, std::array<int, 2>{{0, 1}}));
 
     v3.resize(5, 3);
-
     EXPECT_TRUE(std::ranges::equal(v3, std::array<int, 5>{{0, 1, 3, 3, 3}}));
 
     {
@@ -1362,6 +1348,12 @@ TEST(FixedVector, AssignValue)
     }
 }
 
+TEST(FixedVector, AssignValue_ExceedsCapacity)
+{
+    FixedVector<int, 3> v1{0, 1, 2};
+    EXPECT_DEATH(v1.assign(5, 100), "");
+}
+
 TEST(FixedVector, AssignRange)
 {
     {
@@ -1389,12 +1381,6 @@ TEST(FixedVector, AssignRange)
         EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 2>{300, 300}));
         EXPECT_EQ(2, v2.size());
     }
-}
-
-TEST(FixedVector, AssignValue_ExceedsCapacity)
-{
-    FixedVector<int, 3> v1{0, 1, 2};
-    EXPECT_DEATH(v1.assign(5, 100), "");
 }
 
 TEST(FixedVector, AssignRange_ExceedsCapacity)
@@ -1531,9 +1517,16 @@ TEST(FixedVector, InsertIterator)
     }
 }
 
+TEST(FixedVector, InsertIterator_ExceedsCapacity)
+{
+    FixedVector<int, 4> v1{0, 1, 2};
+    std::array<int, 2> a{3, 4};
+    EXPECT_DEATH(v1.insert(v1.begin() + 1, a.begin(), a.end()), "");
+}
+
 TEST(FixedVector, InsertInputIterator)
 {
-    MockIntStream stream{3};
+    MockIntegraStream<int> stream{3};
     FixedVector<int, 14> v{10, 20, 30, 40};
     auto it = v.insert(v.begin() + 2, stream.begin(), stream.end());
     ASSERT_EQ(7, v.size());
@@ -1543,16 +1536,9 @@ TEST(FixedVector, InsertInputIterator)
 
 TEST(FixedVector, InsertInputIterator_ExceedsCapacity)
 {
-    MockIntStream stream{3};
+    MockIntegraStream<int> stream{3};
     FixedVector<int, 6> v{10, 20, 30, 40};
     EXPECT_DEATH(v.insert(v.begin() + 2, stream.begin(), stream.end()), "");
-}
-
-TEST(FixedVector, InsertRange_ExceedsCapacity)
-{
-    FixedVector<int, 4> v1{0, 1, 2};
-    std::array<int, 2> a{3, 4};
-    EXPECT_DEATH(v1.insert(v1.begin() + 1, a.begin(), a.end()), "");
 }
 
 TEST(FixedVector, InsertInitializerList)
@@ -1628,7 +1614,7 @@ TEST(FixedVector, EraseOne)
     ++it;
     it = v2.erase(it);
     EXPECT_EQ(it, v2.cend());
-    EXPECT_EQ(*it, 3);
+    // EXPECT_EQ(*it, 3); // Not dereferenceable
     EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 3>{{1, 4, 0}}));
 }
 
@@ -1649,6 +1635,9 @@ TEST(FixedVector, Erase_Empty)
         // Don't Expect Death
         v1.erase(std::remove_if(v1.begin(), v1.end(), [&](const auto&) { return true; }), v1.end());
 
+        // The iterator pos must be valid and dereferenceable. Thus the end() iterator (which is
+        // valid, but is not dereferenceable) cannot be used as a value for pos.
+        // https://en.cppreference.com/w/cpp/container/vector/erase
         EXPECT_DEATH(v1.erase(v1.begin()), "");
     }
 }
@@ -1700,7 +1689,7 @@ TEST(FixedVector, Front)
     EXPECT_EQ(v2_const_ref.front(), 777);  // const variant
 }
 
-TEST(FixedVector, Front_EmptyVector)
+TEST(FixedVector, Front_EmptyContainer)
 {
     {
         const FixedVector<int, 3> v{};
@@ -1732,7 +1721,7 @@ TEST(FixedVector, Back)
     EXPECT_EQ(v2_const_ref.back(), 999);  // const variant
 }
 
-TEST(FixedVector, Back_EmptyVector)
+TEST(FixedVector, Back_EmptyContainer)
 {
     {
         const FixedVector<int, 3> v{};
@@ -2099,6 +2088,6 @@ TEST(FixedVector, ArgumentDependentLookup)
     fixed_containers::FixedVector<int, 5> a{};
     erase(a, 5);
     erase_if(a, [](int) { return true; });
-    is_full(a);
+    (void)is_full(a);
 }
 }  // namespace another_namespace_unrelated_to_the_fixed_containers_namespace

@@ -1,14 +1,15 @@
 #pragma once
 
+#include "fixed_containers/algorithm.hpp"
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/consteval_compare.hpp"
+#include "fixed_containers/integer_range.hpp"
 #include "fixed_containers/iterator_utils.hpp"
 #include "fixed_containers/optional_storage.hpp"
 #include "fixed_containers/preconditions.hpp"
 #include "fixed_containers/random_access_iterator_transformer.hpp"
+#include "fixed_containers/sequence_container_checking.hpp"
 #include "fixed_containers/source_location.hpp"
-#include "fixed_containers/string_literal.hpp"
-#include "fixed_containers/type_name.hpp"
 
 #include <algorithm>
 #include <array>
@@ -17,52 +18,6 @@
 #include <iterator>
 #include <memory>
 #include <type_traits>
-
-namespace fixed_containers::fixed_vector_customize
-{
-template <class T>
-concept FixedVectorChecking = requires(std::size_t i,
-                                       std::size_t s,
-                                       const StringLiteral& error_message,
-                                       const std_transition::source_location& loc) {
-    T::out_of_range(i, s, loc);  // ~ std::out_of_range
-    T::length_error(s, loc);     // ~ std::length_error
-    T::empty_container_access(loc);
-    T::invalid_argument(error_message, loc);  // ~ std::invalid_argument
-};
-
-template <typename T, std::size_t /*MAXIMUM_SIZE*/>
-struct AbortChecking
-{
-    static constexpr auto TYPE_NAME = fixed_containers::type_name<T>();
-
-    [[noreturn]] static constexpr void out_of_range(const std::size_t /*index*/,
-                                                    const std::size_t /*size*/,
-                                                    const std_transition::source_location& /*loc*/)
-    {
-        std::abort();
-    }
-
-    [[noreturn]] static void length_error(const std::size_t /*target_capacity*/,
-                                          const std_transition::source_location& /*loc*/)
-    {
-        std::abort();
-    }
-
-    [[noreturn]] static constexpr void empty_container_access(
-        const std_transition::source_location& /*loc*/)
-    {
-        std::abort();
-    }
-
-    [[noreturn]] static constexpr void invalid_argument(
-        const fixed_containers::StringLiteral& /*error_message*/,
-        const std_transition::source_location& /*loc*/)
-    {
-        std::abort();
-    }
-};
-}  // namespace fixed_containers::fixed_vector_customize
 
 namespace fixed_containers::fixed_vector_detail
 {
@@ -129,9 +84,7 @@ private:
 // that is preventing usage of concepts for destructors: https://bugs.llvm.org/show_bug.cgi?id=46269
 // [WORKAROUND-1] due to destructors: manually do the split with template specialization.
 // FixedVectorBase is only used for avoiding too much duplication for the destructor split
-template <typename T,
-          std::size_t MAXIMUM_SIZE,
-          fixed_vector_customize::FixedVectorChecking CheckingType>
+template <typename T, std::size_t MAXIMUM_SIZE, customize::SequenceContainerChecking CheckingType>
 class FixedVectorBase
 {
     /*
@@ -243,13 +196,6 @@ public:
         }
     }
 
-    constexpr FixedVectorBase(std::initializer_list<T> list,
-                              const std_transition::source_location& loc =
-                                  std_transition::source_location::current()) noexcept
-      : FixedVectorBase(list.begin(), list.end(), loc)
-    {
-    }
-
     constexpr explicit FixedVectorBase(std::size_t count,
                                        const std_transition::source_location& loc =
                                            std_transition::source_location::current()) noexcept
@@ -264,7 +210,14 @@ public:
                                   std_transition::source_location::current()) noexcept
       : FixedVectorBase()
     {
-        insert(end(), first, last, loc);
+        insert(cend(), first, last, loc);
+    }
+
+    constexpr FixedVectorBase(std::initializer_list<T> list,
+                              const std_transition::source_location& loc =
+                                  std_transition::source_location::current()) noexcept
+      : FixedVectorBase(list.begin(), list.end(), loc)
+    {
     }
 
     /**
@@ -289,14 +242,14 @@ public:
         // Reinitialize the new members if we are enlarging
         while (size() < count)
         {
-            place_at(size(), v);
+            place_at(end_index(), v);
             increment_size();
         }
         // Destroy extras if we are making it smaller.
         while (size() > count)
         {
             decrement_size();
-            destroy_at(size());
+            destroy_at(end_index());
         }
     }
 
@@ -326,7 +279,7 @@ public:
     constexpr reference emplace_back(Args&&... args)
     {
         check_not_full(std_transition::source_location::current());
-        emplace_at(size(), std::forward<Args>(args)...);
+        emplace_at(end_index(), std::forward<Args>(args)...);
         increment_size();
         return this->back();
     }
@@ -339,7 +292,7 @@ public:
         const std_transition::source_location& loc = std_transition::source_location::current())
     {
         check_not_empty(loc);
-        destroy_at(size() - 1);
+        destroy_at(back_index());
         decrement_size();
     }
 
@@ -353,9 +306,9 @@ public:
         const std_transition::source_location& loc = std_transition::source_location::current())
     {
         check_not_full(loc);
-        const std::size_t index = this->advance_all_after_iterator_by_n(it, 1);
-        place_at(index, v);
-        return begin() + static_cast<difference_type>(index);
+        auto entry_it = advance_all_after_iterator_by_n(it, 1);
+        std::construct_at(&*entry_it, v);
+        return entry_it;
     }
     constexpr iterator insert(
         const_iterator it,
@@ -363,9 +316,9 @@ public:
         const std_transition::source_location& loc = std_transition::source_location::current())
     {
         check_not_full(loc);
-        const std::size_t index = this->advance_all_after_iterator_by_n(it, 1);
-        place_at(index, std::move(v));
-        return begin() + static_cast<difference_type>(index);
+        auto entry_it = advance_all_after_iterator_by_n(it, 1);
+        std::construct_at(&*entry_it, std::move(v));
+        return entry_it;
     }
     template <InputIterator InputIt>
     constexpr iterator insert(
@@ -394,9 +347,9 @@ public:
     constexpr iterator emplace(const_iterator it, Args&&... args)
     {
         check_not_full(std_transition::source_location::current());
-        const std::size_t index = this->advance_all_after_iterator_by_n(it, 1);
-        emplace_at(index, std::forward<Args>(args)...);
-        return begin() + static_cast<difference_type>(index);
+        auto entry_it = advance_all_after_iterator_by_n(it, 1);
+        std::construct_at(&*entry_it, std::forward<Args>(args)...);
+        return entry_it;
     }
 
     /**
@@ -422,7 +375,7 @@ public:
         const std_transition::source_location& loc = std_transition::source_location::current())
     {
         this->clear();
-        this->insert(end(), first, last, loc);
+        this->insert(cend(), first, last, loc);
     }
 
     constexpr void assign(
@@ -430,7 +383,7 @@ public:
         const std_transition::source_location& loc = std_transition::source_location::current())
     {
         this->clear();
-        this->insert(end(), ilist, loc);
+        this->insert(cend(), ilist, loc);
     }
 
     /**
@@ -445,26 +398,29 @@ public:
         {
             Checking::invalid_argument("first > last, range is invalid", loc);
         }
+        if (preconditions::test(first >= cbegin() && last <= cend()))
+        {
+            Checking::invalid_argument("iterators exceed container range", loc);
+        }
 
         const std::size_t read_start = this->index_of(last);
         const std::size_t write_start = this->index_of(first);
 
-        std::size_t entry_count_to_move = size() - read_start;
-        const std::size_t entry_count_to_remove = read_start - write_start;
+        const auto entry_count_to_move = static_cast<std::size_t>(cend() - last);
+        const auto entry_count_to_remove = static_cast<std::size_t>(last - first);
 
         // Clean out the gap
-        destroy_index_range(write_start, write_start + entry_count_to_remove);
+        destroy_range({.start = write_start, .distance = entry_count_to_remove});
+
+        auto read_start_it = create_iterator(read_start);
+        auto read_end_it = create_iterator(read_start + entry_count_to_move);
+        auto write_start_it = create_iterator(write_start);
 
         // Do the move
-        for (std::size_t i = 0; i < entry_count_to_move; ++i)
-        {
-            place_at(write_start + i,
-                     std::move(optional_storage_detail::get(array_unchecked_at(read_start + i))));
-            destroy_at(read_start + i);
-        }
+        std::move(read_start_it, read_end_it, write_start_it);
 
         decrement_size(entry_count_to_remove);
-        return iterator{this->begin() + static_cast<difference_type>(write_start)};
+        return create_iterator(write_start);
     }
 
     /**
@@ -480,11 +436,10 @@ public:
     /**
      * Erases all elements from the container. After this call, size() returns zero.
      */
-    constexpr FixedVectorBase& clear() noexcept
+    constexpr void clear() noexcept
     {
-        destroy_index_range(0, size());
+        destroy_range({.start = 0, .distance = size()});
         set_size(0);
-        return *this;
     }
 
     /**
@@ -528,25 +483,25 @@ public:
         const std_transition::source_location& loc = std_transition::source_location::current())
     {
         check_not_empty(loc);
-        return unchecked_at(0);
+        return unchecked_at(front_index());
     }
     constexpr const_reference front(const std_transition::source_location& loc =
                                         std_transition::source_location::current()) const
     {
         check_not_empty(loc);
-        return unchecked_at(0);
+        return unchecked_at(front_index());
     }
     constexpr reference back(
         const std_transition::source_location& loc = std_transition::source_location::current())
     {
         check_not_empty(loc);
-        return unchecked_at(size() - 1);
+        return unchecked_at(back_index());
     }
     constexpr const_reference back(const std_transition::source_location& loc =
                                        std_transition::source_location::current()) const
     {
         check_not_empty(loc);
-        return unchecked_at(size() - 1);
+        return unchecked_at(back_index());
     }
 
     constexpr value_type* data() noexcept
@@ -561,12 +516,15 @@ public:
     /**
      * Iterators
      */
-    constexpr iterator begin() noexcept { return create_iterator(0); }
+    constexpr iterator begin() noexcept { return create_iterator(front_index()); }
     constexpr const_iterator begin() const noexcept { return cbegin(); }
-    constexpr const_iterator cbegin() const noexcept { return create_const_iterator(0); }
-    constexpr iterator end() noexcept { return create_iterator(size()); }
+    constexpr const_iterator cbegin() const noexcept
+    {
+        return create_const_iterator(front_index());
+    }
+    constexpr iterator end() noexcept { return create_iterator(end_index()); }
     constexpr const_iterator end() const noexcept { return cend(); }
-    constexpr const_iterator cend() const noexcept { return create_const_iterator(size()); }
+    constexpr const_iterator cend() const noexcept { return create_const_iterator(end_index()); }
 
     constexpr reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
     constexpr const_reverse_iterator rbegin() const noexcept { return crbegin(); }
@@ -593,7 +551,7 @@ public:
     /**
      * Equality.
      */
-    template <std::size_t MAXIMUM_SIZE_2, fixed_vector_customize::FixedVectorChecking CheckingType2>
+    template <std::size_t MAXIMUM_SIZE_2, customize::SequenceContainerChecking CheckingType2>
     constexpr bool operator==(const FixedVectorBase<T, MAXIMUM_SIZE_2, CheckingType2>& other) const
     {
         if constexpr (MAXIMUM_SIZE == MAXIMUM_SIZE_2)
@@ -620,7 +578,7 @@ public:
         return true;
     }
 
-    template <std::size_t MAXIMUM_SIZE_2, fixed_vector_customize::FixedVectorChecking CheckingType2>
+    template <std::size_t MAXIMUM_SIZE_2, customize::SequenceContainerChecking CheckingType2>
     constexpr auto operator<=>(const FixedVectorBase<T, MAXIMUM_SIZE_2, CheckingType2>& other) const
     {
         using OrderingType = decltype(std::declval<T>() <=> std::declval<T>());
@@ -641,42 +599,20 @@ public:
     }
 
 private:
-    /*
-     * Helper for insert
-     * Moves everything ahead of a given const_iterator n spots forward, and
-     * returns the index to insert something at that place. Increments size.
-     */
-    constexpr std::size_t advance_all_after_iterator_by_n(const const_iterator it,
-                                                          const std::size_t n)
+    constexpr iterator advance_all_after_iterator_by_n(const const_iterator it, const std::size_t n)
     {
         const std::size_t read_start = index_of(it);
         const std::size_t write_start = read_start + n;
         const std::size_t value_count_to_move = size() - read_start;
 
-        const std::size_t read_end = read_start + value_count_to_move - 1;
-        const std::size_t write_end = write_start + value_count_to_move - 1;
-
-        for (std::size_t i = 0; i < value_count_to_move; i++)
-        {
-            place_at(write_end - i, std::move(unchecked_at(read_end - i)));
-            destroy_at(read_end - i);
-        }
+        auto read_start_it = create_iterator(read_start);
+        auto read_end_it = create_iterator(read_start + value_count_to_move);
+        auto write_end_it = create_iterator(write_start + value_count_to_move);
+        algorithm::emplace_move_backward(read_start_it, read_end_it, write_end_it);
 
         increment_size(n);
 
-        return read_start;
-    }
-
-    constexpr void push_back_internal(const value_type& v)
-    {
-        place_at(size(), v);
-        increment_size();
-    }
-
-    constexpr void push_back_internal(value_type&& v)
-    {
-        place_at(size(), std::move(v));
-        increment_size();
+        return read_start_it;
     }
 
     template <InputIterator InputIt>
@@ -688,14 +624,13 @@ private:
     {
         const auto entry_count_to_add = static_cast<std::size_t>(std::distance(first, last));
         check_target_size(size() + entry_count_to_add, loc);
-        const std::size_t write_index =
-            this->advance_all_after_iterator_by_n(it, entry_count_to_add);
 
-        for (std::size_t i = write_index; first != last; std::advance(first, 1), i++)
+        auto write_it = advance_all_after_iterator_by_n(it, entry_count_to_add);
+        for (auto w_it = write_it; first != last; std::advance(first, 1), std::advance(w_it, 1))
         {
-            place_at(i, *first);
+            std::construct_at(&*w_it, *first);
         }
-        return begin() + static_cast<difference_type>(write_index);
+        return write_it;
     }
 
     template <InputIterator InputIt>
@@ -705,55 +640,52 @@ private:
                                        InputIt last,
                                        const std_transition::source_location& loc)
     {
+        const std::size_t original_size = size();
+
         // Place everything at the end of the vector
-        std::size_t new_size = size();
-        for (; first != last && new_size < max_size(); ++first, ++new_size)
+        for (; first != last && size() < max_size(); ++first)
         {
-            place_at(new_size, *first);
+            push_back_internal(*first);
         }
 
         if (first != last)  // Reached capacity
         {
-            // Count excess elements
+            std::size_t excess_element_count = 0;
             for (; first != last; ++first)
             {
-                new_size++;
+                excess_element_count++;
             }
 
-            Checking::length_error(new_size, loc);
+            Checking::length_error(MAXIMUM_SIZE + excess_element_count, loc);
         }
 
         // Rotate into the correct places
         const std::size_t write_index = this->index_of(it);
-        std::rotate(
-            create_iterator(write_index), create_iterator(size()), create_iterator(new_size));
-        set_size(new_size);
+        auto write_it = create_iterator(write_index);
+        std::rotate({write_it}, create_iterator(original_size), create_iterator(size()));
 
-        return begin() + static_cast<difference_type>(write_index);
+        return write_it;
     }
 
-    constexpr iterator create_iterator(const std::size_t start_index) noexcept
+    constexpr iterator create_iterator(const std::size_t offset_from_start) noexcept
     {
         auto array_it = std::next(std::begin(IMPLEMENTATION_DETAIL_DO_NOT_USE_array_),
-                                  static_cast<difference_type>(start_index));
+                                  static_cast<difference_type>(offset_from_start));
         return iterator{array_it, Mapper{}};
     }
 
-    constexpr const_iterator create_const_iterator(const std::size_t start_index) const noexcept
+    constexpr const_iterator create_const_iterator(
+        const std::size_t offset_from_start) const noexcept
     {
         auto array_it = std::next(std::begin(IMPLEMENTATION_DETAIL_DO_NOT_USE_array_),
-                                  static_cast<difference_type>(start_index));
+                                  static_cast<difference_type>(offset_from_start));
         return const_iterator{array_it, Mapper{}};
     }
 
 private:
-    constexpr std::size_t index_of(iterator it) const
-    {
-        return static_cast<std::size_t>(it - begin());
-    }
     constexpr std::size_t index_of(const_iterator it) const
     {
-        return static_cast<std::size_t>(it - cbegin());
+        return static_cast<std::size_t>(std::distance(cbegin(), it));
     }
 
     constexpr void check_not_full(const std_transition::source_location& loc) const
@@ -771,8 +703,10 @@ private:
         }
     }
 
-    // [WORKAROUND-1] - Needed by the non-trivially-copyable flavor of FixedVector
-protected:
+    [[nodiscard]] constexpr std::size_t front_index() const { return 0; }
+    [[nodiscard]] constexpr std::size_t back_index() const { return end_index() - 1; }
+    [[nodiscard]] constexpr std::size_t end_index() const { return size(); }
+
     constexpr void increment_size(const std::size_t n = 1)
     {
         IMPLEMENTATION_DETAIL_DO_NOT_USE_size_ += n;
@@ -809,19 +743,23 @@ protected:
     constexpr void destroy_at(std::size_t i)
         requires NotTriviallyDestructible<T>
     {
-        array_unchecked_at(i).value.~T();
+        std::destroy_at(&array_unchecked_at(i).value);
     }
 
-    constexpr void destroy_index_range(std::size_t, std::size_t)
+    constexpr void destroy_range(const StartingIntegerAndDistance&)
         requires TriviallyDestructible<T>
     {
     }
-    constexpr void destroy_index_range(std::size_t from_inclusive, std::size_t to_exclusive)
+    constexpr void destroy_range(const StartingIntegerAndDistance& start_and_distance)
         requires NotTriviallyDestructible<T>
     {
-        for (std::size_t i = from_inclusive; i < to_exclusive; i++)
+        const IntegerRange as_range = start_and_distance.to_range();
+        auto start = create_iterator(as_range.start_inclusive());
+        auto end = create_iterator(as_range.end_exclusive());
+
+        for (auto it = start; it != end; ++it)
         {
-            destroy_at(i);
+            std::destroy_at(&*it);
         }
     }
 
@@ -829,7 +767,6 @@ protected:
     {
         std::construct_at(&array_unchecked_at(i), v);
     }
-
     constexpr void place_at(const std::size_t i, value_type&& v)
     {
         std::construct_at(&array_unchecked_at(i), std::move(v));
@@ -840,15 +777,27 @@ protected:
     {
         optional_storage_detail::construct_at(&array_unchecked_at(i), std::forward<Args>(args)...);
     }
+
+    // [WORKAROUND-1] - Needed by the non-trivially-copyable flavor of FixedVector
+protected:
+    constexpr void push_back_internal(const value_type& v)
+    {
+        place_at(end_index(), v);
+        increment_size();
+    }
+
+    constexpr void push_back_internal(value_type&& v)
+    {
+        place_at(end_index(), std::move(v));
+        increment_size();
+    }
 };
 
 }  // namespace fixed_containers::fixed_vector_detail
 
 namespace fixed_containers::fixed_vector_detail::specializations
 {
-template <typename T,
-          std::size_t MAXIMUM_SIZE,
-          fixed_vector_customize::FixedVectorChecking CheckingType>
+template <typename T, std::size_t MAXIMUM_SIZE, customize::SequenceContainerChecking CheckingType>
 class FixedVector : public fixed_vector_detail::FixedVectorBase<T, MAXIMUM_SIZE, CheckingType>
 {
     using Base = fixed_vector_detail::FixedVectorBase<T, MAXIMUM_SIZE, CheckingType>;
@@ -859,12 +808,6 @@ public:
 
     constexpr FixedVector() noexcept
       : Base()
-    {
-    }
-    constexpr FixedVector(std::initializer_list<T> list,
-                          const std_transition::source_location& loc =
-                              std_transition::source_location::current()) noexcept
-      : Base(list, loc)
     {
     }
     constexpr FixedVector(std::size_t count,
@@ -886,6 +829,12 @@ public:
                           const std_transition::source_location& loc =
                               std_transition::source_location::current()) noexcept
       : Base(first, last, loc)
+    {
+    }
+    constexpr FixedVector(std::initializer_list<T> list,
+                          const std_transition::source_location& loc =
+                              std_transition::source_location::current()) noexcept
+      : Base(list, loc)
     {
     }
 
@@ -903,24 +852,17 @@ public:
     = default;
 
     constexpr FixedVector(const FixedVector& other)
-      : FixedVector()
+      : FixedVector(other.begin(), other.end())
     {
-        const std::size_t sz = other.size();
-        this->set_size(sz);
-        for (std::size_t i = 0; i < sz; i++)
-        {
-            this->place_at(i, other.array_unchecked_at(i).value);
-        }
     }
     constexpr FixedVector(FixedVector&& other) noexcept
       : FixedVector()
     {
-        const std::size_t sz = other.size();
-        this->set_size(sz);
-        for (std::size_t i = 0; i < sz; i++)
+        for (T& entry : other)
         {
-            this->place_at(i, std::move(other.array_unchecked_at(i).value));
+            this->push_back_internal(std::move(entry));
         }
+
         // Clear the moved-out-of-vector. This is consistent with both std::vector
         // as well as the trivial move constructor of this class.
         other.clear();
@@ -932,13 +874,7 @@ public:
             return *this;
         }
 
-        this->clear();
-        const std::size_t sz = other.size();
-        this->set_size(sz);
-        for (std::size_t i = 0; i < sz; i++)
-        {
-            this->place_at(i, other.array_unchecked_at(i).value);
-        }
+        this->assign(other.begin(), other.end());
         return *this;
     }
     constexpr FixedVector& operator=(FixedVector&& other) noexcept
@@ -949,11 +885,9 @@ public:
         }
 
         this->clear();
-        const std::size_t sz = other.size();
-        this->set_size(sz);
-        for (std::size_t i = 0; i < sz; i++)
+        for (T& entry : other)
         {
-            this->place_at(i, std::move(other.array_unchecked_at(i).value));
+            this->push_back_internal(std::move(entry));
         }
         // The trivial assignment operator does not `other.clear()`, so don't do it here either for
         // consistency across FixedVectors. std::vector<T> does clear it, so behavior is different.
@@ -967,7 +901,7 @@ public:
 
 template <TriviallyCopyable T,
           std::size_t MAXIMUM_SIZE,
-          fixed_vector_customize::FixedVectorChecking CheckingType>
+          customize::SequenceContainerChecking CheckingType>
 class FixedVector<T, MAXIMUM_SIZE, CheckingType>
   : public fixed_vector_detail::FixedVectorBase<T, MAXIMUM_SIZE, CheckingType>
 {
@@ -979,12 +913,6 @@ public:
 
     constexpr FixedVector() noexcept
       : Base()
-    {
-    }
-    constexpr FixedVector(std::initializer_list<T> list,
-                          const std_transition::source_location& loc =
-                              std_transition::source_location::current()) noexcept
-      : Base(list, loc)
     {
     }
     constexpr FixedVector(std::size_t count,
@@ -1006,6 +934,12 @@ public:
                           const std_transition::source_location& loc =
                               std_transition::source_location::current()) noexcept
       : Base(first, last, loc)
+    {
+    }
+    constexpr FixedVector(std::initializer_list<T> list,
+                          const std_transition::source_location& loc =
+                              std_transition::source_location::current()) noexcept
+      : Base(list, loc)
     {
     }
 };
@@ -1024,8 +958,8 @@ namespace fixed_containers
  */
 template <typename T,
           std::size_t MAXIMUM_SIZE,
-          fixed_vector_customize::FixedVectorChecking CheckingType =
-              fixed_vector_customize::AbortChecking<T, MAXIMUM_SIZE>>
+          customize::SequenceContainerChecking CheckingType =
+              customize::SequenceContainerAbortChecking<T, MAXIMUM_SIZE>>
 class FixedVector
   : public fixed_vector_detail::specializations::FixedVector<T, MAXIMUM_SIZE, CheckingType>
 {
@@ -1069,7 +1003,7 @@ public:
 };
 
 template <typename T, std::size_t MAXIMUM_SIZE, typename CheckingType>
-constexpr typename FixedVector<T, MAXIMUM_SIZE, CheckingType>::size_type is_full(
+[[nodiscard]] constexpr typename FixedVector<T, MAXIMUM_SIZE, CheckingType>::size_type is_full(
     const FixedVector<T, MAXIMUM_SIZE, CheckingType>& c)
 {
     return c.size() >= c.max_size();
@@ -1097,7 +1031,7 @@ constexpr typename FixedVector<T, MAXIMUM_SIZE, CheckingType>::size_type erase_i
  * Construct a FixedVector with its capacity being deduced from the number of items being passed.
  */
 template <typename T,
-          fixed_vector_customize::FixedVectorChecking CheckingType,
+          customize::SequenceContainerChecking CheckingType,
           std::size_t MAXIMUM_SIZE,
           // Exposing this as a template parameter is useful for customization (for example with
           // child classes that set the CheckingType)
@@ -1121,7 +1055,7 @@ template <typename T, std::size_t MAXIMUM_SIZE>
     const std_transition::source_location& loc =
         std_transition::source_location::current()) noexcept
 {
-    using CheckingType = fixed_vector_customize::AbortChecking<T, MAXIMUM_SIZE>;
+    using CheckingType = customize::SequenceContainerAbortChecking<T, MAXIMUM_SIZE>;
     using FixedVectorType = FixedVector<T, MAXIMUM_SIZE, CheckingType>;
     return make_fixed_vector<T, CheckingType, MAXIMUM_SIZE, FixedVectorType>(list, loc);
 }

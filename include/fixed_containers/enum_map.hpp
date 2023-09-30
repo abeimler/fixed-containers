@@ -22,18 +22,21 @@
 #include <memory>
 #include <type_traits>
 
-namespace fixed_containers::enum_map_customize
+namespace fixed_containers::customize
 {
 template <class T, class K>
 concept EnumMapChecking =
     requires(K key, std::size_t size, const std_transition::source_location& loc) {
         T::missing_enum_entries(loc);
+        T::duplicate_enum_entries(loc);
         T::out_of_range(key, size, loc);  // ~ std::out_of_range
     };
 
 template <class K, class V>
-struct AbortChecking
+struct EnumMapAbortChecking
 {
+    // KEY_TYPE_NAME and VALUE_TYPE_NAME are not used, but are meant as an example
+    // for Checking implementations that will utilize this information.
     static constexpr auto KEY_TYPE_NAME = fixed_containers::type_name<K>();
     static constexpr auto VALUE_TYPE_NAME = fixed_containers::type_name<V>();
 
@@ -47,15 +50,15 @@ struct AbortChecking
         std::abort();
     }
 
-    [[noreturn]] static constexpr void out_of_range(const K& /*key*/,
-                                                    const std::size_t /*size*/,
-                                                    const std_transition::source_location& /*loc*/)
+    [[noreturn]] static void out_of_range(const K& /*key*/,
+                                          const std::size_t /*size*/,
+                                          const std_transition::source_location& /*loc*/)
     {
         std::abort();
     }
 };
 
-}  // namespace fixed_containers::enum_map_customize
+}  // namespace fixed_containers::customize
 
 namespace fixed_containers::enum_map_detail
 {
@@ -119,7 +122,7 @@ private:
     EnumMapType enum_map_;
 };
 
-template <class K, class V, enum_map_customize::EnumMapChecking<K> CheckingType>
+template <class K, class V, customize::EnumMapChecking<K> CheckingType>
 class EnumMapBase
 {
 public:
@@ -156,22 +159,22 @@ private:
             return (*array_set_)[i];
 #endif
         }
+        constexpr bool operator==(const IndexPredicate&) const = default;
     };
 
     template <bool IS_CONST>
-    struct PairProvider
+    class PairProvider
     {
+        friend class PairProvider<!IS_CONST>;
         using ConstOrMutableValueArray =
             std::conditional_t<IS_CONST, const ValueArrayType, ValueArrayType>;
-        using ConstOrMutablePair =
-            std::conditional_t<IS_CONST, std::pair<const K&, const V&>, std::pair<const K&, V&>>;
 
-        FilteredIntegerRangeIterator<IndexPredicate,
-                                     IteratorDirection::FORWARD,
-                                     CompileTimeIntegerRange<0, ENUM_COUNT>>
+    private:
+        FilteredIntegerRangeEntryProvider<IndexPredicate, CompileTimeIntegerRange<0, ENUM_COUNT>>
             present_indices_;
         ConstOrMutableValueArray* values_;
 
+    public:
         constexpr PairProvider() noexcept
           : PairProvider{nullptr, nullptr, ENUM_COUNT}
         {
@@ -180,7 +183,9 @@ private:
         constexpr PairProvider(const ArraySetType* array_set_,
                                ConstOrMutableValueArray* const values,
                                const std::size_t current_index) noexcept
-          : present_indices_{{}, current_index, IndexPredicate{array_set_}}
+          : present_indices_{CompileTimeIntegerRange<0, ENUM_COUNT>{},
+                             current_index,
+                             IndexPredicate{array_set_}}
           , values_{values}
         {
         }
@@ -199,20 +204,20 @@ private:
         {
         }
 
-        constexpr void advance() noexcept { ++present_indices_; }
-        constexpr void recede() noexcept { --present_indices_; }
+        constexpr void advance() noexcept { present_indices_.advance(); }
+        constexpr void recede() noexcept { present_indices_.recede(); }
 
-        constexpr const_reference get() const noexcept
-            requires IS_CONST
+        constexpr std::conditional_t<IS_CONST, const_reference, reference> get() const noexcept
         {
-            return {ENUM_VALUES[*present_indices_], (*values_)[*present_indices_].get()};
+            const std::size_t i = present_indices_.get();
+            return {ENUM_VALUES[i], (*values_)[i].get()};
         }
-        constexpr reference get() const noexcept
-            requires(not IS_CONST)
+
+        template <bool IS_CONST2>
+        constexpr bool operator==(const PairProvider<IS_CONST2>& other) const noexcept
         {
-            return {ENUM_VALUES[*present_indices_], (*values_)[*present_indices_].get()};
+            return values_ == other.values_ && present_indices_ == other.present_indices_;
         }
-        constexpr bool operator==(const PairProvider&) const = default;
     };
 
     template <IteratorConstness CONSTNESS, IteratorDirection DIRECTION>
@@ -676,7 +681,7 @@ public:
         return static_cast<std::size_t>(contains(key));
     }
 
-    template <enum_map_customize::EnumMapChecking<K> CheckingType2>
+    template <customize::EnumMapChecking<K> CheckingType2>
     [[nodiscard]] constexpr bool operator==(const EnumMapBase<K, V, CheckingType2>& other) const
     {
         for (std::size_t i = 0; i < ENUM_COUNT; i++)
@@ -874,7 +879,7 @@ protected:  // [WORKAROUND-1]
 
 namespace fixed_containers::enum_map_detail::specializations
 {
-template <class K, class V, enum_map_customize::EnumMapChecking<K> CheckingType>
+template <class K, class V, customize::EnumMapChecking<K> CheckingType>
 class EnumMap : public enum_map_detail::EnumMapBase<K, V, CheckingType>
 {
     using Self = EnumMap<K, V, CheckingType>;
@@ -1035,7 +1040,7 @@ public:
     constexpr ~EnumMap() noexcept { this->clear(); }
 };
 
-template <class K, TriviallyCopyable V, enum_map_customize::EnumMapChecking<K> CheckingType>
+template <class K, TriviallyCopyable V, customize::EnumMapChecking<K> CheckingType>
 class EnumMap<K, V, CheckingType> : public enum_map_detail::EnumMapBase<K, V, CheckingType>
 {
     using Self = EnumMap<K, V, CheckingType>;
@@ -1123,8 +1128,7 @@ namespace fixed_containers
  */
 template <class K,
           class V,
-          enum_map_customize::EnumMapChecking<K> CheckingType =
-              enum_map_customize::AbortChecking<K, V>>
+          customize::EnumMapChecking<K> CheckingType = customize::EnumMapAbortChecking<K, V>>
 class EnumMap : public enum_map_detail::specializations::EnumMap<K, V, CheckingType>
 {
     using Self = EnumMap<K, V, CheckingType>;
@@ -1201,7 +1205,7 @@ public:
     }
 };
 
-template <class K, class V, enum_map_customize::EnumMapChecking<K> CheckingType, class Predicate>
+template <class K, class V, customize::EnumMapChecking<K> CheckingType, class Predicate>
 constexpr typename EnumMap<K, V, CheckingType>::size_type erase_if(EnumMap<K, V, CheckingType>& c,
                                                                    Predicate predicate)
 {

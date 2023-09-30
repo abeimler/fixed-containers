@@ -3,43 +3,13 @@
 #include "fixed_containers/bidirectional_iterator.hpp"
 #include "fixed_containers/erase_if.hpp"
 #include "fixed_containers/fixed_red_black_tree.hpp"
+#include "fixed_containers/map_checking.hpp"
 #include "fixed_containers/preconditions.hpp"
 #include "fixed_containers/source_location.hpp"
 
 #include <algorithm>
 #include <cstddef>
 #include <functional>
-
-namespace fixed_containers::fixed_map_customize
-{
-template <class T, class K>
-concept FixedMapChecking =
-    requires(K key, std::size_t size, const std_transition::source_location& loc) {
-        T::out_of_range(key, size, loc);  // ~ std::out_of_range
-        T::length_error(size, loc);       // ~ std::length_error
-    };
-
-template <class K, class V, std::size_t MAXIMUM_SIZE>
-struct AbortChecking
-{
-    static constexpr auto KEY_TYPE_NAME = fixed_containers::type_name<K>();
-    static constexpr auto VALUE_TYPE_NAME = fixed_containers::type_name<V>();
-
-    [[noreturn]] static constexpr void out_of_range(const K& /*key*/,
-                                                    const std::size_t /*size*/,
-                                                    const std_transition::source_location& /*loc*/)
-    {
-        std::abort();
-    }
-
-    [[noreturn]] static void length_error(const std::size_t /*target_capacity*/,
-                                          const std_transition::source_location& /*loc*/)
-    {
-        std::abort();
-    }
-};
-
-}  // namespace fixed_containers::fixed_map_customize
 
 namespace fixed_containers
 {
@@ -63,8 +33,7 @@ template <class K,
                     ,
                     std::size_t>
           typename StorageTemplate = FixedIndexBasedPoolStorage,
-          fixed_map_customize::FixedMapChecking<K> CheckingType =
-              fixed_map_customize::AbortChecking<K, V, MAXIMUM_SIZE>>
+          customize::MapChecking<K> CheckingType = customize::MapAbortChecking<K, V, MAXIMUM_SIZE>>
 class FixedMap
 {
 public:
@@ -84,15 +53,16 @@ private:
         FixedRedBlackTree<K, V, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate>;
 
     template <bool IS_CONST>
-    struct PairProvider
+    class PairProvider
     {
+        friend class PairProvider<!IS_CONST>;
         using ConstOrMutableTree = std::conditional_t<IS_CONST, const Tree, Tree>;
-        using ConstOrMutablePair =
-            std::conditional_t<IS_CONST, std::pair<const K&, const V&>, std::pair<const K&, V&>>;
 
+    private:
         ConstOrMutableTree* tree_;
         NodeIndex current_index_;
 
+    public:
         constexpr PairProvider() noexcept
           : PairProvider{nullptr, MAXIMUM_SIZE}
         {
@@ -142,24 +112,14 @@ private:
             }
         }
 
-        constexpr const_reference get() const noexcept
-            requires IS_CONST
-        {
-            fixed_red_black_tree_detail::RedBlackTreeNodeView node = tree_->node_at(current_index_);
-            return {node.key(), node.value()};
-        }
-        constexpr reference get() const noexcept
-            requires(not IS_CONST)
+        constexpr std::conditional_t<IS_CONST, const_reference, reference> get() const noexcept
         {
             fixed_red_black_tree_detail::RedBlackTreeNodeView node = tree_->node_at(current_index_);
             return {node.key(), node.value()};
         }
 
-        constexpr bool operator==(const PairProvider& other) const noexcept
-        {
-            return tree_ == other.tree_ && current_index_ == other.current_index_;
-        }
-        constexpr bool operator==(const PairProvider<!IS_CONST>& other) const noexcept
+        template <bool IS_CONST2>
+        constexpr bool operator==(const PairProvider<IS_CONST2>& other) const noexcept
         {
             return tree_ == other.tree_ && current_index_ == other.current_index_;
         }
@@ -655,7 +615,7 @@ public:
                         ,
                         std::size_t>
               typename StorageTemplate2,
-              fixed_map_customize::FixedMapChecking<K> CheckingType2>
+              customize::MapChecking<K> CheckingType2>
     [[nodiscard]] constexpr bool operator==(const FixedMap<K,
                                                            V,
                                                            MAXIMUM_SIZE_2,
@@ -741,8 +701,8 @@ here. clang accepts it */
                     ,
                     std::size_t>
           typename StorageTemplate,
-          fixed_map_customize::FixedMapChecking<K> CheckingType>
-constexpr
+          customize::MapChecking<K> CheckingType>
+[[nodiscard]] constexpr
     typename FixedMap<K, V, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>::
         size_type
         is_full(
@@ -762,7 +722,7 @@ here. clang accepts it */
                     ,
                     std::size_t>
           typename StorageTemplate,
-          fixed_map_customize::FixedMapChecking<K> CheckingType,
+          customize::MapChecking<K> CheckingType,
           class Predicate>
 constexpr
     typename FixedMap<K, V, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>::
@@ -784,7 +744,7 @@ template <typename K,
           fixed_red_black_tree_detail::RedBlackTreeNodeColorCompactness COMPACTNESS =
               fixed_red_black_tree_detail::RedBlackTreeNodeColorCompactness::EMBEDDED_COLOR,
           template <typename, std::size_t> typename StorageTemplate = FixedIndexBasedPoolStorage,
-          fixed_map_customize::FixedMapChecking<K> CheckingType,
+          customize::MapChecking<K> CheckingType,
           std::size_t MAXIMUM_SIZE,
           // Exposing this as a template parameter is useful for customization (for example with
           // child classes that set the CheckingType)
@@ -816,7 +776,7 @@ template <typename K,
                                             const std_transition::source_location& loc =
                                                 std_transition::source_location::current()) noexcept
 {
-    using CheckingType = fixed_map_customize::AbortChecking<K, V, MAXIMUM_SIZE>;
+    using CheckingType = customize::MapAbortChecking<K, V, MAXIMUM_SIZE>;
     using FixedMapType =
         FixedMap<K, V, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>;
     return make_fixed_map<K,

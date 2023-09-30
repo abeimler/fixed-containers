@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fixed_containers/arrow_proxy.hpp"
+#include "fixed_containers/concepts.hpp"
 #include "fixed_containers/iterator_utils.hpp"
 
 #include <cstddef>
@@ -10,43 +11,48 @@
 namespace fixed_containers
 {
 template <class P>
-concept NextAndPreviousProvider = requires(P p, P other) {
+concept BidirectionalEntryProvider = DefaultConstructible<P> && requires(P p, P other) {
     p.advance();
-    p.get();
     p.recede();
-    p == other;
+    p.get();
+    {
+        p == other
+    } -> std::same_as<bool>;
 };
 
-template <NextAndPreviousProvider ConstReferenceProvider,
-          NextAndPreviousProvider MutableReferenceProvider,
+template <BidirectionalEntryProvider ConstEntryProvider,
+          BidirectionalEntryProvider MutableEntryProvider,
           IteratorConstness CONSTNESS,
           IteratorDirection DIRECTION>
 class BidirectionalIterator
 {
     static constexpr IteratorConstness NEGATED_CONSTNESS = IteratorConstness(!bool(CONSTNESS));
 
+    using Self =
+        BidirectionalIterator<ConstEntryProvider, MutableEntryProvider, CONSTNESS, DIRECTION>;
+
     // Sibling has the same parameters, but different const-ness
-    using Sibling = BidirectionalIterator<ConstReferenceProvider,
-                                          MutableReferenceProvider,
+    using Sibling = BidirectionalIterator<ConstEntryProvider,
+                                          MutableEntryProvider,
                                           NEGATED_CONSTNESS,
                                           DIRECTION>;
 
     // Give Sibling access to private members
-    friend class BidirectionalIterator<ConstReferenceProvider,
-                                       MutableReferenceProvider,
+    friend class BidirectionalIterator<ConstEntryProvider,
+                                       MutableEntryProvider,
                                        NEGATED_CONSTNESS,
                                        DIRECTION>;
 
-    using ReverseBase = BidirectionalIterator<ConstReferenceProvider,
-                                              MutableReferenceProvider,
+    using ReverseBase = BidirectionalIterator<ConstEntryProvider,
+                                              MutableEntryProvider,
                                               CONSTNESS,
                                               IteratorDirection(!bool(DIRECTION))>;
 
-    using ReferenceProvider = std::conditional_t<CONSTNESS == IteratorConstness::CONSTANT_ITERATOR,
-                                                 ConstReferenceProvider,
-                                                 MutableReferenceProvider>;
+    using EntryProvider = std::conditional_t<CONSTNESS == IteratorConstness::CONSTANT_ITERATOR,
+                                             ConstEntryProvider,
+                                             MutableEntryProvider>;
 
-    using ReturnedType = decltype(std::declval<ReferenceProvider>().get());
+    using ReturnedType = decltype(std::declval<EntryProvider>().get());
     static constexpr bool SAFE_LIFETIME = std::is_reference_v<ReturnedType>;
 
 public:
@@ -54,21 +60,24 @@ public:
     using value_type = std::remove_cvref_t<reference>;
     using pointer =
         std::conditional_t<SAFE_LIFETIME, std::add_pointer_t<reference>, ArrowProxy<reference>>;
-    using iterator = BidirectionalIterator;
+    using iterator = Self;
     using iterator_category = std::bidirectional_iterator_tag;
     using difference_type = std::ptrdiff_t;
 
 private:
-    ReferenceProvider reference_provider_;
+    EntryProvider reference_provider_;
 
 public:
     constexpr BidirectionalIterator() noexcept
-      : BidirectionalIterator{ReferenceProvider{}}
+      : BidirectionalIterator{EntryProvider{}}
     {
     }
 
-    explicit constexpr BidirectionalIterator(const ReferenceProvider& reference_provider) noexcept
-      : reference_provider_(reference_provider)
+    template <typename First, typename... Args>
+        requires(!std::same_as<Self, std::remove_cvref_t<First>> &&
+                 !std::same_as<Sibling, std::remove_cvref_t<First>>)
+    explicit constexpr BidirectionalIterator(First&& first, Args&&... args) noexcept
+      : reference_provider_(std::forward<First>(first), std::forward<Args>(args)...)
     {
         if constexpr (DIRECTION == IteratorDirection::REVERSE)
         {
@@ -97,33 +106,33 @@ public:
         }
     }
 
-    constexpr BidirectionalIterator& operator++() noexcept
+    constexpr Self& operator++() noexcept
     {
         advance();
         return *this;
     }
 
-    constexpr BidirectionalIterator operator++(int) & noexcept
+    constexpr Self operator++(int) & noexcept
     {
-        BidirectionalIterator tmp = *this;
+        Self tmp = *this;
         advance();
         return tmp;
     }
 
-    constexpr BidirectionalIterator& operator--() noexcept
+    constexpr Self& operator--() noexcept
     {
         recede();
         return *this;
     }
 
-    constexpr BidirectionalIterator operator--(int) & noexcept
+    constexpr Self operator--(int) & noexcept
     {
-        BidirectionalIterator tmp = *this;
+        Self tmp = *this;
         recede();
         return tmp;
     }
 
-    constexpr bool operator==(const BidirectionalIterator& other) const noexcept
+    constexpr bool operator==(const Self& other) const noexcept
     {
         return reference_provider_ == other.reference_provider_;
     }

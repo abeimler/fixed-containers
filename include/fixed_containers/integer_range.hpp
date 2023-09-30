@@ -21,6 +21,10 @@ concept IsIntegerRange = requires(const T t, const T t2, std::size_t i) {
     } -> std::same_as<bool>;
 
     {
+        t.distance()
+    } -> std::same_as<std::size_t>;
+
+    {
         t == t2
     } -> std::same_as<bool>;
 };
@@ -36,8 +40,14 @@ public:
     {
         return START_INCLUSIVE <= i && i < END_EXCLUSIVE;
     }
+    [[nodiscard]] constexpr std::size_t distance() const { return END_EXCLUSIVE - START_INCLUSIVE; }
 
-    constexpr bool operator==(const CompileTimeIntegerRange& other) const = default;
+    template <std::size_t START_INCLUSIVE2, std::size_t END_EXCLUSIVE2>
+    constexpr bool operator==(
+        const CompileTimeIntegerRange<START_INCLUSIVE2, END_EXCLUSIVE2>&) const
+    {
+        return START_INCLUSIVE == START_INCLUSIVE2 && END_EXCLUSIVE == END_EXCLUSIVE2;
+    }
 };
 
 class IntegerRange
@@ -58,6 +68,12 @@ private:
     std::size_t start_inclusive_;
     std::size_t end_exclusive_;
 
+public:
+    constexpr IntegerRange()
+      : IntegerRange(0, 0)
+    {
+    }
+
 private:
     constexpr IntegerRange(const std::size_t start_inclusive_inclusive,
                            const std::size_t end_exclusive)
@@ -74,6 +90,23 @@ public:
     {
         return start_inclusive_ <= i && i < end_exclusive_;
     }
+    [[nodiscard]] constexpr std::size_t distance() const
+    {
+        return end_exclusive_ - start_inclusive_;
+    }
+
     constexpr bool operator==(const IntegerRange& other) const = default;
 };
+
+struct StartingIntegerAndDistance
+{
+    std::size_t start{};
+    std::size_t distance{};
+
+    [[nodiscard]] constexpr IntegerRange to_range() const
+    {
+        return IntegerRange::closed_open(start, start + distance);
+    }
+};
+
 }  // namespace fixed_containers

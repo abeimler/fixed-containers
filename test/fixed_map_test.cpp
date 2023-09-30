@@ -608,6 +608,14 @@ TEST(FixedMap, EraseIterator)
     static_assert(s1.contains(4));
 }
 
+TEST(FixedMap, EraseIterator_Ambiguity)
+{
+    // If the iterator has extraneous auto-conversions, it might cause ambiguity between the various
+    // overloads
+    FixedMap<std::string, int, 5> s1{};
+    s1.erase("");
+}
+
 TEST(FixedMap, EraseIterator_InvalidIterator)
 {
     FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
@@ -1747,6 +1755,6 @@ TEST(FixedMap, ArgumentDependentLookup)
     // Compile-only test
     fixed_containers::FixedMap<int, int, 5> a{};
     erase_if(a, [](auto&&) { return true; });
-    is_full(a);
+    (void)is_full(a);
 }
 }  // namespace another_namespace_unrelated_to_the_fixed_containers_namespace

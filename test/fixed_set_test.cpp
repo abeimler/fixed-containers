@@ -446,6 +446,14 @@ TEST(FixedSet, EraseIterator)
     static_assert(s1.contains(4));
 }
 
+TEST(FixedSet, EraseIterator_Ambiguity)
+{
+    // If the iterator has extraneous auto-conversions, it might cause ambiguity between the various
+    // overloads
+    FixedSet<std::string, 5> s1{};
+    s1.erase("");
+}
+
 TEST(FixedSet, EraseIterator_InvalidIterator)
 {
     FixedSet<int, 10> s{2, 4};
@@ -701,6 +709,6 @@ TEST(FixedSet, ArgumentDependentLookup)
     // Compile-only test
     fixed_containers::FixedSet<int, 5> a{};
     erase_if(a, [](int) { return true; });
-    is_full(a);
+    (void)is_full(a);
 }
 }  // namespace another_namespace_unrelated_to_the_fixed_containers_namespace

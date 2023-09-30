@@ -132,21 +132,21 @@ private:
     struct IndexPredicate
     {
 #ifdef USE_BIT_SET_FOR_ENUM_SET
-      const ValueArrayType* array_set_;
-      constexpr bool operator()(const int i) const { return array_set_->contains(i); }
+        const ValueArrayType* array_set_;
+        constexpr bool operator()(const int i) const { return array_set_->contains(i); }
 #else
-      const ValueArrayType* array_set_;
-      constexpr bool operator()(const std::size_t i) const { return (*array_set_)[i]; }
+        const ValueArrayType* array_set_;
+        constexpr bool operator()(const std::size_t i) const { return (*array_set_)[i]; }
 #endif
+        constexpr bool operator==(const IndexPredicate&) const = default;
     };
 
-    struct ReferenceProvider
+    class ReferenceProvider
     {
-        FilteredIntegerRangeIterator<IndexPredicate,
-                                     IteratorDirection::FORWARD,
-                                     CompileTimeIntegerRange<0, ENUM_COUNT>>
+        FilteredIntegerRangeEntryProvider<IndexPredicate, CompileTimeIntegerRange<0, ENUM_COUNT>>
             present_indices_;
 
+    public:
         constexpr ReferenceProvider()
           : ReferenceProvider(nullptr, ENUM_COUNT)
         {
@@ -154,13 +154,17 @@ private:
 
         constexpr ReferenceProvider(const ValueArrayType* array_set,
                                     const std::size_t current_index)
-          : present_indices_{{}, current_index, IndexPredicate{array_set}}
+          : present_indices_{
+                CompileTimeIntegerRange<0, ENUM_COUNT>{}, current_index, IndexPredicate{array_set}}
         {
         }
 
-        constexpr void advance() noexcept { ++present_indices_; }
-        constexpr void recede() noexcept { --present_indices_; }
-        constexpr const_reference get() const noexcept { return ENUM_VALUES[*present_indices_]; }
+        constexpr void advance() noexcept { present_indices_.advance(); }
+        constexpr void recede() noexcept { present_indices_.recede(); }
+        constexpr const_reference get() const noexcept
+        {
+            return ENUM_VALUES[present_indices_.get()];
+        }
         constexpr bool operator==(const ReferenceProvider&) const = default;
     };
 
@@ -215,7 +219,7 @@ public:
         return output;
     }
 
-    static constexpr std::size_t max_size() noexcept 
+    static constexpr std::size_t max_size() noexcept
     {
 #ifdef USE_BIT_SET_FOR_ENUM_SET
         return ValueArrayType::max_size();
@@ -276,7 +280,7 @@ public:
     constexpr const_reverse_iterator rbegin() const noexcept { return crbegin(); }
     constexpr const_reverse_iterator rend() const noexcept { return crend(); }
 
-    [[nodiscard]] constexpr bool empty() const noexcept 
+    [[nodiscard]] constexpr bool empty() const noexcept
     {
 #ifdef USE_BIT_SET_FOR_ENUM_SET
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.empty();
@@ -485,7 +489,7 @@ private:
         return const_reverse_iterator{ReferenceProvider{&array_set(), start_index}};
     }
 
-    [[nodiscard]] [[nodiscard]] constexpr bool contains_at(const std::size_t i) const noexcept
+    [[nodiscard]] constexpr bool contains_at(const std::size_t i) const noexcept
     {
 #ifdef USE_BIT_SET_FOR_ENUM_SET
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(i);
