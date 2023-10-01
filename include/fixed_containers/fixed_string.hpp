@@ -14,9 +14,17 @@
 
 namespace fixed_containers
 {
+
+namespace customize {
+
+enum class StringTruncationIsError : bool { NoError = false, Error = true };
+
+}
+
 template <std::size_t MAXIMUM_LENGTH,
           customize::SequenceContainerChecking CheckingType =
-              customize::SequenceContainerAbortChecking<char, MAXIMUM_LENGTH>>
+              customize::SequenceContainerAbortChecking<char, MAXIMUM_LENGTH>,
+          customize::StringTruncationIsError STRING_TRUNCATION_IS_ERROR = customize::StringTruncationIsError::Error>
 class FixedString
 {
     using Checking = CheckingType;
@@ -54,11 +62,15 @@ public:
 
 public:  // Public so this type is a structural type and can thus be used in template parameters
     FixedVecStorage IMPLEMENTATION_DETAIL_DO_NOT_USE_data_;
+    bool IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_{false};
 
 public:
+    inline static constexpr std::size_t MaxLength = MAXIMUM_LENGTH;
+
     constexpr FixedString(const std_transition::source_location& loc =
                               std_transition::source_location::current()) noexcept
       : IMPLEMENTATION_DETAIL_DO_NOT_USE_data_{}
+      , IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_{false}
     {
         null_terminate_at_max_length();
         null_terminate(loc);
@@ -69,13 +81,29 @@ public:
         CharT ch,
         const std_transition::source_location& loc = std_transition::source_location::current())
       : IMPLEMENTATION_DETAIL_DO_NOT_USE_data_{count, ch, loc}
+      , IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_{false}
     {
         null_terminate_at_max_length();
         null_terminate(loc);
     }
 
-    constexpr FixedString(
+    template <std::size_t N>
+    explicit(false) constexpr FixedString(const CharT(&s)[N],
+                                          const std_transition::source_location& loc = std_transition::source_location::current())
+      : FixedString(std::string_view{s}, loc)
+    {
+        static_assert(N-1 <= MaxLength, "string didn't fit");
+    }
+
+    explicit(false) constexpr FixedString(
         const CharT* s,
+        const std_transition::source_location& loc = std_transition::source_location::current())
+      : FixedString(std::string_view{s}, loc)
+    {
+    }
+
+    explicit(false) constexpr FixedString(
+        const fixed_containers::StringLiteral& s,
         const std_transition::source_location& loc = std_transition::source_location::current())
       : FixedString(std::string_view{s}, loc)
     {
@@ -85,6 +113,7 @@ public:
         std::initializer_list<CharT> ilist,
         const std_transition::source_location& loc = std_transition::source_location::current())
       : IMPLEMENTATION_DETAIL_DO_NOT_USE_data_{ilist, loc}
+      , IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_{false}
     {
         null_terminate_at_max_length();
         null_terminate(loc);
@@ -93,7 +122,12 @@ public:
     explicit(false) constexpr FixedString(const std::string_view& view,
                                           const std_transition::source_location& loc =
                                               std_transition::source_location::current()) noexcept
-      : IMPLEMENTATION_DETAIL_DO_NOT_USE_data_{view.begin(), view.end(), loc}
+      : IMPLEMENTATION_DETAIL_DO_NOT_USE_data_{view.begin(),
+                                               (STRING_TRUNCATION_IS_ERROR == customize::StringTruncationIsError::NoError)
+                                                   ? std::next(view.begin(), std::min(MAXIMUM_LENGTH, view.size()))
+                                                   : view.end(),
+                                               loc}
+      , IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_{view.length() > IMPLEMENTATION_DETAIL_DO_NOT_USE_data_.max_size()-1}
     {
         null_terminate_at_max_length();
         null_terminate(loc);
@@ -130,8 +164,17 @@ public:
         const std::string_view& t,
         const std_transition::source_location& loc = std_transition::source_location::current())
     {
-        vec().assign(t.begin(), t.end(), loc);
-        null_terminate(loc);
+        if constexpr (STRING_TRUNCATION_IS_ERROR == customize::StringTruncationIsError::NoError)
+        {
+            vec().assign(t.begin(), std::next(t.begin(), std::min(vec().max_size()-1, t.size())), loc);
+            IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_ = t.length() > vec().max_size()-1;
+            null_terminate_at_max_length();
+        }
+        else
+        {
+            vec().assign(t.begin(), t.end(), loc);
+            null_terminate(loc);
+        }
         return *this;
     }
 
@@ -316,8 +359,29 @@ public:
         const std::string_view& t,
         const std_transition::source_location& loc = std_transition::source_location::current())
     {
-        vec().insert(vec().cend(), t.begin(), t.end(), loc);
-        null_terminate(loc);
+        if constexpr (STRING_TRUNCATION_IS_ERROR == customize::StringTruncationIsError::NoError)
+        {
+            if(size() < max_size() && !t.empty()) {
+                const auto available_space = vec().max_size() - vec().size() - 1;
+                if (t.length() >= available_space) {
+                    vec().insert(vec().cend(), t.begin(), std::next(t.begin(), available_space), loc);
+                    IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_ = true;
+                    //null_terminate(available_space+1);
+                    null_terminate_at_max_length();
+                } else {
+                    vec().insert(vec().cend(), t.begin(), t.end(), loc);
+                    IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_ = false;
+                    null_terminate(loc);
+                }
+            } else {
+                IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_ = !t.empty();
+            }
+        }
+        else
+        {
+            vec().insert(vec().cend(), t.begin(), t.end(), loc);
+            null_terminate(loc);
+        }
         return *this;
     }
 
@@ -423,6 +487,42 @@ public:
         null_terminate(loc);
     }
 
+    constexpr FixedString& fill(
+        CharT ch,
+        const std_transition::source_location& loc = std_transition::source_location::current())
+    {
+        assign(max_size(), ch, loc);
+        null_terminate_at_max_length();
+        return *this;
+    }
+
+    constexpr void repair(const std_transition::source_location& loc = std_transition::source_location::current()) {
+        if (auto it = std::find(vec().cbegin(), vec().cend(), '\0'); it != vec().cend()) {
+            std::size_t null_index = std::distance(vec().cbegin(), it);
+            repair(null_index, loc);
+        } else {
+            vec().clear();
+            null_terminate(loc);
+        }
+    }
+    constexpr void repair(const std::size_t null_index,
+                          const std_transition::source_location& loc = std_transition::source_location::current()) {
+        if (preconditions::test(null_index <= MAXIMUM_LENGTH))
+        {
+            Checking::length_error(null_index, loc);
+        }
+        vec().resize(null_index, CharT{}, loc);
+        null_terminate(loc);
+    }
+
+    [[nodiscard]] constexpr bool truncated() const {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_;
+    }
+
+    constexpr void clear_truncated() {
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_ = false;
+    }
+
 private:
     constexpr void null_terminate(std::size_t n)
     {
@@ -492,6 +592,11 @@ template <std::size_t MAXIMUM_LENGTH_WITH_NULL_TERMINATOR>
     return make_fixed_string<CheckingType, MAXIMUM_LENGTH_WITH_NULL_TERMINATOR, FixedStringType>(
         list, loc);
 }
+
+template <std::size_t MAXIMUM_LENGTH,
+          customize::SequenceContainerChecking CheckingType =
+              customize::SequenceContainerAbortChecking<char, MAXIMUM_LENGTH>>
+using FixedStringTruncable = FixedString<MAXIMUM_LENGTH, CheckingType, customize::StringTruncationIsError::NoError>;
 
 }  // namespace fixed_containers
 

@@ -222,6 +222,32 @@ TEST(FixedString, AssignStringView)
     }
 }
 
+TEST(FixedString, Fill)
+{
+    {
+        constexpr auto v1 = []()
+        {
+            FixedString<4> v{"1324"};
+            v.fill('9');
+            return v;
+        }();
+
+        static_assert(v1 == "9999");
+        static_assert(v1.size() == 4);
+    }
+    {
+        auto v2 = []()
+        {
+            FixedString<4> v{};
+            v.fill('9');
+            return v;
+        }();
+
+        EXPECT_EQ(v2, "9999");
+        EXPECT_EQ(4, v2.size());
+    }
+}
+
 TEST(FixedString, BracketOperator)
 {
     constexpr auto v1 = []()
@@ -416,6 +442,39 @@ TEST(FixedString, CStr)
         EXPECT_EQ(*std::next(v1.c_str(), 2), '2');
         EXPECT_EQ(*std::next(v1.c_str(), 3), '\0');
         EXPECT_EQ(*std::next(v1.c_str(), 8), '\0');
+
+        static_assert(v1.size() == 3);
+    }
+}
+
+TEST(FixedString, Repair)
+{
+    {
+        constexpr auto v1 = []()
+        {
+            FixedString<8> v{"01234"};
+            // write string "by hand" (like read from buffer) ... scanf_s("%s", v.data(), v.max_size())
+            v.resize(8);
+            v[0] = '0';
+            v[1] = '1';
+            v[2] = '2';
+            v[3] = '\0';
+            v[4] = '\255';
+            v[5] = '\127';
+            v[6] = '\123';
+            v.repair();
+            return v;
+        }();
+
+        static_assert(*std::next(v1.c_str(), 0) == '0');
+        static_assert(*std::next(v1.c_str(), 1) == '1');
+        static_assert(*std::next(v1.c_str(), 2) == '2');
+        static_assert(*std::next(v1.c_str(), 3) == '\0');
+
+        EXPECT_EQ(*std::next(v1.c_str(), 0), '0');
+        EXPECT_EQ(*std::next(v1.c_str(), 1), '1');
+        EXPECT_EQ(*std::next(v1.c_str(), 2), '2');
+        EXPECT_EQ(*std::next(v1.c_str(), 3), '\0');
 
         static_assert(v1.size() == 3);
     }
@@ -1134,7 +1193,7 @@ TEST(FixedString, OperatorPlusEqual)
 {
     constexpr auto v1 = []()
     {
-        FixedString<17> v{"012"};
+        FixedStringTruncable<17> v{"012"};
         v.append("abc");
         v.append({'d', 'e'});
         std::string_view s = "fg";
@@ -1145,6 +1204,127 @@ TEST(FixedString, OperatorPlusEqual)
     static_assert(v1 == "012abcdefg");
     static_assert(v1.size() == 10);
     static_assert(v1.max_size() == 17);
+}
+
+TEST(FixedString, Truncation)
+{
+    {
+        constexpr auto v1 = []()
+        {
+            FixedStringTruncable<5> v{std::string_view{"World"}};
+            return v;
+        }();
+
+        static_assert(v1 == "World");
+        static_assert(v1.size() == 5);
+        static_assert(v1.max_size() == 5);
+
+        EXPECT_FALSE(v1.truncated());
+    }
+
+    {
+        constexpr auto v1 = []()
+        {
+            FixedStringTruncable<6> v{std::string_view{" World!!!"}};
+            return v;
+        }();
+
+        static_assert(v1 == " World");
+        static_assert(v1.size() == 6);
+        static_assert(v1.max_size() == 6);
+
+        EXPECT_TRUE(v1.truncated());
+    }
+
+    {
+        constexpr auto v1 = []()
+        {
+            FixedStringTruncable<11> text1{std::string_view{"Hello World"}};
+            FixedStringTruncable<6> text2{"!!!"};
+            text1 += text2;
+            return text1;
+        }();
+
+        EXPECT_EQ(v1, "Hello World");
+        static_assert(v1.size() == 11);
+        static_assert(v1.max_size() == 11);
+
+        EXPECT_TRUE(v1.truncated());
+    }
+
+    {
+        constexpr auto v1 = []()
+        {
+            FixedStringTruncable<11> text1{"Hello"};
+            FixedStringTruncable<9> text2{std::string_view{" World!!!"}};
+            text1 += text2;
+            return text1;
+        }();
+
+        EXPECT_EQ(v1, "Hello World");
+        static_assert(v1.size() == 11);
+        static_assert(v1.max_size() == 11);
+
+        EXPECT_TRUE(v1.truncated());
+    }
+
+    {
+        constexpr auto v1 = []()
+        {
+            FixedString<11> text1{"Hello"};
+            text1.assign("Hello World");
+            return text1;
+        }();
+
+        static_assert(v1 == "Hello World");
+        static_assert(v1.size() == 11);
+        static_assert(v1.max_size() == 11);
+
+        EXPECT_FALSE(v1.truncated());
+    }
+
+    {
+        constexpr auto v1 = []()
+        {
+            FixedStringTruncable<11> text1{"Hello"};
+            text1.assign("Hello World!!!");
+            return text1;
+        }();
+
+        static_assert(v1 == "Hello World");
+        static_assert(v1.size() == 11);
+        static_assert(v1.max_size() == 11);
+
+        EXPECT_TRUE(v1.truncated());
+    }
+}
+
+TEST(FixedString, NotTruncable)
+{
+    {
+        constexpr auto v1 = []()
+        {
+            FixedString<5> v{std::string_view{"World"}};
+            return v;
+        }();
+
+        static_assert(v1 == "World");
+        static_assert(v1.size() == 5);
+        static_assert(v1.max_size() == 5);
+
+        EXPECT_FALSE(v1.truncated());
+    }
+
+    {
+        auto v1 = []()
+        {
+            FixedString<6> v{"Hello"};
+            return v;
+        }();
+
+        EXPECT_DEATH(v1.append(" World!!!"), "");
+        EXPECT_FALSE(v1.truncated());
+    }
 }
 
 TEST(FixedString, Equality)
