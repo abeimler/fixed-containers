@@ -356,6 +356,13 @@ public:
         return *this;
     }
     constexpr FixedString& append(
+        std::size_t length, const CharT& chr,
+        const std_transition::source_location& loc = std_transition::source_location::current())
+    {
+        const FixedString str (length, chr, loc);
+        return append(std::string_view{str}, loc);
+    }
+    constexpr FixedString& append(
         const std::string_view& t,
         const std_transition::source_location& loc = std_transition::source_location::current())
     {

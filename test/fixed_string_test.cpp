@@ -1189,6 +1189,29 @@ TEST(FixedString, AppendStringView)
     }
 }
 
+TEST(FixedString, AppendChars)
+{
+    {
+        constexpr auto v1 = []()
+        {
+            FixedString<5> v{"012"};
+            v.append(1, 'a');
+            return v;
+        }();
+
+        static_assert(v1 == "012a");
+        static_assert(v1.size() == 4);
+        static_assert(v1.max_size() == 5);
+    }
+
+    {
+        FixedString<7> v{"0123"};
+        auto& self = v.append(2, 'a');
+        EXPECT_EQ(v, "0123aa");
+        EXPECT_EQ(self, v);
+    }
+}
+
 TEST(FixedString, OperatorPlusEqual)
 {
     constexpr auto v1 = []()
