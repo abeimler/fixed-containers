@@ -362,6 +362,10 @@ public:
         const FixedString str (length, chr, loc);
         return append(std::string_view{str}, loc);
     }
+    constexpr void append(const CharT* s, std::size_t length,
+                          const std_transition::source_location& loc = std_transition::source_location::current()) {
+        append(std::string_view{s, length}, loc);
+    }
     constexpr FixedString& append(
         const std::string_view& t,
         const std_transition::source_location& loc = std_transition::source_location::current())
@@ -414,10 +418,10 @@ public:
         return std::string_view(*this).compare(view);
     }
 
-    template <std::size_t MAXIMUM_LENGTH_2, customize::SequenceContainerChecking CheckingType2>
-    constexpr bool operator==(const FixedString<MAXIMUM_LENGTH_2, CheckingType2>& other) const
+    template <std::size_t MAXIMUM_LENGTH_2, customize::SequenceContainerChecking CheckingType2, customize::StringTruncationIsError STRING_TRUNCATION_IS_ERROR_2>
+    constexpr bool operator==(const FixedString<MAXIMUM_LENGTH_2, CheckingType2, STRING_TRUNCATION_IS_ERROR_2>& other) const
     {
-        return vec() == other.IMPLEMENTATION_DETAIL_DO_NOT_USE_data_;
+        return as_view() == other;
     }
     constexpr bool operator==(const CharT* other) const
     {
@@ -425,9 +429,9 @@ public:
     }
     constexpr bool operator==(std::string_view view) const noexcept { return as_view() == view; }
 
-    template <std::size_t MAXIMUM_LENGTH_2, customize::SequenceContainerChecking CheckingType2>
+    template <std::size_t MAXIMUM_LENGTH_2, customize::SequenceContainerChecking CheckingType2, customize::StringTruncationIsError STRING_TRUNCATION_IS_ERROR_2>
     constexpr std::strong_ordering operator<=>(
-        const FixedString<MAXIMUM_LENGTH_2, CheckingType2>& other) const noexcept
+        const FixedString<MAXIMUM_LENGTH_2, CheckingType2, STRING_TRUNCATION_IS_ERROR_2>& other) const noexcept
     {
         return as_view() <=> other;
     }
