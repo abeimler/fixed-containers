@@ -433,12 +433,14 @@ TEST(FixedVector, CountConstructor)
     }
 }
 
+TEST(FixedVector, CountConstructor_ExceedsCapacity)
+{
+    EXPECT_DEATH((FixedVector<int, 8>(1000, 3)), "");
+}
+
 TEST(FixedVector, IteratorConstructor)
 {
-    constexpr FixedVector<int, 3> v1{77, 99};
-    static_assert(v1[0] == 77);
-    static_assert(v1[1] == 99);
-    static_assert(v1.size() == 2);
+    constexpr std::array<int, 2> v1{77, 99};
 
     constexpr FixedVector<int, 15> v2{v1.begin(), v1.end()};
     static_assert(v2[0] == 77);
@@ -446,12 +448,25 @@ TEST(FixedVector, IteratorConstructor)
     static_assert(v2.size() == 2);
 }
 
+TEST(FixedVector, IteratorConstructor_ExceedsCapacity)
+{
+    constexpr std::array<int, 5> v1{1, 2, 3, 4, 5};
+
+    EXPECT_DEATH((FixedVector<int, 3>(v1.begin(), v1.end())), "");
+}
+
 TEST(FixedVector, InputIteratorConstructor)
 {
-    MockIntegraStream<int> stream{3};
+    MockIntegralStream<int> stream{3};
     FixedVector<int, 14> v{stream.begin(), stream.end()};
     ASSERT_EQ(3, v.size());
     EXPECT_TRUE(std::ranges::equal(v, std::array{3, 2, 1}));
+}
+
+TEST(FixedVector, InputIteratorConstructor_ExceedsCapacity)
+{
+    MockIntegralStream<int> stream{7};
+    EXPECT_DEATH((FixedVector<int, 3>{stream.begin(), stream.end()}), "");
 }
 
 TEST(FixedVector, InitializerConstructor)
@@ -468,6 +483,11 @@ TEST(FixedVector, InitializerConstructor)
 
     EXPECT_TRUE(std::ranges::equal(v1, std::array{77, 99}));
     EXPECT_TRUE(std::ranges::equal(v2, std::array{66, 55}));
+}
+
+TEST(FixedVector, InitializerConstructor_ExceedsCapacity)
+{
+    EXPECT_DEATH((FixedVector<int, 3>{1, 2, 3, 4, 5}), "");
 }
 
 TEST(FixedVector, PushBack)
@@ -544,6 +564,14 @@ TEST(FixedVector, EmplaceBack)
     }
 }
 
+TEST(FixedVector, EmplaceBack_ExceedsCapacity)
+{
+    FixedVector<int, 2> v{};
+    v.emplace_back(0);
+    v.emplace_back(1);
+    EXPECT_DEATH(v.emplace_back(2), "");
+}
+
 TEST(FixedVector, CapacityAndMaxSize)
 {
     {
@@ -582,7 +610,7 @@ TEST(FixedVector, ReserveFailure)
     EXPECT_DEATH(v1.reserve(15), "");
 }
 
-TEST(FixedVector, ExceedCapacity)
+TEST(FixedVector, ExceedsCapacity)
 {
     FixedVector<int, 3> v1{0, 1, 2};
     EXPECT_DEATH(v1.push_back(3), "");
@@ -1171,7 +1199,7 @@ TEST(FixedVector, Resize)
     }
 }
 
-TEST(FixedVector, Resize_ExceedCapacity)
+TEST(FixedVector, Resize_ExceedsCapacity)
 {
     FixedVector<int, 3> v1{};
     EXPECT_DEATH(v1.resize(6), "");
@@ -1298,12 +1326,20 @@ TEST(FixedVector, Emplace)
     }
     {
         FixedVector<ComplexStruct, 11> v2{};
-        v2.emplace_back(1, 2, 3, 4);
-        auto ref = v2.emplace_back(101, 202, 303, 404);
+        v2.emplace(v2.begin(), 1, 2, 3, 4);
+        auto ref = v2.emplace(v2.begin(), 101, 202, 303, 404);
 
-        EXPECT_EQ(ref.a, 101);
-        EXPECT_EQ(ref.c, 404);
+        EXPECT_EQ(ref->a, 101);
+        EXPECT_EQ(ref->c, 404);
     }
+}
+
+TEST(FixedVector, Emplace_ExceedsCapacity)
+{
+    FixedVector<int, 2> v{};
+    v.emplace(v.begin(), 0);
+    v.emplace(v.begin(), 1);
+    EXPECT_DEATH(v.emplace(v.begin(), 2), "");
 }
 
 TEST(FixedVector, AssignValue)
@@ -1354,7 +1390,7 @@ TEST(FixedVector, AssignValue_ExceedsCapacity)
     EXPECT_DEATH(v1.assign(5, 100), "");
 }
 
-TEST(FixedVector, AssignRange)
+TEST(FixedVector, AssignIterator)
 {
     {
         constexpr auto v1 = []()
@@ -1383,11 +1419,27 @@ TEST(FixedVector, AssignRange)
     }
 }
 
-TEST(FixedVector, AssignRange_ExceedsCapacity)
+TEST(FixedVector, AssignIterator_ExceedsCapacity)
 {
     FixedVector<int, 3> v1{0, 1, 2};
-    std::array<int, 17> a{300, 300};
+    std::array<int, 5> a{300, 300, 300, 300, 300};
     EXPECT_DEATH(v1.assign(a.begin(), a.end()), "");
+}
+
+TEST(FixedVector, AssignInputIterator)
+{
+    MockIntegralStream<int> stream{3};
+    FixedVector<int, 14> v{10, 20, 30, 40};
+    v.assign(stream.begin(), stream.end());
+    ASSERT_EQ(3, v.size());
+    EXPECT_TRUE(std::ranges::equal(v, std::array{3, 2, 1}));
+}
+
+TEST(FixedVector, AssignInputIterator_ExceedsCapacity)
+{
+    MockIntegralStream<int> stream{7};
+    FixedVector<int, 2> v{};
+    EXPECT_DEATH(v.assign(stream.begin(), stream.end()), "");
 }
 
 TEST(FixedVector, AssignInitializerList)
@@ -1415,6 +1467,12 @@ TEST(FixedVector, AssignInitializerList)
         EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 2>{300, 300}));
         EXPECT_EQ(2, v2.size());
     }
+}
+
+TEST(FixedVector, AssignInitializerList_ExceedsCapacity)
+{
+    FixedVector<int, 3> v{0, 1, 2};
+    EXPECT_DEATH(v.assign({300, 300, 300, 300, 300}), "");
 }
 
 TEST(FixedVector, InsertValue)
@@ -1526,7 +1584,7 @@ TEST(FixedVector, InsertIterator_ExceedsCapacity)
 
 TEST(FixedVector, InsertInputIterator)
 {
-    MockIntegraStream<int> stream{3};
+    MockIntegralStream<int> stream{3};
     FixedVector<int, 14> v{10, 20, 30, 40};
     auto it = v.insert(v.begin() + 2, stream.begin(), stream.end());
     ASSERT_EQ(7, v.size());
@@ -1536,7 +1594,7 @@ TEST(FixedVector, InsertInputIterator)
 
 TEST(FixedVector, InsertInputIterator_ExceedsCapacity)
 {
-    MockIntegraStream<int> stream{3};
+    MockIntegralStream<int> stream{3};
     FixedVector<int, 6> v{10, 20, 30, 40};
     EXPECT_DEATH(v.insert(v.begin() + 2, stream.begin(), stream.end()), "");
 }
@@ -1563,6 +1621,12 @@ TEST(FixedVector, InsertInitializerList)
         EXPECT_TRUE(std::ranges::equal(v, std::array<int, 6>{0, 1, 100, 500, 2, 3}));
         EXPECT_EQ(it, v.begin() + 2);
     }
+}
+
+TEST(FixedVector, InsertInitializerList_ExceedsCapacity)
+{
+    FixedVector<int, 4> v1{0, 1, 2};
+    EXPECT_DEATH(v1.insert(v1.begin() + 1, {3, 4}), "");
 }
 
 TEST(FixedVector, EraseRange)
@@ -1777,6 +1841,25 @@ TEST(FixedVector, Ranges)
     EXPECT_EQ(1, f.size());
     int first_entry = *f.begin();
     EXPECT_EQ(20, first_entry);
+}
+
+TEST(FixedVector, MoveableButNotCopyable)
+{
+    // Compile-only test
+    {
+        FixedVector<MockMoveableButNotCopyable, 13> a{};
+        a.emplace_back();
+        a.emplace_back();
+        a.emplace(a.cbegin());
+        a.erase(a.cbegin());
+    }
+    {
+        std::vector<MockMoveableButNotCopyable> a{};
+        a.emplace_back();
+        a.emplace_back();
+        a.emplace(a.cbegin());
+        a.erase(a.cbegin());
+    }
 }
 
 TEST(FixedVector, NonTriviallyCopyableCopyConstructor)

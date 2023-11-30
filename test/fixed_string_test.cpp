@@ -46,6 +46,11 @@ TEST(FixedString, CountConstructor)
     }
 }
 
+TEST(FixedString, CountConstructor_ExceedsCapacity)
+{
+    EXPECT_DEATH((FixedString<8>(1000, '3')), "");
+}
+
 TEST(FixedString, ConstCharPointerConstructor)
 {
     {
@@ -130,7 +135,7 @@ TEST(FixedString, AssignValue_ExceedsCapacity)
     EXPECT_DEATH(v1.assign(5, '9'), "");
 }
 
-TEST(FixedString, AssignRange)
+TEST(FixedString, AssignIterator)
 {
     {
         constexpr auto v1 = []()
@@ -159,11 +164,28 @@ TEST(FixedString, AssignRange)
     }
 }
 
-TEST(FixedString, AssignRange_ExceedsCapacity)
+TEST(FixedString, AssignIterator_ExceedsCapacity)
 {
     FixedString<3> v1{"012"};
-    std::array<char, 17> a{'9', '9'};
+    std::array<char, 5> a{'9', '9', '9', '9', '9'};
     EXPECT_DEATH(v1.assign(a.begin(), a.end()), "");
+}
+
+TEST(FixedString, AssignInputIterator)
+{
+    MockIntegralStream<char> stream{static_cast<char>(3)};
+    FixedString<14> v{"abcd"};
+    v.assign(stream.begin(), stream.end());
+    ASSERT_EQ(3, v.size());
+    EXPECT_TRUE(std::ranges::equal(
+        v, std::array{static_cast<char>(3), static_cast<char>(2), static_cast<char>(1)}));
+}
+
+TEST(FixedString, AssignInputIterator_ExceedsCapacity)
+{
+    MockIntegralStream<char> stream{static_cast<char>(7)};
+    FixedString<2> v{};
+    EXPECT_DEATH(v.assign(stream.begin(), stream.end()), "");
 }
 
 TEST(FixedString, AssignInitializerList)
@@ -191,6 +213,12 @@ TEST(FixedString, AssignInitializerList)
         EXPECT_EQ(v2, "99");
         EXPECT_EQ(2, v2.size());
     }
+}
+
+TEST(FixedString, AssignInitializerList_ExceedsCapacity)
+{
+    FixedString<3> v{'0', '1', '2'};
+    EXPECT_DEATH(v.assign({'9', '9', '9', '9', '9'}), "");
 }
 
 TEST(FixedString, AssignStringView)
@@ -869,7 +897,7 @@ TEST(FixedString, InsertIterator_ExceedsCapacity)
 
 TEST(FixedString, InsertInputIterator)
 {
-    MockIntegraStream<char> stream{static_cast<char>(3)};
+    MockIntegralStream<char> stream{static_cast<char>(3)};
     FixedString<14> v{"abcd"};
     auto it = v.insert(v.begin() + 2, stream.begin(), stream.end());
     ASSERT_EQ(7, v.size());
@@ -882,7 +910,7 @@ TEST(FixedString, InsertInputIterator)
 
 TEST(FixedString, InsertInputIterator_ExceedsCapacity)
 {
-    MockIntegraStream<char> stream{3};
+    MockIntegralStream<char> stream{3};
     FixedString<6> v{"abcd"};
     EXPECT_DEATH(v.insert(v.begin() + 2, stream.begin(), stream.end()), "");
 }
@@ -909,6 +937,12 @@ TEST(FixedString, InsertInitializerList)
         EXPECT_EQ(v, "01ae23");
         EXPECT_EQ(it, v.begin() + 2);
     }
+}
+
+TEST(FixedString, InsertInitializerList_ExceedsCapacity)
+{
+    FixedString<4> v1{"012"};
+    EXPECT_DEATH(v1.insert(v1.begin() + 1, {'3', '4'}), "");
 }
 
 TEST(FixedString, InsertStringView)
@@ -1115,7 +1149,7 @@ TEST(FixedString, AppendIterator_ExceedsCapacity)
 
 TEST(FixedString, AppendInputIterator)
 {
-    MockIntegraStream<char> stream{static_cast<char>(3)};
+    MockIntegralStream<char> stream{static_cast<char>(3)};
     FixedString<14> v{"abcd"};
     auto& self = v.append(stream.begin(), stream.end());
     ASSERT_EQ(7, v.size());
@@ -1134,7 +1168,7 @@ TEST(FixedString, AppendInputIterator)
 
 TEST(FixedString, AppendInputIterator_ExceedsCapacity)
 {
-    MockIntegraStream<char> stream{3};
+    MockIntegralStream<char> stream{3};
     FixedString<6> v{"abcd"};
     EXPECT_DEATH(v.append(stream.begin(), stream.end()), "");
 }
@@ -1658,7 +1692,7 @@ TEST(FixedString, Resize)
     EXPECT_EQ(v3, "01333");
 }
 
-TEST(FixedString, Resize_ExceedCapacity)
+TEST(FixedString, Resize_ExceedsCapacity)
 {
     FixedString<3> v1{};
     EXPECT_DEATH(v1.resize(6), "");

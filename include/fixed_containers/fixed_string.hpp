@@ -421,7 +421,7 @@ public:
     template <std::size_t MAXIMUM_LENGTH_2, customize::SequenceContainerChecking CheckingType2, customize::StringTruncationIsError STRING_TRUNCATION_IS_ERROR_2>
     constexpr bool operator==(const FixedString<MAXIMUM_LENGTH_2, CheckingType2, STRING_TRUNCATION_IS_ERROR_2>& other) const
     {
-        return as_view() == other;
+        return as_view() == std::string_view{other};
     }
     constexpr bool operator==(const CharT* other) const
     {
@@ -581,14 +581,8 @@ template <
         std_transition::source_location::current()) noexcept
 {
     constexpr std::size_t MAXIMUM_LENGTH = MAXIMUM_LENGTH_WITH_NULL_TERMINATOR - 1;
-    assert(list[MAXIMUM_LENGTH] == '\0');
-    FixedStringType s{};
-    s.resize(MAXIMUM_LENGTH, loc);
-    for (std::size_t i = 0; i < MAXIMUM_LENGTH; i++)
-    {
-        s[i] = list[i];
-    }
-    return s;
+    assert(*std::next(list, MAXIMUM_LENGTH) == '\0');
+    return {std::string_view{std::begin(list), MAXIMUM_LENGTH}, loc};
 }
 
 template <std::size_t MAXIMUM_LENGTH_WITH_NULL_TERMINATOR>
