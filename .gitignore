@@ -1,5 +1,8 @@
 /build/
 
+### ctags ###
+tags
+
 ### CMake ###
 CMakeLists.txt.user
 CMakeCache.txt
