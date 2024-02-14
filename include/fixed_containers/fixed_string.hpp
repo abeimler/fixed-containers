@@ -99,6 +99,17 @@ public:
         static_assert(N-1 <= MaxLength, "string didn't fit");
     }
 
+    template <std::size_t MAXIMUM_LENGTH_2,
+              customize::SequenceContainerChecking CheckingType2 =
+                  customize::SequenceContainerAbortChecking<char, MAXIMUM_LENGTH_2>,
+              customize::StringTruncationIsError STRING_TRUNCATION_IS_ERROR2 = customize::StringTruncationIsError::Error>
+    explicit(false) constexpr FixedString(const FixedString<MAXIMUM_LENGTH_2, CheckingType2, STRING_TRUNCATION_IS_ERROR2>& s,
+                                          const std_transition::source_location& loc = std_transition::source_location::current())
+      : FixedString(std::string_view{s}, loc)
+    {
+        static_assert(MAXIMUM_LENGTH_2-1 <= MaxLength, "string didn't fit");
+    }
+
     explicit(false) constexpr FixedString(
         const CharT* s,
         const std_transition::source_location& loc = std_transition::source_location::current())
@@ -536,6 +547,19 @@ public:
 
     constexpr void clear_truncated() {
         IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_ = false;
+    }
+
+    constexpr void remove_prefix(std::size_t length,
+                                 const std_transition::source_location& loc = std_transition::source_location::current()) {
+        std::copy(std::next(vec().cbegin(), std::min(vec().size(), length)), std::next(vec().cbegin(), vec().size()), vec().begin());
+        vec().resize(vec().size() - std::min(vec().size(), length));
+        null_terminate(loc);
+    }
+
+    constexpr void remove_suffix(std::size_t length,
+                                 const std_transition::source_location& loc = std_transition::source_location::current()) {
+        vec().resize(vec().size() - std::min(vec().size(), length));
+        null_terminate(loc);
     }
 
 private:

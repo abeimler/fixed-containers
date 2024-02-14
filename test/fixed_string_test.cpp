@@ -1748,6 +1748,47 @@ TEST(FixedString, ClassTemplateArgumentDeduction)
     (void)a;
 }
 
+TEST(FixedString, RemoveSuffix)
+{
+    {
+        auto v1 = []()
+        {
+            FixedString<7> v{"0123"};
+            return v;
+        }();
+
+        v1.remove_suffix(1);
+        EXPECT_TRUE(v1.ends_with("12"));
+        EXPECT_TRUE(!v1.ends_with("3"));
+    }
+
+    {
+        auto v1 = []()
+        {
+            FixedString<7> v{"0123"};
+            return v;
+        }();
+
+        v1.remove_suffix(2);
+        EXPECT_TRUE(v1.ends_with("01"));
+        EXPECT_TRUE(!v1.ends_with("2"));
+        EXPECT_TRUE(!v1.ends_with("3"));
+    }
+
+    {
+        auto v1 = []()
+        {
+            FixedString<7> v{"0123"};
+            return v;
+        }();
+
+        v1.remove_suffix(5);
+        EXPECT_TRUE(v1.empty());
+        EXPECT_TRUE(!v1.ends_with("2"));
+        EXPECT_TRUE(!v1.ends_with("3"));
+    }
+}
+
 namespace
 {
 template <FixedString<5> /*MY_STR*/>
