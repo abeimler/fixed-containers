@@ -4,6 +4,8 @@
 #include "mock_testing_types.hpp"
 #include "test_utilities_common.hpp"
 
+#include "fixed_containers/assert_or_abort.hpp"
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -341,6 +343,14 @@ TEST(FixedCircularDeque, MaxSize)
         {
             auto v1 = Factory::template create<int, 3>();
             EXPECT_EQ(3, v1.max_size());
+        }
+
+        {
+            using ContainerType = decltype(Factory::template create<int, 3>());
+            static_assert(ContainerType::static_max_size() == 3);
+            EXPECT_EQ(3, ContainerType::static_max_size());
+            static_assert(max_size_v<ContainerType> == 3);
+            EXPECT_EQ(3, (max_size_v<ContainerType>));
         }
     };
 

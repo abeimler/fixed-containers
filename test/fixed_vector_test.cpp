@@ -4,6 +4,7 @@
 #include "mock_testing_types.hpp"
 #include "test_utilities_common.hpp"
 
+#include "fixed_containers/assert_or_abort.hpp"
 #include "fixed_containers/concepts.hpp"
 
 #include <gtest/gtest.h>
@@ -87,7 +88,6 @@ using VecType = FixedVector<T, 5>;
 static_assert(!TriviallyCopyable<VecType>);
 static_assert(NotTrivial<VecType>);
 static_assert(StandardLayout<VecType>);
-static_assert(!IsStructuralType<VecType>);
 
 static_assert(std::contiguous_iterator<VecType::iterator>);
 static_assert(std::contiguous_iterator<VecType::const_iterator>);
@@ -584,6 +584,13 @@ TEST(FixedVector, CapacityAndMaxSize)
         FixedVector<int, 3> v1{};
         EXPECT_EQ(3, v1.capacity());
         EXPECT_EQ(3, v1.max_size());
+    }
+
+    {
+        static_assert(FixedVector<int, 3>::static_max_size() == 3);
+        EXPECT_EQ(3, (FixedVector<int, 3>::static_max_size()));
+        static_assert(max_size_v<FixedVector<int, 3>> == 3);
+        EXPECT_EQ(3, (max_size_v<FixedVector<int, 3>>));
     }
 }
 

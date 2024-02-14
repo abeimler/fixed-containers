@@ -1,16 +1,17 @@
 #pragma once
 
+#include "fixed_containers/assert_or_abort.hpp"
 #include "fixed_containers/bidirectional_iterator.hpp"
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/enum_utils.hpp"
 #include "fixed_containers/erase_if.hpp"
 #include "fixed_containers/filtered_integer_range_iterator.hpp"
+#include "fixed_containers/max_size.hpp"
 
 #ifdef USE_BIT_SET_FOR_ENUM_SET
 #include "bit_set.hpp"
 #endif
 #include <array>
-#include <cassert>
 #include <cstddef>
 #include <initializer_list>
 
@@ -219,8 +220,7 @@ public:
         return output;
     }
 
-    static constexpr std::size_t max_size() noexcept
-    {
+    [[nodiscard]] static constexpr std::size_t static_max_size() noexcept {
 #ifdef USE_BIT_SET_FOR_ENUM_SET
         return ValueArrayType::max_size();
 #else
@@ -280,20 +280,20 @@ public:
     constexpr const_reverse_iterator rbegin() const noexcept { return crbegin(); }
     constexpr const_reverse_iterator rend() const noexcept { return crend(); }
 
-    [[nodiscard]] constexpr bool empty() const noexcept
+    [[nodiscard]] constexpr std::size_t max_size() const noexcept { return static_max_size(); }
+    [[nodiscard]] constexpr std::size_t size() const noexcept
     {
-#ifdef USE_BIT_SET_FOR_ENUM_SET
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.empty();
-#else
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_size_ == 0;
-#endif
-    }
-
-    [[nodiscard]] constexpr std::size_t size() const noexcept {
 #ifdef USE_BIT_SET_FOR_ENUM_SET
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.size();
 #else
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_size_;
+#endif
+    }
+    [[nodiscard]] constexpr bool empty() const noexcept {
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.empty();
+#else
+        return size() == 0;
 #endif
     }
 
@@ -359,13 +359,13 @@ public:
 
     constexpr const_iterator erase(const_iterator pos) noexcept
     {
-        assert(pos != cend());
+        assert_or_abort(pos != cend());
         const std::size_t i = EnumAdapterType::ordinal(*pos);
 #ifdef USE_BIT_SET_FOR_ENUM_SET
         IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
         return create_const_iterator(i);
 #else
-        assert(contains_at(i));
+        assert_or_abort(contains_at(i));
         reset_at(i);
         return create_const_iterator(i);
 #endif
@@ -375,7 +375,7 @@ public:
     {
         const std::size_t from = first == end() ? ENUM_COUNT : EnumAdapterType::ordinal(*first);
         const std::size_t to = last == end() ? ENUM_COUNT : EnumAdapterType::ordinal(*last);
-        assert(from <= to);
+        assert_or_abort(from <= to);
 
         for (std::size_t i = from; i < to; i++)
         {
@@ -395,14 +395,13 @@ public:
     constexpr size_type erase(const K& key) noexcept
     {
         const std::size_t i = EnumAdapterType::ordinal(key);
-#ifdef USE_BIT_SET_FOR_ENUM_SET
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
-#else
         if (!contains_at(i))
         {
             return 0;
         }
-
+#ifdef USE_BIT_SET_FOR_ENUM_SET
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
+#else
         reset_at(i);
         return 1;
 #endif
@@ -503,16 +502,22 @@ private:
 #ifdef USE_BIT_SET_FOR_ENUM_SET
         IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
 #else
-        assert(contains_at(i));
+        assert_or_abort(contains_at(i));
         array_set_unchecked_at(i) = false;
         decrement_size();
 #endif
     }
 };
 
+template <typename K>
+[[nodiscard]] constexpr typename EnumSet<K>::size_type is_full(const EnumSet<K>& c)
+{
+    return c.size() >= c.max_size();
+}
+
 template <InputIterator InputIt>
-EnumSet(InputIt first,
-        InputIt last) noexcept->EnumSet<typename std::iterator_traits<InputIt>::value_type>;
+EnumSet(InputIt first, InputIt last) noexcept
+    -> EnumSet<typename std::iterator_traits<InputIt>::value_type>;
 
 template <class K, class Predicate>
 constexpr typename EnumSet<K>::size_type erase_if(EnumSet<K>& c, Predicate predicate)
@@ -521,3 +526,14 @@ constexpr typename EnumSet<K>::size_type erase_if(EnumSet<K>& c, Predicate predi
 }
 
 }  // namespace fixed_containers
+
+// Specializations
+namespace std
+{
+template <typename K>
+struct tuple_size<fixed_containers::EnumSet<K>> : std::integral_constant<std::size_t, 0>
+{
+    static_assert(fixed_containers::AlwaysFalseV<K>,
+                  "Implicit Structured Binding due to the fields being public is disabled");
+};
+}  // namespace std

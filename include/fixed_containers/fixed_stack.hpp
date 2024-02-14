@@ -1,6 +1,8 @@
 #pragma once
 
+#include "fixed_containers/concepts.hpp"
 #include "fixed_containers/fixed_vector.hpp"
+#include "fixed_containers/max_size.hpp"
 #include "fixed_containers/sequence_container_checking.hpp"
 #include "fixed_containers/source_location.hpp"
 #include "fixed_containers/stack_adapter.hpp"
@@ -17,6 +19,9 @@ class FixedStack : public StackAdapter<FixedVector<T, MAXIMUM_SIZE, CheckingType
 {
 private:
     using Base = StackAdapter<FixedVector<T, MAXIMUM_SIZE, CheckingType>>;
+
+public:
+    [[nodiscard]] static constexpr std::size_t static_max_size() noexcept { return MAXIMUM_SIZE; }
 
 public:
     constexpr FixedStack()
@@ -42,3 +47,17 @@ template <typename T, std::size_t MAXIMUM_SIZE, typename CheckingType>
 }
 
 }  // namespace fixed_containers
+
+// Specializations
+namespace std
+{
+template <typename T,
+          std::size_t MAXIMUM_SIZE,
+          fixed_containers::customize::SequenceContainerChecking CheckingType>
+struct tuple_size<fixed_containers::FixedStack<T, MAXIMUM_SIZE, CheckingType>>
+  : std::integral_constant<std::size_t, 0>
+{
+    static_assert(fixed_containers::AlwaysFalseV<T, decltype(MAXIMUM_SIZE), CheckingType>,
+                  "Implicit Structured Binding due to the fields being public is disabled");
+};
+}  // namespace std

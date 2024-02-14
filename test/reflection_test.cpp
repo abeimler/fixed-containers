@@ -1,9 +1,15 @@
-#if __has_builtin(__builtin_dump_struct)
 #if defined(__clang__) && __clang_major__ >= 15
 
 #include "fixed_containers/reflection.hpp"
 
+#include "mock_testing_types.hpp"
+
+#include "fixed_containers/fixed_vector.hpp"
+
 #include <gtest/gtest.h>
+
+#include <cstddef>
+#include <string_view>
 
 namespace fixed_containers
 {
@@ -23,7 +29,7 @@ struct ChildStruct : public BaseStruct
 
 /*
  * Output of `__builtin_dump_struct(&instance, printf)` is:
-fixed_containers::(anonymous namespace)::MyColors {
+fixed_containers::(anonymous namespace)::StructWithNestedStructs {
 int yellow = 0
 double red = 0.000000
 BaseStruct green = {
@@ -40,12 +46,31 @@ ChildStruct purple = {
 }
 }
  */
-struct MyColors
+struct StructWithNestedStructs
 {
     int yellow;
     double red[17];
     BaseStruct green;
     ChildStruct purple;
+};
+
+/*
+ * __builtin_dump_struct does NOT recurse on non-aggregate types
+ * Output of `__builtin_dump_struct(&instance, printf)` is:
+fixed_containers::(anonymous namespace)::StructWithNonAggregates {
+  int outer_field_1 = 0
+  MockNonAggregate non_aggregate = *0x7ffdf5f7b804
+}
+
+ * but it can analyze them if explicitly requested:
+fixed_containers::MockNonAggregate {
+  int field_1 = 0
+}
+ */
+struct StructWithNonAggregates
+{
+    int a1;
+    MockNonAggregate non_aggregate;
 };
 
 struct RecursiveFieldCount8
@@ -147,8 +172,15 @@ struct NonConstexprDefaultConstructibleWithFields
     }
 };
 
-constexpr std::string_view pick_compiler_specific_string([[maybe_unused]] const std::string_view s1,
-                                                         [[maybe_unused]] const std::string_view s2)
+struct StructWithFieldsWithLimitedConstructibility
+{
+    MockTriviallyCopyableButNotCopyableOrMoveable non_copyable_non_moveable{};
+    MockNonTrivialInt non_trivial{};
+    MockMoveableButNotCopyable non_copyable{};
+};
+
+constexpr std::string_view pick_compiler_specific_string(
+    [[maybe_unused]] const std::string_view& s1, [[maybe_unused]] const std::string_view& s2)
 {
 #if defined(__clang__) && __clang_major__ == 15
     return s1;
@@ -157,36 +189,79 @@ constexpr std::string_view pick_compiler_specific_string([[maybe_unused]] const 
 #endif
 }
 
+template <std::size_t MAXIMUM_FIELD_COUNT = 16, typename T>
+constexpr auto field_info_of(const T& instance)
+    -> FixedVector<reflection_detail::FieldEntry, MAXIMUM_FIELD_COUNT>
+{
+    FixedVector<reflection_detail::FieldEntry, MAXIMUM_FIELD_COUNT> output{};
+    reflection_detail::for_each_parsed_field_entry(
+        instance,
+        [&output](const reflection_detail::FieldEntry& field_entry)
+        {
+            if (field_entry.enclosing_field_name().empty())
+            {
+                output.push_back(field_entry);
+            }
+        });
+    return output;
+}
+
+// Since __builtin_dump_struct sometimes recurses and sometimes does not, these
+// are impractical for direct use. Keep them for testing purposes.
+template <typename T>
+constexpr std::size_t field_count_of_exhaustive_until_non_aggregates_impl(const T& instance)
+{
+    std::size_t counter = 0;
+    reflection_detail::for_each_parsed_field_entry(
+        instance, [&counter](const reflection_detail::FieldEntry& /*field_entry*/) { ++counter; });
+    return counter;
+}
+template <std::size_t MAXIMUM_FIELD_COUNT = 16, typename T>
+constexpr auto field_info_of_exhaustive_until_non_aggregates_impl(const T& instance)
+    -> FixedVector<reflection_detail::FieldEntry, MAXIMUM_FIELD_COUNT>
+{
+    FixedVector<reflection_detail::FieldEntry, MAXIMUM_FIELD_COUNT> output{};
+    reflection_detail::for_each_parsed_field_entry(
+        instance,
+        [&output](const reflection_detail::FieldEntry& field_entry)
+        { output.push_back(field_entry); });
+    return output;
+}
+
 }  // namespace
 
 TEST(Reflection, DebuggingHelper)
 {
-    using enum reflection_detail::RecursionType;
-    auto foo = reflection_detail::field_info_of<RECURSIVE_DEPTH_FIRST_ORDER, MyColors>();
+    auto foo = field_info_of(StructWithNestedStructs{});
     // std::cout << foo.size() << std::endl;
     (void)foo;
+
+    StructWithNonAggregates instance{};
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-pedantic"
+    // __builtin_dump_struct(&instance, printf);
+#pragma clang diagnostic pop
+    (void)instance;
 }
 
-TEST(Reflection, Example)
+TEST(Reflection, FieldInfo_StructWithNestedStructs)
 {
-    using enum reflection_detail::RecursionType;
-
     static_assert(
-        consteval_compare::equal<4, reflection_detail::field_count_of<NON_RECURSIVE, MyColors>()>);
+        consteval_compare::equal<4, reflection::field_count_of<StructWithNestedStructs>()>);
 
-    constexpr auto FIELD_INFO = reflection_detail::field_info_of<NON_RECURSIVE, MyColors>();
+    constexpr auto FIELD_INFO = field_info_of(StructWithNestedStructs{});
 
     static_assert(FIELD_INFO.at(0).field_type_name() == "int");
     static_assert(FIELD_INFO.at(0).field_name() == "yellow");
     static_assert(FIELD_INFO.at(0).enclosing_field_type_name() ==
-                  "fixed_containers::(anonymous namespace)::MyColors");
+                  "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
     static_assert(FIELD_INFO.at(0).enclosing_field_name() == "");
     static_assert(!FIELD_INFO.at(0).providing_base_class_name().has_value());
 
     static_assert(FIELD_INFO.at(1).field_type_name() == "double[17]");
     static_assert(FIELD_INFO.at(1).field_name() == "red");
     static_assert(FIELD_INFO.at(1).enclosing_field_type_name() ==
-                  "fixed_containers::(anonymous namespace)::MyColors");
+                  "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
     static_assert(FIELD_INFO.at(1).enclosing_field_name() == "");
     static_assert(!FIELD_INFO.at(1).providing_base_class_name().has_value());
 
@@ -195,7 +270,7 @@ TEST(Reflection, Example)
                       "fixed_containers::(anonymous namespace)::BaseStruct", "BaseStruct"));
     static_assert(FIELD_INFO.at(2).field_name() == "green");
     static_assert(FIELD_INFO.at(2).enclosing_field_type_name() ==
-                  "fixed_containers::(anonymous namespace)::MyColors");
+                  "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
     static_assert(FIELD_INFO.at(2).enclosing_field_name() == "");
     static_assert(!FIELD_INFO.at(2).providing_base_class_name().has_value());
 
@@ -204,33 +279,54 @@ TEST(Reflection, Example)
                       "fixed_containers::(anonymous namespace)::ChildStruct", "ChildStruct"));
     static_assert(FIELD_INFO.at(3).field_name() == "purple");
     static_assert(FIELD_INFO.at(3).enclosing_field_type_name() ==
-                  "fixed_containers::(anonymous namespace)::MyColors");
+                  "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
     static_assert(FIELD_INFO.at(3).enclosing_field_name() == "");
     static_assert(!FIELD_INFO.at(3).providing_base_class_name().has_value());
 }
 
-TEST(Reflection, RecursiveExample)
+TEST(Reflection, FieldInfo_StructWithNonAggregates)
 {
-    using enum reflection_detail::RecursionType;
-
     static_assert(
-        consteval_compare::
-            equal<10, reflection_detail::field_count_of<RECURSIVE_DEPTH_FIRST_ORDER, MyColors>()>);
+        consteval_compare::equal<2, reflection::field_count_of<StructWithNonAggregates>()>);
+
+    constexpr auto FIELD_INFO = field_info_of(StructWithNonAggregates{});
+
+    static_assert(FIELD_INFO.at(0).field_type_name() == "int");
+    static_assert(FIELD_INFO.at(0).field_name() == "a1");
+    static_assert(FIELD_INFO.at(0).enclosing_field_type_name() ==
+                  "fixed_containers::(anonymous namespace)::StructWithNonAggregates");
+    static_assert(FIELD_INFO.at(0).enclosing_field_name() == "");
+    static_assert(!FIELD_INFO.at(0).providing_base_class_name().has_value());
+
+    static_assert(FIELD_INFO.at(1).field_type_name() == "MockNonAggregate");
+    static_assert(FIELD_INFO.at(1).field_name() == "non_aggregate");
+    static_assert(FIELD_INFO.at(1).enclosing_field_type_name() ==
+                  "fixed_containers::(anonymous namespace)::StructWithNonAggregates");
+    static_assert(FIELD_INFO.at(1).enclosing_field_name() == "");
+    static_assert(!FIELD_INFO.at(1).providing_base_class_name().has_value());
+}
+
+TEST(Reflection, FieldInfo_StructWithNestedStructs_ExhaustiveUntilNonAggregates)
+{
+    // This is fully exhaustive, because the struct is composed from aggregates only.
+    static_assert(consteval_compare::equal<10,
+                                           field_count_of_exhaustive_until_non_aggregates_impl(
+                                               StructWithNestedStructs{})>);
 
     constexpr auto FIELD_INFO =
-        reflection_detail::field_info_of<RECURSIVE_DEPTH_FIRST_ORDER, MyColors>();
+        field_info_of_exhaustive_until_non_aggregates_impl(StructWithNestedStructs{});
 
     static_assert(FIELD_INFO.at(0).field_type_name() == "int");
     static_assert(FIELD_INFO.at(0).field_name() == "yellow");
     static_assert(FIELD_INFO.at(0).enclosing_field_type_name() ==
-                  "fixed_containers::(anonymous namespace)::MyColors");
+                  "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
     static_assert(FIELD_INFO.at(0).enclosing_field_name() == "");
     static_assert(!FIELD_INFO.at(0).providing_base_class_name().has_value());
 
     static_assert(FIELD_INFO.at(1).field_type_name() == "double[17]");
     static_assert(FIELD_INFO.at(1).field_name() == "red");
     static_assert(FIELD_INFO.at(1).enclosing_field_type_name() ==
-                  "fixed_containers::(anonymous namespace)::MyColors");
+                  "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
     static_assert(FIELD_INFO.at(1).enclosing_field_name() == "");
     static_assert(!FIELD_INFO.at(1).providing_base_class_name().has_value());
 
@@ -239,7 +335,7 @@ TEST(Reflection, RecursiveExample)
                       "fixed_containers::(anonymous namespace)::BaseStruct", "BaseStruct"));
     static_assert(FIELD_INFO.at(2).field_name() == "green");
     static_assert(FIELD_INFO.at(2).enclosing_field_type_name() ==
-                  "fixed_containers::(anonymous namespace)::MyColors");
+                  "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
     static_assert(FIELD_INFO.at(2).enclosing_field_name() == "");
     static_assert(!FIELD_INFO.at(2).providing_base_class_name().has_value());
 
@@ -266,7 +362,7 @@ TEST(Reflection, RecursiveExample)
                       "fixed_containers::(anonymous namespace)::ChildStruct", "ChildStruct"));
     static_assert(FIELD_INFO.at(5).field_name() == "purple");
     static_assert(FIELD_INFO.at(5).enclosing_field_type_name() ==
-                  "fixed_containers::(anonymous namespace)::MyColors");
+                  "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
     static_assert(FIELD_INFO.at(5).enclosing_field_name() == "");
     static_assert(!FIELD_INFO.at(5).providing_base_class_name().has_value());
 
@@ -307,18 +403,38 @@ TEST(Reflection, RecursiveExample)
     }
 }
 
+TEST(Reflection, FieldInfo_StructWithNonAggregates_ExhaustiveUntilNonAggregates)
+{
+    static_assert(consteval_compare::equal<2,
+                                           field_count_of_exhaustive_until_non_aggregates_impl(
+                                               StructWithNonAggregates{})>);
+
+    constexpr auto FIELD_INFO =
+        field_info_of_exhaustive_until_non_aggregates_impl(StructWithNonAggregates{});
+
+    static_assert(FIELD_INFO.at(0).field_type_name() == "int");
+    static_assert(FIELD_INFO.at(0).field_name() == "a1");
+    static_assert(FIELD_INFO.at(0).enclosing_field_type_name() ==
+                  "fixed_containers::(anonymous namespace)::StructWithNonAggregates");
+    static_assert(FIELD_INFO.at(0).enclosing_field_name() == "");
+    static_assert(!FIELD_INFO.at(0).providing_base_class_name().has_value());
+
+    static_assert(FIELD_INFO.at(1).field_type_name() == "MockNonAggregate");
+    static_assert(FIELD_INFO.at(1).field_name() == "non_aggregate");
+    static_assert(FIELD_INFO.at(1).enclosing_field_type_name() ==
+                  "fixed_containers::(anonymous namespace)::StructWithNonAggregates");
+    static_assert(FIELD_INFO.at(1).enclosing_field_name() == "");
+    static_assert(!FIELD_INFO.at(1).providing_base_class_name().has_value());
+}
+
 TEST(Reflection, NonConstexprDefaultConstructible)
 {
-    using enum reflection_detail::RecursionType;
-
     constexpr NonConstexprDefaultConstructibleWithFields INSTANCE{3, 5.0};
 
-    static_assert(
-        consteval_compare::equal<2, reflection_detail::field_count_of<NON_RECURSIVE>(INSTANCE)>);
+    static_assert(consteval_compare::equal<2, reflection_detail::field_count_of_impl(INSTANCE)>);
 
-    constexpr auto FIELD_INFO = reflection_detail::
-        field_info_of<NON_RECURSIVE, reflection_detail::field_count_of<NON_RECURSIVE>(INSTANCE)>(
-            INSTANCE);
+    constexpr auto FIELD_INFO =
+        field_info_of<reflection_detail::field_count_of_impl(INSTANCE)>(INSTANCE);
 
     static_assert(FIELD_INFO.at(0).field_type_name() == "int");
     static_assert(FIELD_INFO.at(0).field_name() == "a");
@@ -337,43 +453,138 @@ TEST(Reflection, NonConstexprDefaultConstructible)
     static_assert(!FIELD_INFO.at(1).providing_base_class_name().has_value());
 }
 
-TEST(Reflection, FieldCountLimits)
+TEST(Reflection, BuiltinDumpStructLimits)
 {
-    using enum reflection_detail::RecursionType;
-    using reflection_detail::field_count_of;
+    using consteval_compare::equal;
     static_assert(
-        consteval_compare::
-            equal<9, field_count_of<RECURSIVE_DEPTH_FIRST_ORDER, RecursiveFieldCount9>()>);
+        equal<9, field_count_of_exhaustive_until_non_aggregates_impl(RecursiveFieldCount9{})>);
     static_assert(
-        consteval_compare::
-            equal<10, field_count_of<RECURSIVE_DEPTH_FIRST_ORDER, RecursiveFieldCount10>()>);
+        equal<10, field_count_of_exhaustive_until_non_aggregates_impl(RecursiveFieldCount10{})>);
     static_assert(
-        consteval_compare::
-            equal<99, field_count_of<RECURSIVE_DEPTH_FIRST_ORDER, RecursiveFieldCount99>()>);
+        equal<99, field_count_of_exhaustive_until_non_aggregates_impl(RecursiveFieldCount99{})>);
     static_assert(
-        consteval_compare::
-            equal<100, field_count_of<RECURSIVE_DEPTH_FIRST_ORDER, RecursiveFieldCount100>()>);
+        equal<100, field_count_of_exhaustive_until_non_aggregates_impl(RecursiveFieldCount100{})>);
     static_assert(
-        consteval_compare::
-            equal<193, field_count_of<RECURSIVE_DEPTH_FIRST_ORDER, RecursiveFieldCount193>()>);
+        equal<193, field_count_of_exhaustive_until_non_aggregates_impl(RecursiveFieldCount193{})>);
 
     // Before clang-17, there is a limit in recursive number of fields.
     // The limit is around 200 fields, but is affected by level of recursion, so it is 193 here
     // due to the way the structs are defined.
 #if defined(__clang__) && __clang_major__ >= 17
     static_assert(
-        consteval_compare::
-            equal<194, field_count_of<RECURSIVE_DEPTH_FIRST_ORDER, RecursiveFieldCount194>()>);
+        equal<194, field_count_of_exhaustive_until_non_aggregates_impl(RecursiveFieldCount194{})>);
     static_assert(
-        consteval_compare::
-            equal<300, field_count_of<RECURSIVE_DEPTH_FIRST_ORDER, RecursiveFieldCount300>()>);
+        equal<300, field_count_of_exhaustive_until_non_aggregates_impl(RecursiveFieldCount300{})>);
 #else
-    EXPECT_DEATH((field_count_of<RECURSIVE_DEPTH_FIRST_ORDER, RecursiveFieldCount194>()), "");
-    EXPECT_DEATH((field_count_of<RECURSIVE_DEPTH_FIRST_ORDER, RecursiveFieldCount300>()), "");
+    EXPECT_DEATH((field_count_of_exhaustive_until_non_aggregates_impl(RecursiveFieldCount194{})),
+                 "");
+    EXPECT_DEATH((field_count_of_exhaustive_until_non_aggregates_impl(RecursiveFieldCount300{})),
+                 "");
 #endif
+}
+
+TEST(Reflection, FieldCount)
+{
+    static_assert(reflection::field_count_of<StructWithNestedStructs>() == 4);
+    static_assert(reflection::field_count_of<StructWithNonAggregates>() == 2);
+}
+
+TEST(Reflection, FieldNames)
+{
+    {
+        constexpr const auto& FIELD_NAMES = reflection::field_names_of<StructWithNestedStructs>();
+        static_assert(FIELD_NAMES.max_size() == 4);
+        static_assert(FIELD_NAMES.size() == 4);
+        static_assert(FIELD_NAMES.at(0) == "yellow");
+        static_assert(FIELD_NAMES.at(1) == "red");
+        static_assert(FIELD_NAMES.at(2) == "green");
+        static_assert(FIELD_NAMES.at(3) == "purple");
+    }
+
+    {
+        constexpr const auto& FIELD_NAMES = reflection::field_names_of<StructWithNonAggregates>();
+        static_assert(FIELD_NAMES.max_size() == 2);
+        static_assert(FIELD_NAMES.size() == 2);
+        static_assert(FIELD_NAMES.at(0) == "a1");
+        static_assert(FIELD_NAMES.at(1) == "non_aggregate");
+    }
+}
+
+TEST(Reflection, ForEachField)
+{
+    constexpr std::pair<StructWithNestedStructs, FixedVector<std::string_view, 10>> OUTPUT = []()
+    {
+        StructWithNestedStructs a{};
+        FixedVector<std::string_view, 10> field_list{};
+
+        reflection::for_each_field(a,
+                                   [&field_list]<class T>(const std::string_view& name, T& field)
+                                   {
+                                       if constexpr (std::is_same_v<int, T>)
+                                       {
+                                           field = 5;
+                                       }
+
+                                       field_list.push_back(name);
+                                   });
+
+        return std::pair{a, field_list};
+    }();
+
+    constexpr StructWithNestedStructs STRUCT = OUTPUT.first;
+    constexpr FixedVector<std::string_view, 10> FIELD_LIST = OUTPUT.second;
+
+    static_assert(STRUCT.yellow == 5);
+
+    static_assert(FIELD_LIST.size() == 4);
+    static_assert(FIELD_LIST.at(0) == "yellow");
+    static_assert(FIELD_LIST.at(1) == "red");
+    static_assert(FIELD_LIST.at(2) == "green");
+    static_assert(FIELD_LIST.at(3) == "purple");
+}
+
+TEST(Reflection, ForEachField_LimitedConstructibility)
+{
+    StructWithFieldsWithLimitedConstructibility a{};
+    FixedVector<std::string_view, 10> field_list{};
+
+    reflection::for_each_field(a,
+                               [&field_list]<class T>(const std::string_view& name, T& field)
+                               {
+                                   if constexpr (std::is_same_v<MockNonTrivialInt, T>)
+                                   {
+                                       field.value = 5;
+                                   }
+
+                                   field_list.push_back(name);
+                               });
+
+    EXPECT_EQ(a.non_trivial.value, 5);
+    EXPECT_EQ(field_list.size(), 3);
+    EXPECT_EQ(field_list.at(0), "non_copyable_non_moveable");
+    EXPECT_EQ(field_list.at(1), "non_trivial");
+    EXPECT_EQ(field_list.at(2), "non_copyable");
+}
+
+TEST(Reflection, ForEachField_EmptyStruct)
+{
+    constexpr std::size_t COUNTER = []()
+    {
+        MockEmptyStruct empty_struct{};
+        std::size_t counter = 0;
+        [&]()
+        {
+            reflection::for_each_field(empty_struct,
+                                       [&]<typename T>(const std::string_view& /*name*/, const T&)
+                                       { counter++; });
+        }();
+
+        return counter;
+    }();
+
+    static_assert(COUNTER == 0);
 }
 
 }  // namespace fixed_containers
 
-#endif
 #endif

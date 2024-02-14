@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cassert>
+#include "fixed_containers/assert_or_abort.hpp"
+
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -63,7 +64,7 @@ public:
     template <std::unsigned_integral V>
     [[nodiscard]] constexpr V cast() const
     {
-        assert(is_non_negative());
+        assert_or_abort(is_non_negative());
 
         // TODO: ensure the value fits in the target type
         return static_cast<V>(unsigned_value());
@@ -91,6 +92,13 @@ constexpr UnsignedIntegralAndSign<T> safe_add(const T addend_left,
     }
 
     return UnsignedIntegralAndSign<T>::create_positive(addend_left + static_cast<T>(addend_right));
+}
+
+template <std::integral T>
+constexpr T divide_integers_rounding_up(const T dividend, const T divisor)
+{
+    assert_or_abort(divisor != static_cast<T>(0));
+    return ((dividend - static_cast<T>(1)) / divisor) + static_cast<T>(1);
 }
 
 }  // namespace fixed_containers::int_math

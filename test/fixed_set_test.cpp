@@ -3,6 +3,7 @@
 #include "mock_testing_types.hpp"
 #include "test_utilities_common.hpp"
 
+#include "fixed_containers/assert_or_abort.hpp"
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/consteval_compare.hpp"
 
@@ -180,6 +181,14 @@ TEST(FixedSet, MaxSize)
 {
     constexpr FixedSet<int, 10> s1{2, 4};
     static_assert(s1.max_size() == 10);
+
+    constexpr FixedSet<int, 4> s2{};
+    static_assert(s2.max_size() == 4);
+
+    static_assert(FixedSet<int, 4>::static_max_size() == 4);
+    EXPECT_EQ(4, (FixedSet<int, 4>::static_max_size()));
+    static_assert(max_size_v<FixedSet<int, 4>> == 4);
+    EXPECT_EQ(4, (max_size_v<FixedSet<int, 4>>));
 }
 
 TEST(FixedSet, EmptySizeFull)

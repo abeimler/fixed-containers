@@ -4,6 +4,7 @@
 #include "mock_testing_types.hpp"
 #include "test_utilities_common.hpp"
 
+#include "fixed_containers/assert_or_abort.hpp"
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/consteval_compare.hpp"
 
@@ -92,6 +93,14 @@ TEST(FixedMap, MaxSize)
 {
     constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
     static_assert(s1.max_size() == 10);
+
+    constexpr FixedMap<int, int, 4> s2{};
+    static_assert(s2.max_size() == 4);
+
+    static_assert(FixedMap<int, int, 4>::static_max_size() == 4);
+    EXPECT_EQ(4, (FixedMap<int, int, 4>::static_max_size()));
+    static_assert(max_size_v<FixedMap<int, int, 4>> == 4);
+    EXPECT_EQ(4, (max_size_v<FixedMap<int, int, 4>>));
 }
 
 TEST(FixedMap, EmptySizeFull)
@@ -522,9 +531,32 @@ TEST(FixedMap, Emplace)
         }
 
         {
-            FixedMap<int, MockMoveableButNotCopyable, 5> s2{};
-            s2.emplace(1, MockMoveableButNotCopyable{});
+            auto [it, was_inserted] = s1.emplace(std::make_pair(2, 209999999));
+            ASSERT_EQ(1, s1.size());
+            ASSERT_TRUE(!s1.contains(1));
+            ASSERT_TRUE(s1.contains(2));
+            ASSERT_TRUE(!s1.contains(3));
+            ASSERT_TRUE(!s1.contains(4));
+            ASSERT_EQ(20, s1.at(2));
+            ASSERT_FALSE(was_inserted);
+            ASSERT_EQ(2, it->first);
+            ASSERT_EQ(20, it->second);
         }
+    }
+
+    {
+        FixedMap<int, MockMoveableButNotCopyable, 5> s2{};
+        s2.emplace(1, MockMoveableButNotCopyable{});
+    }
+
+    {
+        FixedMap<int, MockTriviallyCopyableButNotCopyableOrMoveable, 5> s2{};
+        s2.emplace(1);
+    }
+
+    {
+        FixedMap<int, std::pair<int, int>, 5> s3{};
+        s3.emplace(std::piecewise_construct, std::make_tuple(1), std::make_tuple(2, 3));
     }
 }
 

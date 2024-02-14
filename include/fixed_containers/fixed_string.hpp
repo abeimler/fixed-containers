@@ -1,13 +1,14 @@
 #pragma once
 
+#include "fixed_containers/assert_or_abort.hpp"
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/fixed_vector.hpp"
+#include "fixed_containers/max_size.hpp"
 #include "fixed_containers/preconditions.hpp"
 #include "fixed_containers/sequence_container_checking.hpp"
 #include "fixed_containers/source_location.hpp"
 
 #include <array>
-#include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <string_view>
@@ -59,6 +60,9 @@ public:
     using iterator = typename FixedVecStorage::iterator;
     using reverse_iterator = typename FixedVecStorage::reverse_iterator;
     using const_reverse_iterator = typename FixedVecStorage::const_reverse_iterator;
+
+public:
+    [[nodiscard]] static constexpr std::size_t static_max_size() noexcept { return MAXIMUM_LENGTH; }
 
 public:  // Public so this type is a structural type and can thus be used in template parameters
     FixedVecStorage IMPLEMENTATION_DETAIL_DO_NOT_USE_data_;
@@ -252,7 +256,7 @@ public:
     [[nodiscard]] constexpr bool empty() const noexcept { return length() == 0; }
     [[nodiscard]] constexpr std::size_t length() const noexcept { return vec().size(); }
     [[nodiscard]] constexpr std::size_t size() const noexcept { return length(); }
-    [[nodiscard]] constexpr std::size_t max_size() const noexcept { return MAXIMUM_LENGTH; }
+    [[nodiscard]] constexpr std::size_t max_size() const noexcept { return static_max_size(); }
     constexpr void reserve(const std::size_t new_capacity,
                            const std_transition::source_location& loc =
                                std_transition::source_location::current()) noexcept
@@ -581,7 +585,7 @@ template <
         std_transition::source_location::current()) noexcept
 {
     constexpr std::size_t MAXIMUM_LENGTH = MAXIMUM_LENGTH_WITH_NULL_TERMINATOR - 1;
-    assert(*std::next(list, MAXIMUM_LENGTH) == '\0');
+    assert_or_abort(*std::next(list, MAXIMUM_LENGTH) == '\0');
     return {std::string_view{std::begin(list), MAXIMUM_LENGTH}, loc};
 }
 
@@ -605,6 +609,7 @@ using FixedStringTruncable = FixedString<MAXIMUM_LENGTH, CheckingType, customize
 
 }  // namespace fixed_containers
 
+// Specializations
 namespace std
 {
 template <std::size_t MAXIMUM_LENGTH,
@@ -615,5 +620,4 @@ struct tuple_size<fixed_containers::FixedString<MAXIMUM_LENGTH, CheckingType>>
     static_assert(fixed_containers::AlwaysFalseV<decltype(MAXIMUM_LENGTH), CheckingType>,
                   "Implicit Structured Binding due to the fields being public is disabled");
 };
-
 }  // namespace std

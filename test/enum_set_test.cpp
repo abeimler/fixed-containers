@@ -3,6 +3,7 @@
 #include "enums_test_common.hpp"
 #include "test_utilities_common.hpp"
 
+#include "fixed_containers/assert_or_abort.hpp"
 #include "fixed_containers/consteval_compare.hpp"
 
 #include <gtest/gtest.h>
@@ -252,9 +253,14 @@ TEST(EnumSet, MaxSize)
 
     constexpr EnumSet<TestEnum1> s2{};
     static_assert(s2.max_size() == 4);
+
+    static_assert(EnumSet<TestEnum1>::static_max_size() == 4);
+    EXPECT_EQ(4, (EnumSet<TestEnum1>::static_max_size()));
+    static_assert(max_size_v<EnumSet<TestEnum1>> == 4);
+    EXPECT_EQ(4, (max_size_v<EnumSet<TestEnum1>>));
 }
 
-TEST(EnumSet, EmptyAndSize)
+TEST(EnumSet, EmptySizeFull)
 {
     constexpr EnumSet<TestEnum1> s1{TestEnum1::TWO, TestEnum1::FOUR};
     static_assert(s1.size() == 2);
@@ -263,6 +269,13 @@ TEST(EnumSet, EmptyAndSize)
     constexpr EnumSet<TestEnum1> s2{};
     static_assert(s2.size() == 0);
     static_assert(s2.empty());
+
+    constexpr EnumSet<TestEnum1> s3{
+        TestEnum1::ONE, TestEnum1::TWO, TestEnum1::THREE, TestEnum1::FOUR};
+    static_assert(is_full(s3));
+
+    constexpr EnumSet<TestEnum1> s4{TestEnum1::TWO, TestEnum1::FOUR};
+    static_assert(!is_full(s4));
 }
 
 TEST(EnumSet, Insert)

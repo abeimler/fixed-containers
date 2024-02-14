@@ -4,6 +4,7 @@
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/consteval_compare.hpp"
 #include "fixed_containers/iterator_utils.hpp"
+#include "fixed_containers/max_size.hpp"
 #include "fixed_containers/optional_storage.hpp"
 #include "fixed_containers/preconditions.hpp"
 #include "fixed_containers/random_access_iterator_transformer.hpp"
@@ -137,6 +138,9 @@ public:
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
+public:
+    [[nodiscard]] static constexpr std::size_t static_max_size() noexcept { return MAXIMUM_SIZE; }
+
 private:
     static constexpr void check_target_size(size_type target_size,
                                             const std_transition::source_location& loc)
@@ -152,19 +156,6 @@ public:  // Public so this type is a structural type and can thus be used in tem
     std::array<OptionalT, MAXIMUM_SIZE> IMPLEMENTATION_DETAIL_DO_NOT_USE_array_;
 
 public:
-    static constexpr std::size_t max_size() noexcept { return MAXIMUM_SIZE; }
-    static constexpr std::size_t capacity() noexcept { return max_size(); }
-    static constexpr void reserve(const std::size_t new_capacity,
-                                  const std_transition::source_location& loc =
-                                      std_transition::source_location::current()) noexcept
-    {
-        if (preconditions::test(new_capacity <= MAXIMUM_SIZE))
-        {
-            Checking::length_error(new_capacity, loc);
-        }
-        // Do nothing
-    }
-
     constexpr FixedVectorBase() noexcept
       : IMPLEMENTATION_DETAIL_DO_NOT_USE_size_{0}
     // Don't initialize the array
@@ -538,6 +529,18 @@ public:
     /**
      * Size
      */
+    [[nodiscard]] constexpr std::size_t max_size() const noexcept { return static_max_size(); }
+    [[nodiscard]] constexpr std::size_t capacity() const noexcept { return max_size(); }
+    constexpr void reserve(const std::size_t new_capacity,
+                           const std_transition::source_location& loc =
+                               std_transition::source_location::current()) noexcept
+    {
+        if (preconditions::test(new_capacity <= MAXIMUM_SIZE))
+        {
+            Checking::length_error(new_capacity, loc);
+        }
+        // Do nothing
+    }
     [[nodiscard]] constexpr std::size_t size() const noexcept
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_size_;
@@ -1045,3 +1048,17 @@ template <typename T, std::size_t MAXIMUM_SIZE>
 }
 
 }  // namespace fixed_containers
+
+// Specializations
+namespace std
+{
+template <typename T,
+          std::size_t MAXIMUM_SIZE,
+          fixed_containers::customize::SequenceContainerChecking CheckingType>
+struct tuple_size<fixed_containers::FixedVector<T, MAXIMUM_SIZE, CheckingType>>
+  : std::integral_constant<std::size_t, 0>
+{
+    static_assert(fixed_containers::AlwaysFalseV<T, decltype(MAXIMUM_SIZE), CheckingType>,
+                  "Implicit Structured Binding due to the fields being public is disabled");
+};
+}  // namespace std

@@ -5,6 +5,7 @@
 #include "mock_testing_types.hpp"
 #include "test_utilities_common.hpp"
 
+#include "fixed_containers/assert_or_abort.hpp"
 #include "fixed_containers/consteval_compare.hpp"
 
 #include <gtest/gtest.h>
@@ -388,16 +389,29 @@ TEST(EnumMap, MaxSize)
 
     constexpr EnumMap<TestEnum1, int> s2{};
     static_assert(s2.max_size() == 4);
+
+    static_assert(EnumMap<TestEnum1, int>::static_max_size() == 4);
+    EXPECT_EQ(4, (EnumMap<TestEnum1, int>::static_max_size()));
+    static_assert(max_size_v<EnumMap<TestEnum1, int>> == 4);
+    EXPECT_EQ(4, (max_size_v<EnumMap<TestEnum1, int>>));
 }
 
-TEST(EnumMap, EmptyAndSize)
+TEST(EnumMap, EmptySizeFull)
 {
     constexpr EnumMap<TestEnum1, int> s1{{TestEnum1::TWO, 20}, {TestEnum1::FOUR, 40}};
     static_assert(s1.size() == 2);
     static_assert(!s1.empty());
 
     constexpr EnumMap<TestEnum1, int> s2{};
+    static_assert(s2.size() == 0);
     static_assert(s2.empty());
+
+    constexpr EnumMap<TestEnum1, int> s3{
+        {TestEnum1::ONE, 10}, {TestEnum1::TWO, 20}, {TestEnum1::THREE, 30}, {TestEnum1::FOUR, 40}};
+    static_assert(is_full(s3));
+
+    constexpr EnumMap<TestEnum1, int> s4{{TestEnum1::TWO, 20}, {TestEnum1::FOUR, 40}};
+    static_assert(!is_full(s4));
 }
 
 TEST(EnumMap, OperatorBracket_Constexpr)
@@ -735,6 +749,22 @@ TEST(EnumMap, Emplace)
             ASSERT_EQ(TestEnum1::TWO, it->first);
             ASSERT_EQ(20, it->second);
         }
+    }
+
+    {
+        EnumMap<TestEnum1, MockMoveableButNotCopyable> s2{};
+        s2.emplace(TestEnum1::ONE, MockMoveableButNotCopyable{});
+    }
+
+    {
+        EnumMap<TestEnum1, MockTriviallyCopyableButNotCopyableOrMoveable> s2{};
+        s2.emplace(TestEnum1::ONE);
+    }
+
+    {
+        EnumMap<TestEnum1, std::pair<int, int>> s3{};
+        s3.emplace(
+            std::piecewise_construct, std::make_tuple(TestEnum1::ONE), std::make_tuple(2, 3));
     }
 }
 

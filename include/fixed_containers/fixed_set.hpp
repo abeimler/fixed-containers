@@ -1,8 +1,11 @@
 #pragma once
 
+#include "fixed_containers/assert_or_abort.hpp"
 #include "fixed_containers/bidirectional_iterator.hpp"
+#include "fixed_containers/concepts.hpp"
 #include "fixed_containers/erase_if.hpp"
 #include "fixed_containers/fixed_red_black_tree.hpp"
+#include "fixed_containers/max_size.hpp"
 #include "fixed_containers/preconditions.hpp"
 #include "fixed_containers/set_checking.hpp"
 #include "fixed_containers/source_location.hpp"
@@ -123,7 +126,7 @@ public:
     using difference_type = typename Tree::difference_type;
 
 public:
-    static constexpr std::size_t max_size() noexcept { return MAXIMUM_SIZE; }
+    [[nodiscard]] static constexpr std::size_t static_max_size() noexcept { return MAXIMUM_SIZE; }
 
 public:  // Public so this type is a structural type and can thus be used in template parameters
     Tree IMPLEMENTATION_DETAIL_DO_NOT_USE_tree_;
@@ -179,6 +182,7 @@ public:
     constexpr const_reverse_iterator rbegin() const noexcept { return crbegin(); }
     constexpr const_reverse_iterator rend() const noexcept { return crend(); }
 
+    [[nodiscard]] constexpr std::size_t max_size() const noexcept { return static_max_size(); }
     [[nodiscard]] constexpr std::size_t size() const noexcept { return tree().size(); }
     [[nodiscard]] constexpr bool empty() const noexcept { return tree().empty(); }
 
@@ -260,9 +264,9 @@ public:
 
     constexpr const_iterator erase(const_iterator pos) noexcept
     {
-        assert(pos != cend());
+        assert_or_abort(pos != cend());
         const NodeIndex i = tree().index_of_node_or_null(*pos);
-        assert(tree().contains_at(i));
+        assert_or_abort(tree().contains_at(i));
         const NodeIndex successor_index = tree().delete_at_and_return_successor(i);
         return create_const_iterator(successor_index);
     }
@@ -512,3 +516,29 @@ template <typename K,
 }
 
 }  // namespace fixed_containers
+
+// Specializations
+namespace std
+{
+template <
+    typename K,
+    std::size_t MAXIMUM_SIZE,
+    typename Compare,
+    fixed_containers::fixed_red_black_tree_detail::RedBlackTreeNodeColorCompactness COMPACTNESS,
+    template <class /*Would be IsFixedIndexBasedStorage but gcc doesn't like the constraints
+here. clang accepts it */
+              ,
+              std::size_t>
+    typename StorageTemplate,
+    fixed_containers::customize::SetChecking<K> CheckingType>
+struct tuple_size<
+    fixed_containers::
+        FixedSet<K, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>>
+  : std::integral_constant<std::size_t, 0>
+{
+    static_assert(
+        fixed_containers::
+            AlwaysFalseV<K, decltype(MAXIMUM_SIZE), Compare, decltype(COMPACTNESS), CheckingType>,
+        "Implicit Structured Binding due to the fields being public is disabled");
+};
+}  // namespace std
