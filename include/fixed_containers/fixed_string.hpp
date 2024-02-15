@@ -272,9 +272,12 @@ public:
                            const std_transition::source_location& loc =
                                std_transition::source_location::current()) noexcept
     {
-        if (preconditions::test(new_capacity <= MAXIMUM_LENGTH))
+        if constexpr (STRING_TRUNCATION_IS_ERROR == customize::StringTruncationIsError::Error)
         {
-            Checking::length_error(new_capacity, loc);
+            if (preconditions::test(new_capacity <= MAXIMUM_LENGTH))
+            {
+                Checking::length_error(new_capacity, loc);
+            }
         }
         // Do nothing
     }

@@ -787,19 +787,37 @@ TEST(FixedString, CapacityAndMaxSize)
 
 TEST(FixedString, Reserve)
 {
-    constexpr auto v1 = []()
     {
-        FixedString<11> v{};
-        v.reserve(5);
-        return v;
-    }();
+        constexpr auto v1 = []()
+        {
+            FixedString<11> v{};
+            v.reserve(5);
+            return v;
+        }();
 
-    static_assert(v1.capacity() == 11);
-    static_assert(v1.max_size() == 11);
+        static_assert(v1.capacity() == 11);
+        static_assert(v1.max_size() == 11);
 
-    FixedString<7> v2{};
-    v2.reserve(5);
-    EXPECT_DEATH(v2.reserve(15), "");
+        FixedString<7> v2{};
+        v2.reserve(5);
+        EXPECT_DEATH(v2.reserve(15), "");
+    }
+
+    {
+        constexpr auto v1 = []()
+        {
+            FixedStringTruncable<11> v{};
+            v.reserve(5);
+            return v;
+        }();
+
+        static_assert(v1.capacity() == 11);
+        static_assert(v1.max_size() == 11);
+
+        FixedStringTruncable<7> v2{};
+        v2.reserve(5);
+        v2.reserve(15);
+    }
 }
 
 TEST(FixedString, Clear)
