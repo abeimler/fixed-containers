@@ -10,7 +10,6 @@
 
 #include <algorithm>
 #include <deque>
-#include <span>
 
 namespace fixed_containers
 {
@@ -25,8 +24,6 @@ static_assert(NotTrivial<CircularDequeType>);
 static_assert(StandardLayout<CircularDequeType>);
 static_assert(IsStructuralType<CircularDequeType>);
 }  // namespace trivially_copyable_vector
-
-void const_ref(const int&) {}
 
 struct ComplexStruct
 {
@@ -138,13 +135,8 @@ TEST(FixedCircularDeque, CountConstructor_ExceedsCapacity)
 TEST(FixedCircularDeque, MaxSizeDeduction)
 {
     constexpr auto v1 = make_fixed_circular_deque({10, 11, 12, 13, 14});
-    static_assert(v1.size() == 5);
     static_assert(v1.max_size() == 5);
-    static_assert(v1[0] == 10);
-    static_assert(v1[1] == 11);
-    static_assert(v1[2] == 12);
-    static_assert(v1[3] == 13);
-    static_assert(v1[4] == 14);
+    static_assert(std::ranges::equal(v1, std::array{10, 11, 12, 13, 14}));
 }
 
 TEST(FixedCircularDeque, IteratorConstructor)
@@ -152,9 +144,7 @@ TEST(FixedCircularDeque, IteratorConstructor)
     constexpr std::array<int, 2> v1{77, 99};
 
     constexpr FixedCircularDeque<int, 15> v2{v1.begin(), v1.end()};
-    static_assert(v2[0] == 77);
-    static_assert(v2[1] == 99);
-    static_assert(v2.size() == 2);
+    static_assert(std::ranges::equal(v2, std::array{77, 99}));
 }
 
 TEST(FixedCircularDeque, IteratorConstructor_ExceedsCapacity)
@@ -163,9 +153,9 @@ TEST(FixedCircularDeque, IteratorConstructor_ExceedsCapacity)
 
     constexpr FixedCircularDeque<int, 3> v2{v1.begin(), v1.end()};
     static_assert(v2.size() == 3);
-    static_assert(v2[0] == 3);
-    static_assert(v2[1] == 2);
-    static_assert(v2[2] == 1);
+    static_assert(v2.at(0) == 3);
+    static_assert(v2.at(1) == 2);
+    static_assert(v2.at(2) == 1);
 }
 
 TEST(FixedCircularDeque, InputIteratorConstructor)
@@ -187,14 +177,10 @@ TEST(FixedCircularDeque, InputIteratorConstructor_ExceedsCapacity)
 TEST(FixedCircularDeque, InitializerConstructor)
 {
     constexpr FixedCircularDeque<int, 3> v1{77, 99};
-    static_assert(v1[0] == 77);
-    static_assert(v1[1] == 99);
-    static_assert(v1.size() == 2);
+    static_assert(std::ranges::equal(v1, std::array{77, 99}));
 
     constexpr FixedCircularDeque<int, 3> v2{{66, 55}};
-    static_assert(v2[0] == 66);
-    static_assert(v2[1] == 55);
-    static_assert(v2.size() == 2);
+    static_assert(std::ranges::equal(v2, std::array{66, 55}));
 
     EXPECT_TRUE(std::ranges::equal(v1, std::array{77, 99}));
     EXPECT_TRUE(std::ranges::equal(v2, std::array{66, 55}));
@@ -204,9 +190,9 @@ TEST(FixedCircularDeque, InitializerConstructor_ExceedsCapacity)
 {
     constexpr FixedCircularDeque<int, 3> v2{1, 2, 3, 4, 5};
     static_assert(v2.size() == 3);
-    static_assert(v2[0] == 3);
-    static_assert(v2[1] == 4);
-    static_assert(v2[2] == 5);
+    static_assert(v2.at(0) == 3);
+    static_assert(v2.at(1) == 4);
+    static_assert(v2.at(2) == 5);
 }
 
 TEST(FixedCircularDeque, PushBack)
@@ -223,10 +209,7 @@ TEST(FixedCircularDeque, PushBack)
             return v;
         }();
 
-        static_assert(v1[0] == 0);
-        static_assert(v1[1] == 1);
-        static_assert(v1[2] == 2);
-        static_assert(v1.size() == 3);
+        static_assert(std::ranges::equal(v1, std::array{0, 1, 2}));
 
         constexpr auto v2 = []()
         {
@@ -255,9 +238,9 @@ TEST(FixedCircularDeque, PushBack_ExceedsCapacity)
         }();
 
         static_assert(v1.size() == 3);
-        static_assert(v1[0] == 2);
-        static_assert(v1[1] == 3);
-        static_assert(v1[2] == 4);
+        static_assert(v1.at(0) == 2);
+        static_assert(v1.at(1) == 3);
+        static_assert(v1.at(2) == 4);
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -322,9 +305,9 @@ TEST(FixedCircularDeque, EmplaceBack_ExceedsCapacity)
         }();
 
         static_assert(v1.size() == 3);
-        static_assert(v1[0] == 2);
-        static_assert(v1[1] == 3);
-        static_assert(v1[2] == 4);
+        static_assert(v1.at(0) == 2);
+        static_assert(v1.at(1) == 3);
+        static_assert(v1.at(2) == 4);
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -447,10 +430,7 @@ TEST(FixedCircularDeque, PopBack)
             return v;
         }();
 
-        static_assert(v1[0] == 0);
-        static_assert(v1[1] == 1);
-        static_assert(v1.size() == 2);
-        static_assert(v1.max_size() == 11);
+        static_assert(std::ranges::equal(v1, std::array{0, 1}));
 
         auto v2 = Factory::template create<int, 17>({10, 11, 12});
         v2.pop_back();
@@ -487,10 +467,7 @@ TEST(FixedCircularDeque, PushFront)
             return v;
         }();
 
-        static_assert(v1[0] == 2);
-        static_assert(v1[1] == 1);
-        static_assert(v1[2] == 0);
-        static_assert(v1.size() == 3);
+        static_assert(std::ranges::equal(v1, std::array{2, 1, 0}));
 
         constexpr auto v2 = []()
         {
@@ -519,9 +496,9 @@ TEST(FixedCircularDeque, PushFront_ExceedsCapacity)
         }();
 
         static_assert(v1.size() == 3);
-        static_assert(v1[0] == 4);
-        static_assert(v1[1] == 3);
-        static_assert(v1[2] == 1);
+        static_assert(v1.at(0) == 4);
+        static_assert(v1.at(1) == 3);
+        static_assert(v1.at(2) == 1);
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -586,9 +563,9 @@ TEST(FixedCircularDeque, EmplaceFront_ExceedsCapacity)
         }();
 
         static_assert(v1.size() == 3);
-        static_assert(v1[0] == 4);
-        static_assert(v1[1] == 3);
-        static_assert(v1[2] == 1);
+        static_assert(v1.at(0) == 4);
+        static_assert(v1.at(1) == 3);
+        static_assert(v1.at(2) == 1);
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -602,18 +579,15 @@ TEST(FixedCircularDeque, PopFront)
         constexpr auto v1 = []()
         {
             auto v = Factory::template create<int, 11>({0, 1, 2});
-            v.pop_back();
+            v.pop_front();
             return v;
         }();
 
-        static_assert(v1[0] == 0);
-        static_assert(v1[1] == 1);
-        static_assert(v1.size() == 2);
-        static_assert(v1.max_size() == 11);
+        static_assert(std::ranges::equal(v1, std::array{1, 2}));
 
         auto v2 = Factory::template create<int, 17>({10, 11, 12});
-        v2.pop_back();
-        EXPECT_TRUE(std::ranges::equal(v2, std::array{10, 11}));
+        v2.pop_front();
+        EXPECT_TRUE(std::ranges::equal(v2, std::array{11, 12}));
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -653,8 +627,6 @@ TEST(FixedCircularDeque, BracketOperator)
         static_assert(v1[2] == 102);
         static_assert(v1.size() == 3);
 
-        const_ref(v1[0]);
-
         auto v2 = Factory::template create<int, 11>({0, 1, 2});
         v2[1] = 901;
         EXPECT_EQ(v2[0], 0);
@@ -691,8 +663,6 @@ TEST(FixedCircularDeque, At)
         static_assert(v1.at(1) == 201);
         static_assert(v1.at(2) == 102);
         static_assert(v1.size() == 3);
-
-        const_ref(v1.at(0));
 
         auto v2 = Factory::template create<int, 11>({0, 1, 2});
         v2.at(1) = 901;
@@ -749,9 +719,6 @@ TEST(FixedCircularDeque, Equality)
         EXPECT_NE(v1, v3);
         EXPECT_NE(v1, v4);
         EXPECT_NE(v1, v5);
-
-        const_ref(v1[0]);
-        const_ref(v2[0]);
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -1144,7 +1111,7 @@ TEST(FixedCircularDeque, Iterator_Regression_ConsistencyWhenTheStartingIndexIsCh
         // Old start = 2, New start = 0
         // index = 0 (equal to new start)
         auto v = FixedCircularDequeInitialStateLastIndex::create<int, 3>({1, 2, 3});
-        const auto it = v.begin() + 1;
+        const auto it = std::next(v.begin(), 1);
         v.pop_front();
         const auto it2 = v.begin();
         EXPECT_EQ(*it, 2);
@@ -1158,9 +1125,9 @@ TEST(FixedCircularDeque, Iterator_Regression_ConsistencyWhenTheStartingIndexIsCh
         // Old start = 2, New start = 0
         // index = 1 (not equal to new start)
         auto v = FixedCircularDequeInitialStateLastIndex::create<int, 3>({1, 2, 3});
-        const auto it = v.begin() + 2;
+        const auto it = std::next(v.begin(), 2);
         v.pop_front();
-        const auto it2 = v.begin() + 1;
+        const auto it2 = std::next(v.begin(), 1);
         EXPECT_EQ(*it, 3);
         EXPECT_EQ(*it2, 3);
         EXPECT_EQ(it, it2);
@@ -1174,7 +1141,7 @@ TEST(FixedCircularDeque, Iterator_Regression_ConsistencyWhenTheStartingIndexIsCh
         auto v = FixedCircularDequeInitialStateFirstIndex::create<int, 3>({1, 2});
         const auto it = v.begin();
         v.push_front(3);
-        const auto it2 = v.begin() + 1;
+        const auto it2 = std::next(v.begin(), 1);
         EXPECT_EQ(*it, 1);
         EXPECT_EQ(*it2, 1);
         EXPECT_EQ(it, it2);
@@ -1186,9 +1153,9 @@ TEST(FixedCircularDeque, Iterator_Regression_ConsistencyWhenTheStartingIndexIsCh
         // Old start = 0, New start = 2
         // index = 1 (not equal to old start)
         auto v = FixedCircularDequeInitialStateFirstIndex::create<int, 3>({1, 2});
-        const auto it = v.begin() + 1;
+        const auto it = std::next(v.begin(), 1);
         v.push_front(3);
-        const auto it2 = v.begin() + 2;
+        const auto it2 = std::next(v.begin(), 2);
         EXPECT_EQ(*it, 2);
         EXPECT_EQ(*it2, 2);
         EXPECT_EQ(it, it2);
@@ -1206,7 +1173,7 @@ TEST(FixedCircularDeque, Iterator_Regression_ConsistencyWhenTheStartingIndexIsCh
         v.push_front(1);
         v.push_front(3);
         --it;
-        const auto it2 = v.begin() + 1;
+        const auto it2 = std::next(v.begin(), 1);
         EXPECT_EQ(*it, 1);
         EXPECT_EQ(*it2, 1);
         EXPECT_EQ(it, it2);
@@ -1236,34 +1203,21 @@ TEST(FixedCircularDeque, Resize)
         {
             auto v = Factory::template create<int, 7>({0, 1, 2});
             v.resize(6);
-            v[4] = 100;
             return v;
         }();
 
-        static_assert(v1[0] == 0);
-        static_assert(v1[1] == 1);
-        static_assert(v1[2] == 2);
-        static_assert(v1[3] == 0);
-        static_assert(v1[4] == 100);
-        static_assert(v1[5] == 0);
-        static_assert(v1.size() == 6);
+        static_assert(std::ranges::equal(v1, std::array{0, 1, 2, 0, 0, 0}));
         static_assert(v1.max_size() == 7);
 
         constexpr auto v2 = []()
         {
             auto v = Factory::template create<int, 7>({0, 1, 2});
             v.resize(7, 300);
-            v[4] = -100;
             v.resize(5, 500);
             return v;
         }();
 
-        static_assert(v2[0] == 0);
-        static_assert(v2[1] == 1);
-        static_assert(v2[2] == 2);
-        static_assert(v2[3] == 300);
-        static_assert(v2[4] == -100);
-        static_assert(v2.size() == 5);
+        static_assert(std::ranges::equal(v2, std::array{0, 1, 2, 300, 300}));
         static_assert(v2.max_size() == 7);
 
         auto v3 = Factory::template create<int, 8>({0, 1, 2, 3});
@@ -1344,9 +1298,9 @@ TEST(FixedCircularDeque, IterationBasic)
         }
         EXPECT_EQ(ctr, 6);
 
-        v.erase(v.begin() + 5);
-        v.erase(v.begin() + 3);
-        v.erase(v.begin() + 1);
+        v.erase(std::next(v.begin(), 5));
+        v.erase(std::next(v.begin(), 3));
+        v.erase(std::next(v.begin(), 1));
 
         v_expected = {0, 2, 4};
         EXPECT_TRUE((v == v_expected));
@@ -1359,8 +1313,6 @@ TEST(FixedCircularDeque, IterationBasic)
             ctr += 2;
         }
         EXPECT_EQ(ctr, 6);
-
-        const_ref(v[0]);
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -1375,8 +1327,8 @@ TEST(FixedCircularDeque, Emplace)
             constexpr auto v1 = []()
             {
                 auto v = Factory::template create<int, 11>({0, 1, 2});
-                v.emplace(v.begin() + 1, 3);
-                v.emplace(v.begin() + 1, 4);
+                v.emplace(std::next(v.begin(), 1), 3);
+                v.emplace(std::next(v.begin(), 1), 4);
                 return v;
             }();
 
@@ -1386,8 +1338,8 @@ TEST(FixedCircularDeque, Emplace)
             auto v1 = []()
             {
                 auto v = Factory::template create<int, 11>({0, 1, 2});
-                v.emplace(v.begin() + 1, 3);
-                v.emplace(v.begin() + 1, 4);
+                v.emplace(std::next(v.begin(), 1), 3);
+                v.emplace(std::next(v.begin(), 1), 4);
                 return v;
             }();
 
@@ -1414,15 +1366,15 @@ TEST(FixedCircularDeque, Emplace_ExceedsCapacity)
         constexpr auto v1 = []()
         {
             auto v = Factory::template create<int, 3>({1, 2});
-            v.emplace(v.begin() + 1, 3);
-            v.emplace(v.begin() + 1, 4);
+            v.emplace(std::next(v.begin(), 1), 3);
+            v.emplace(std::next(v.begin(), 1), 4);
             return v;
         }();
 
         static_assert(v1.size() == 3);
-        static_assert(v1[0] == 4);
-        static_assert(v1[1] == 3);
-        static_assert(v1[2] == 2);
+        static_assert(v1.at(0) == 4);
+        static_assert(v1.at(1) == 3);
+        static_assert(v1.at(2) == 2);
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -1489,9 +1441,9 @@ TEST(FixedCircularDeque, AssignValue_ExceedsCapacity)
         }();
 
         static_assert(v1.size() == 3);
-        static_assert(v1[0] == 100);
-        static_assert(v1[1] == 100);
-        static_assert(v1[2] == 100);
+        static_assert(v1.at(0) == 100);
+        static_assert(v1.at(1) == 100);
+        static_assert(v1.at(2) == 100);
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -1546,9 +1498,9 @@ TEST(FixedCircularDeque, AssignIterator_ExceedsCapacity)
         }();
 
         static_assert(v1.size() == 3);
-        static_assert(v1[0] == 500);
-        static_assert(v1[1] == 600);
-        static_assert(v1[2] == 700);
+        static_assert(v1.at(0) == 500);
+        static_assert(v1.at(1) == 600);
+        static_assert(v1.at(2) == 700);
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -1630,9 +1582,9 @@ TEST(FixedCircularDeque, AssignInitializerList_ExceedsCapacity)
         }();
 
         static_assert(v1.size() == 3);
-        static_assert(v1[0] == 300);
-        static_assert(v1[1] == 300);
-        static_assert(v1[2] == 300);
+        static_assert(v1.at(0) == 300);
+        static_assert(v1.at(1) == 300);
+        static_assert(v1.at(2) == 300);
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -1649,7 +1601,7 @@ TEST(FixedCircularDeque, InsertValue)
                 auto v = Factory::template create<int, 7>({0, 1, 2, 3});
                 v.insert(v.begin(), 100);
                 const int value = 500;
-                v.insert(v.begin() + 2, value);
+                v.insert(std::next(v.begin(), 2), value);
                 return v;
             }();
 
@@ -1664,7 +1616,7 @@ TEST(FixedCircularDeque, InsertValue)
                 auto v = Factory::template create<int, 5>({0, 1, 2});
                 v.insert(v.begin(), 100);
                 const int value = 500;
-                v.insert(v.begin() + 2, value);
+                v.insert(std::next(v.begin(), 2), value);
                 return v;
             }();
 
@@ -1685,9 +1637,9 @@ TEST(FixedCircularDeque, InsertValue)
             const MockNonTrivialInt value = 3;
             v3.insert(v3.end(), value);
             EXPECT_TRUE(std::ranges::equal(v3, std::array<MockNonTrivialInt, 4>{{2, 1, 0, 3}}));
-            v3.insert(v3.begin() + 2, 4);
+            v3.insert(std::next(v3.begin(), 2), 4);
             EXPECT_TRUE(std::ranges::equal(v3, std::array<MockNonTrivialInt, 5>{{2, 1, 4, 0, 3}}));
-            v3.insert(v3.begin() + 3, 5);
+            v3.insert(std::next(v3.begin(), 3), 5);
             EXPECT_TRUE(
                 std::ranges::equal(v3, std::array<MockNonTrivialInt, 6>{{2, 1, 4, 5, 0, 3}}));
             auto v4 = v3;
@@ -1709,7 +1661,7 @@ TEST(FixedCircularDeque, InsertValue_ExceedsCapacity)
         constexpr auto v1 = []()
         {
             auto v = Factory::template create<int, 4>({0, 1, 2, 3});
-            v.insert(v.begin() + 1, 5);
+            v.insert(std::next(v.begin(), 1), 5);
             return v;
         }();
         static_assert(std::ranges::equal(v1, std::array<int, 4>{5, 1, 2, 3}));
@@ -1729,7 +1681,7 @@ TEST(FixedCircularDeque, InsertIterator)
             {
                 std::array<int, 2> a{100, 500};
                 auto v = Factory::template create<int, 7>({0, 1, 2, 3});
-                v.insert(v.begin() + 2, a.begin(), a.end());
+                v.insert(std::next(v.begin(), 2), a.begin(), a.end());
                 return v;
             }();
 
@@ -1743,7 +1695,7 @@ TEST(FixedCircularDeque, InsertIterator)
             {
                 std::array<int, 2> a{100, 500};
                 auto v = Factory::template create<int, 5>({0, 1, 2});
-                v.insert(v.begin() + 2, a.begin(), a.end());
+                v.insert(std::next(v.begin(), 2), a.begin(), a.end());
                 return v;
             }();
 
@@ -1755,9 +1707,9 @@ TEST(FixedCircularDeque, InsertIterator)
         {
             std::array<int, 2> a{100, 500};
             auto v = Factory::template create<int, 7>({0, 1, 2, 3});
-            auto it = v.insert(v.begin() + 2, a.begin(), a.end());
+            auto it = v.insert(std::next(v.begin(), 2), a.begin(), a.end());
             EXPECT_TRUE(std::ranges::equal(v, std::array<int, 6>{0, 1, 100, 500, 2, 3}));
-            EXPECT_EQ(it, v.begin() + 2);
+            EXPECT_EQ(it, std::next(v.begin(), 2));
         }
     };
 
@@ -1773,7 +1725,7 @@ TEST(FixedCircularDeque, InsertIterator_ExceedsCapacity)
         {
             auto v = Factory::template create<int, 4>({0, 1, 2});
             std::array<int, 2> a{3, 4};
-            v.insert(v.begin() + 1, a.begin(), a.end());
+            v.insert(std::next(v.begin(), 1), a.begin(), a.end());
             return v;
         }();
         static_assert(v1.size() == 4);
@@ -1793,7 +1745,7 @@ TEST(FixedCircularDeque, InsertIterator_ExceedsCapacityAndMeetsInsertingLocation
             {
                 auto v = Factory::template create<int, 4>({10, 20, 30, 40});
                 std::array<int, 2> a{2, 1};
-                auto it = v.insert(v.begin() + 1, a.begin(), a.end());
+                auto it = v.insert(std::next(v.begin(), 1), a.begin(), a.end());
                 assert_or_abort(1 == *it);
                 return v;
             }();
@@ -1807,7 +1759,7 @@ TEST(FixedCircularDeque, InsertIterator_ExceedsCapacityAndMeetsInsertingLocation
             {
                 auto v = Factory::template create<int, 4>({10, 20, 30, 40});
                 std::array<int, 7> a{7, 6, 5, 4, 3, 2, 1};
-                auto it = v.insert(v.begin() + 1, a.begin(), a.end());
+                auto it = v.insert(std::next(v.begin(), 1), a.begin(), a.end());
                 assert_or_abort(1 == *it);
                 return v;
             }();
@@ -1821,7 +1773,7 @@ TEST(FixedCircularDeque, InsertIterator_ExceedsCapacityAndMeetsInsertingLocation
             {
                 auto v = Factory::template create<int, 4>({10, 20, 30, 40});
                 std::array<int, 7> a{7, 6, 5, 4, 3, 2, 1};
-                auto it = v.insert(v.begin() + 2, a.begin(), a.end());
+                auto it = v.insert(std::next(v.begin(), 2), a.begin(), a.end());
                 assert_or_abort(2 == *it);
                 return v;
             }();
@@ -1835,7 +1787,7 @@ TEST(FixedCircularDeque, InsertIterator_ExceedsCapacityAndMeetsInsertingLocation
             {
                 auto v = Factory::template create<int, 5>({11, 21, 31, 41});
                 std::array<int, 7> a{7, 6, 5, 4, 3, 2, 1};
-                auto it = v.insert(v.begin() + 2, a.begin(), a.end());
+                auto it = v.insert(std::next(v.begin(), 2), a.begin(), a.end());
                 assert_or_abort(3 == *it);
                 return v;
             }();
@@ -1908,10 +1860,10 @@ TEST(FixedCircularDeque, InsertInputIterator)
     {
         MockIntegralStream<int> stream{3};
         auto v = Factory::template create<int, 14>({10, 20, 30, 40});
-        auto it = v.insert(v.begin() + 2, stream.begin(), stream.end());
+        auto it = v.insert(std::next(v.begin(), 2), stream.begin(), stream.end());
         ASSERT_EQ(7, v.size());
         EXPECT_TRUE(std::ranges::equal(v, std::array{10, 20, 3, 2, 1, 30, 40}));
-        EXPECT_EQ(it, v.begin() + 2);
+        EXPECT_EQ(it, std::next(v.begin(), 2));
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -1924,10 +1876,10 @@ TEST(FixedCircularDeque, InsertInputIterator_ExceedsCapacity)
     {
         MockIntegralStream<int> stream{3};
         auto v = Factory::template create<int, 6>({10, 20, 30, 40});
-        auto it = v.insert(v.begin() + 2, stream.begin(), stream.end());
+        auto it = v.insert(std::next(v.begin(), 2), stream.begin(), stream.end());
         ASSERT_EQ(6, v.size());
         EXPECT_TRUE(std::ranges::equal(v, std::array{20, 3, 2, 1, 30, 40}));
-        EXPECT_EQ(it, v.begin() + 1);
+        EXPECT_EQ(it, std::next(v.begin(), 1));
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -1941,7 +1893,7 @@ TEST(FixedCircularDeque, InsertInputIterator_ExceedsCapacityAndMeetsInsertingLoc
         {
             MockIntegralStream<int> stream{2};
             auto v = Factory::template create<int, 4>({10, 20, 30, 40});
-            auto it = v.insert(v.begin() + 1, stream.begin(), stream.end());
+            auto it = v.insert(std::next(v.begin(), 1), stream.begin(), stream.end());
             // Result should be same as if we had infinite size, and trimming to size.
             // [10, 2, 1, 20, 30, 40] -> [1, 20, 30, 40]
             ASSERT_EQ(4, v.size());
@@ -1951,7 +1903,7 @@ TEST(FixedCircularDeque, InsertInputIterator_ExceedsCapacityAndMeetsInsertingLoc
         {
             MockIntegralStream<int> stream{7};
             auto v = Factory::template create<int, 4>({10, 20, 30, 40});
-            auto it = v.insert(v.begin() + 1, stream.begin(), stream.end());
+            auto it = v.insert(std::next(v.begin(), 1), stream.begin(), stream.end());
             // Result should be same as if we had infinite size, and trimming to size.
             // [10, 7, 6, 5, 4, 3, 2, 1, 20, 30, 40] -> [1, 20, 30, 40]
             ASSERT_EQ(4, v.size());
@@ -1961,7 +1913,7 @@ TEST(FixedCircularDeque, InsertInputIterator_ExceedsCapacityAndMeetsInsertingLoc
         {
             MockIntegralStream<int> stream{7};
             auto v = Factory::template create<int, 4>({10, 20, 30, 40});
-            auto it = v.insert(v.begin() + 2, stream.begin(), stream.end());
+            auto it = v.insert(std::next(v.begin(), 2), stream.begin(), stream.end());
             // Result should be same as if we had infinite size, and trimming to size.
             // [10, 20, 7, 6, 5, 4, 3, 2, 1, 30, 40] -> [2, 1, 30, 40]
             ASSERT_EQ(4, v.size());
@@ -1971,7 +1923,7 @@ TEST(FixedCircularDeque, InsertInputIterator_ExceedsCapacityAndMeetsInsertingLoc
         {
             MockIntegralStream<int> stream{7};
             auto v = Factory::template create<int, 5>({11, 21, 31, 41});
-            auto it = v.insert(v.begin() + 2, stream.begin(), stream.end());
+            auto it = v.insert(std::next(v.begin(), 2), stream.begin(), stream.end());
             // Result should be same as if we had infinite size, and trimming to size.
             // [11, 21, 7, 6, 5, 4, 3, 2, 1, 31, 41] -> [3, 2, 1, 31, 41]
             ASSERT_EQ(5, v.size());
@@ -1996,7 +1948,7 @@ TEST(FixedCircularDeque, InsertInputIterator_ExceedsCapacityAndIsEndIterator)
             // [10, 20, 30, 40, 2, 1] -> [30, 40, 2, 1]
             ASSERT_EQ(4, v.size());
             EXPECT_TRUE(std::ranges::equal(v, std::array{30, 40, 2, 1}));
-            EXPECT_EQ(it, v.begin() + 2);
+            EXPECT_EQ(it, std::next(v.begin(), 2));
         }
         {
             MockIntegralStream<int> stream{7};
@@ -2033,7 +1985,7 @@ TEST(FixedCircularDeque, InsertInitializerList)
             constexpr auto v1 = []()
             {
                 auto v = Factory::template create<int, 5>({0, 1, 2});
-                v.insert(v.begin() + 2, {100, 500});
+                v.insert(std::next(v.begin(), 2), {100, 500});
                 return v;
             }();
 
@@ -2044,9 +1996,9 @@ TEST(FixedCircularDeque, InsertInitializerList)
 
         {
             auto v = Factory::template create<int, 7>({0, 1, 2, 3});
-            auto it = v.insert(v.begin() + 2, {100, 500});
+            auto it = v.insert(std::next(v.begin(), 2), {100, 500});
             EXPECT_TRUE(std::ranges::equal(v, std::array<int, 6>{0, 1, 100, 500, 2, 3}));
-            EXPECT_EQ(it, v.begin() + 2);
+            EXPECT_EQ(it, std::next(v.begin(), 2));
         }
     };
 
@@ -2061,7 +2013,7 @@ TEST(FixedCircularDeque, InsertInitializerList_ExceedsCapacity)
         constexpr auto v1 = []()
         {
             auto v = Factory::template create<int, 4>({0, 1, 2});
-            v.insert(v.begin() + 1, {3, 4});
+            v.insert(std::next(v.begin(), 1), {3, 4});
             return v;
         }();
         static_assert(v1.size() == 4);
@@ -2079,7 +2031,7 @@ TEST(FixedCircularDeque, EraseRange)
         constexpr auto v1 = []()
         {
             auto v = Factory::template create<int, 8>({0, 1, 2, 3, 4, 5});
-            v.erase(v.cbegin() + 2, v.begin() + 4);
+            v.erase(std::next(v.cbegin(), 2), std::next(v.begin(), 4));
             return v;
         }();
 
@@ -2089,8 +2041,8 @@ TEST(FixedCircularDeque, EraseRange)
 
         auto v2 = Factory::template create<int, 8>({2, 1, 4, 5, 0, 3});
 
-        auto it = v2.erase(v2.begin() + 1, v2.cbegin() + 3);
-        EXPECT_EQ(it, v2.begin() + 1);
+        auto it = v2.erase(std::next(v2.begin(), 1), std::next(v2.cbegin(), 3));
+        EXPECT_EQ(it, std::next(v2.begin(), 1));
         EXPECT_EQ(*it, 5);
         EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{2, 5, 0, 3}}));
     };
@@ -2107,7 +2059,7 @@ TEST(FixedCircularDeque, EraseOne)
         {
             auto v = Factory::template create<int, 8>({0, 1, 2, 3, 4, 5});
             v.erase(v.cbegin());
-            v.erase(v.begin() + 2);
+            v.erase(std::next(v.begin(), 2));
             return v;
         }();
 
@@ -2121,9 +2073,9 @@ TEST(FixedCircularDeque, EraseOne)
         EXPECT_EQ(it, v2.begin());
         EXPECT_EQ(*it, 1);
         EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 5>{{1, 4, 5, 0, 3}}));
-        it += 2;
+        std::advance(it, 2);
         it = v2.erase(it);
-        EXPECT_EQ(it, v2.begin() + 2);
+        EXPECT_EQ(it, std::next(v2.begin(), 2));
         EXPECT_EQ(*it, 0);
         EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{1, 4, 0, 3}}));
         ++it;
@@ -2175,15 +2127,24 @@ TEST(FixedCircularDeque, EraseFreeFunction)
 {
     auto run_test = []<IsFixedCircularDequeFactory Factory>(Factory&&)
     {
-        constexpr auto v1 = []()
         {
-            auto v = Factory::template create<int, 8>({3, 0, 1, 2, 3, 4, 5, 3});
-            std::size_t removed_count = fixed_containers::erase(v, 3);
-            assert_or_abort(3 == removed_count);
-            return v;
-        }();
+            constexpr auto v1 = []()
+            {
+                auto v = Factory::template create<int, 8>({3, 0, 1, 2, 3, 4, 5, 3});
+                std::size_t removed_count = fixed_containers::erase(v, 3);
+                assert_or_abort(3 == removed_count);
+                return v;
+            }();
 
-        static_assert(std::ranges::equal(v1, std::array<int, 5>{0, 1, 2, 4, 5}));
+            static_assert(std::ranges::equal(v1, std::array<int, 5>{0, 1, 2, 4, 5}));
+        }
+
+        {
+            // Accepts heterogeneous types
+            // Compile-only test
+            auto v = Factory::template create<MockAComparableToB, 5>();
+            erase(v, MockBComparableToA{});
+        }
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -2196,10 +2157,10 @@ TEST(FixedCircularDeque, EraseIf)
     {
         constexpr auto v1 = []()
         {
-            auto v = Factory::template create<int, 8>({0, 1, 2, 3, 4, 5});
+            auto v = Factory::template create<int, 8>({0, 1, 2, 3, 4, 5, 6});
             std::size_t removed_count =
                 fixed_containers::erase_if(v, [](const int& a) { return (a % 2) == 0; });
-            assert_or_abort(3 == removed_count);
+            assert_or_abort(4 == removed_count);
             return v;
         }();
 
@@ -2426,7 +2387,7 @@ TYPED_TEST_P(FixedCircularDequeInstanceCheckFixture, FixedCircularDeque_Instance
     ASSERT_EQ(10, InstanceCounterType::counter);
     v1.erase(v1.begin());
     ASSERT_EQ(9, InstanceCounterType::counter);
-    v1.erase(v1.begin() + 2, v1.begin() + 5);
+    v1.erase(std::next(v1.begin(), 2), std::next(v1.begin(), 5));
     ASSERT_EQ(6, InstanceCounterType::counter);
     v1.erase(v1.begin(), v1.end());
     ASSERT_EQ(0, InstanceCounterType::counter);
@@ -2434,7 +2395,7 @@ TYPED_TEST_P(FixedCircularDequeInstanceCheckFixture, FixedCircularDeque_Instance
     {  // IMPORTANT SCOPE, don't remove.
         v1.assign(5, {});
         ASSERT_EQ(5, InstanceCounterType::counter);
-        v1.insert(v1.begin() + 3, InstanceCounterType{});
+        v1.insert(std::next(v1.begin(), 3), InstanceCounterType{});
         ASSERT_EQ(6, InstanceCounterType::counter);
         InstanceCounterType aa{};
         ASSERT_EQ(7, InstanceCounterType::counter);
@@ -2442,7 +2403,7 @@ TYPED_TEST_P(FixedCircularDequeInstanceCheckFixture, FixedCircularDeque_Instance
         ASSERT_EQ(8, InstanceCounterType::counter);
         std::array<InstanceCounterType, 3> many{};
         ASSERT_EQ(11, InstanceCounterType::counter);
-        v1.insert(v1.begin() + 3, many.begin(), many.end());
+        v1.insert(std::next(v1.begin(), 3), many.begin(), many.end());
         ASSERT_EQ(14, InstanceCounterType::counter);
         v1.clear();
         ASSERT_EQ(4, InstanceCounterType::counter);
@@ -2451,7 +2412,7 @@ TYPED_TEST_P(FixedCircularDequeInstanceCheckFixture, FixedCircularDeque_Instance
 
     v1.assign(5, {});
     ASSERT_EQ(5, InstanceCounterType::counter);
-    v1.emplace(v1.begin() + 2);
+    v1.emplace(std::next(v1.begin(), 2));
     ASSERT_EQ(6, InstanceCounterType::counter);
     v1.clear();
     ASSERT_EQ(0, InstanceCounterType::counter);

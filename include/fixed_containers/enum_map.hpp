@@ -1217,9 +1217,9 @@ template <typename K, typename V, fixed_containers::customize::EnumMapChecking<K
 }
 
 template <InputIterator InputIt>
-EnumMap(InputIt first, InputIt last)
-    -> EnumMap<typename std::iterator_traits<InputIt>::value_type::first_type,
-               typename std::iterator_traits<InputIt>::value_type::second_type>;
+EnumMap(InputIt first,
+        InputIt last) -> EnumMap<typename std::iterator_traits<InputIt>::value_type::first_type,
+                                 typename std::iterator_traits<InputIt>::value_type::second_type>;
 
 template <class K, class V, customize::EnumMapChecking<K> CheckingType, class Predicate>
 constexpr typename EnumMap<K, V, CheckingType>::size_type erase_if(EnumMap<K, V, CheckingType>& c,
@@ -1237,7 +1237,6 @@ template <typename K, typename V, fixed_containers::customize::EnumMapChecking<K
 struct tuple_size<fixed_containers::EnumMap<K, V, CheckingType>>
   : std::integral_constant<std::size_t, 0>
 {
-    static_assert(fixed_containers::AlwaysFalseV<K, V, CheckingType>,
-                  "Implicit Structured Binding due to the fields being public is disabled");
+    // Implicit Structured Binding due to the fields being public is disabled
 };
 }  // namespace std

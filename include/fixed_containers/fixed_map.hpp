@@ -638,12 +638,7 @@ public:
             }
         }
 
-        if (this->size() != other.size())
-        {
-            return false;
-        }
-
-        return std::equal(cbegin(), cend(), other.cbegin());
+        return std::ranges::equal(*this, other);
     }
 
 private:
@@ -812,9 +807,6 @@ struct tuple_size<
         FixedMap<K, V, MAXIMUM_SIZE, Compare, COMPACTNESS, StorageTemplate, CheckingType>>
   : std::integral_constant<std::size_t, 0>
 {
-    static_assert(
-        fixed_containers::
-            AlwaysFalseV<K, decltype(MAXIMUM_SIZE), Compare, decltype(COMPACTNESS), CheckingType>,
-        "Implicit Structured Binding due to the fields being public is disabled");
+    // Implicit Structured Binding due to the fields being public is disabled
 };
 }  // namespace std

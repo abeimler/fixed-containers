@@ -236,8 +236,8 @@ public:
         // Destroy extras if we are making it smaller.
         while (size() > count)
         {
+            destroy_at(back_index());
             decrement_size();
-            destroy_at(end_index());
         }
     }
 
@@ -421,7 +421,7 @@ public:
                              const std_transition::source_location& loc =
                                  std_transition::source_location::current()) noexcept
     {
-        return erase(it, it + 1, loc);
+        return erase(it, std::next(it), loc);
     }
 
     constexpr void clear() noexcept
@@ -431,55 +431,45 @@ public:
         set_size(0);
     }
 
-    constexpr iterator begin() noexcept
-    {
-        return create_iterator(IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.start);
-    }
+    constexpr iterator begin() noexcept { return create_iterator(starting_index_and_size().start); }
     constexpr const_iterator begin() const noexcept { return cbegin(); }
     constexpr const_iterator cbegin() const noexcept
     {
-        return create_const_iterator(
-            IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.start);
+        return create_const_iterator(starting_index_and_size().start);
     }
     constexpr iterator end() noexcept
     {
-        return create_iterator(
-            IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.to_range().end_exclusive());
+        return create_iterator(starting_index_and_size().to_range().end_exclusive());
     }
     constexpr const_iterator end() const noexcept { return cend(); }
     constexpr const_iterator cend() const noexcept
     {
-        return create_const_iterator(
-            IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.to_range().end_exclusive());
+        return create_const_iterator(starting_index_and_size().to_range().end_exclusive());
     }
 
     constexpr reverse_iterator rbegin() noexcept
     {
-        return create_reverse_iterator(
-            IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.to_range().end_exclusive());
+        return create_reverse_iterator(starting_index_and_size().to_range().end_exclusive());
     }
     constexpr const_reverse_iterator rbegin() const noexcept { return crbegin(); }
     constexpr const_reverse_iterator crbegin() const noexcept
     {
-        return create_const_reverse_iterator(
-            IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.to_range().end_exclusive());
+        return create_const_reverse_iterator(starting_index_and_size().to_range().end_exclusive());
     }
     constexpr reverse_iterator rend() noexcept
     {
-        return create_reverse_iterator(
-            IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.start);
+        return create_reverse_iterator(starting_index_and_size().start);
     }
     constexpr const_reverse_iterator rend() const noexcept { return crend(); }
     constexpr const_reverse_iterator crend() const noexcept
     {
-        return create_const_reverse_iterator(
-            IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.start);
+        return create_const_reverse_iterator(starting_index_and_size().start);
     }
 
     [[nodiscard]] constexpr std::size_t max_size() const noexcept { return static_max_size(); }
     [[nodiscard]] constexpr std::size_t size() const noexcept
     {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.distance;
+        return starting_index_and_size().distance;
     }
     [[nodiscard]] constexpr bool empty() const noexcept { return size() == 0; }
 
@@ -494,40 +484,14 @@ public:
             }
         }
 
-        if (this->size() != other.size())
-        {
-            return false;
-        }
-
-        for (std::size_t i = 0; i < this->size(); i++)
-        {
-            if (this->at(i) != other.at(i))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return std::ranges::equal(*this, other);
     }
 
     template <std::size_t MAXIMUM_SIZE_2, customize::SequenceContainerChecking CheckingType2>
     constexpr auto operator<=>(const FixedDequeBase<T, MAXIMUM_SIZE_2, CheckingType2>& other) const
     {
-        using OrderingType = decltype(std::declval<T>() <=> std::declval<T>());
-        const std::size_t min_size = (std::min)(this->size(), other.size());
-        for (std::size_t i = 0; i < min_size; i++)
-        {
-            if (at(i) < other.at(i))
-            {
-                return OrderingType::less;
-            }
-            if (at(i) > other.at(i))
-            {
-                return OrderingType::greater;
-            }
-        }
-
-        return this->size() <=> other.size();
+        return std::lexicographical_compare_three_way(
+            cbegin(), cend(), other.cbegin(), other.cend());
     }
 
     constexpr reference operator[](size_type i) noexcept
@@ -660,34 +624,26 @@ private:
     constexpr iterator create_iterator(const std::size_t offset_from_start) noexcept
     {
         return iterator{
-            ReferenceProvider<false>{&IMPLEMENTATION_DETAIL_DO_NOT_USE_array_,
-                                     &IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_,
-                                     offset_from_start}};
+            ReferenceProvider<false>{&array(), &starting_index_and_size(), offset_from_start}};
     }
     constexpr const_iterator create_const_iterator(
         const std::size_t offset_from_start) const noexcept
     {
         return const_iterator{
-            ReferenceProvider<true>{&IMPLEMENTATION_DETAIL_DO_NOT_USE_array_,
-                                    &IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_,
-                                    offset_from_start}};
+            ReferenceProvider<true>{&array(), &starting_index_and_size(), offset_from_start}};
     }
 
     constexpr reverse_iterator create_reverse_iterator(const std::size_t offset_from_start) noexcept
     {
         return reverse_iterator{
-            ReferenceProvider<false>{&IMPLEMENTATION_DETAIL_DO_NOT_USE_array_,
-                                     &IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_,
-                                     offset_from_start}};
+            ReferenceProvider<false>{&array(), &starting_index_and_size(), offset_from_start}};
     }
 
     constexpr const_reverse_iterator create_const_reverse_iterator(
         const std::size_t offset_from_start) const noexcept
     {
         return const_reverse_iterator{
-            ReferenceProvider<true>{&IMPLEMENTATION_DETAIL_DO_NOT_USE_array_,
-                                    &IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_,
-                                    offset_from_start}};
+            ReferenceProvider<true>{&array(), &starting_index_and_size(), offset_from_start}};
     }
 
 private:
@@ -713,8 +669,7 @@ private:
 
     [[nodiscard]] constexpr std::size_t front_index() const
     {
-        return decrement_index_with_wraparound(
-            IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.start, STARTING_OFFSET);
+        return decrement_index_with_wraparound(starting_index_and_size().start, STARTING_OFFSET);
     }
     [[nodiscard]] constexpr std::size_t back_index() const
     {
@@ -725,39 +680,38 @@ private:
         return increment_index_with_wraparound(front_index(), size());
     }
 
+    constexpr const Array& array() const { return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_; }
+    constexpr Array& array() { return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_; }
+    constexpr const StartingIntegerAndDistance& starting_index_and_size() const
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_;
+    }
+    constexpr StartingIntegerAndDistance& starting_index_and_size()
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_;
+    }
+
     constexpr void increment_start(const std::size_t n = 1)
     {
-        IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.start += n;
+        starting_index_and_size().start += n;
     }
     constexpr void decrement_start(const std::size_t n = 1)
     {
-        IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.start -= n;
+        starting_index_and_size().start -= n;
     }
-    constexpr void set_start(const std::size_t start)
-    {
-        IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.start = start;
-    }
+    constexpr void set_start(const std::size_t start) { starting_index_and_size().start = start; }
     constexpr void increment_size(const std::size_t n = 1)
     {
-        IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.distance += n;
+        starting_index_and_size().distance += n;
     }
     constexpr void decrement_size(const std::size_t n = 1)
     {
-        IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.distance -= n;
+        starting_index_and_size().distance -= n;
     }
-    constexpr void set_size(const std::size_t size)
-    {
-        IMPLEMENTATION_DETAIL_DO_NOT_USE_starting_index_and_size_.distance = size;
-    }
+    constexpr void set_size(const std::size_t size) { starting_index_and_size().distance = size; }
 
-    constexpr const OptionalT& array_unchecked_at(const std::size_t i) const
-    {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_[i];
-    }
-    constexpr OptionalT& array_unchecked_at(const std::size_t i)
-    {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_[i];
-    }
+    constexpr const OptionalT& array_unchecked_at(const std::size_t i) const { return array()[i]; }
+    constexpr OptionalT& array_unchecked_at(const std::size_t i) { return array()[i]; }
     constexpr const T& unchecked_at(const std::size_t i) const
     {
         return optional_storage_detail::get(array_unchecked_at(i));
@@ -886,7 +840,7 @@ public:
             this->push_back_internal(std::move(entry));
         }
 
-        // Clear the moved-out-of-vector. This is consistent with both std::vector
+        // Clear the moved-out-of-deque. This is consistent with both std::deque
         // as well as the trivial move constructor of this class.
         other.clear();
     }
@@ -913,7 +867,7 @@ public:
             this->push_back_internal(std::move(entry));
         }
         // The trivial assignment operator does not `other.clear()`, so don't do it here either for
-        // consistency across FixedDeques. std::vector<T> does clear it, so behavior is different.
+        // consistency across FixedDeques. std::deque<T> does clear it, so behavior is different.
         // Both choices are fine, because the state of a moved object is intentionally unspecified
         // as per the standard and use-after-move is undefined behavior.
         return *this;
@@ -1083,7 +1037,6 @@ template <typename T,
 struct tuple_size<fixed_containers::FixedDeque<T, MAXIMUM_SIZE, CheckingType>>
   : std::integral_constant<std::size_t, 0>
 {
-    static_assert(fixed_containers::AlwaysFalseV<T, decltype(MAXIMUM_SIZE), CheckingType>,
-                  "Implicit Structured Binding due to the fields being public is disabled");
+    // Implicit Structured Binding due to the fields being public is disabled
 };
 }  // namespace std

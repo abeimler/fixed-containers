@@ -31,6 +31,7 @@ cc_library(
     includes = ["include"],
     deps = [
         ":arrow_proxy",
+        ":concepts",
         ":iterator_utils",
     ],
     copts = ["-std=c++20"],
@@ -229,6 +230,16 @@ cc_library(
 )
 
 cc_library(
+    name = "fixed_doubly_linked_list",
+    hdrs = ["include/fixed_containers/fixed_doubly_linked_list.hpp"],
+    includes = ["include"],
+    deps = [
+        ":fixed_index_based_storage",
+        ":concepts",
+    ]
+)
+
+cc_library(
     name = "fixed_index_based_storage",
     hdrs = ["include/fixed_containers/fixed_index_based_storage.hpp"],
     includes = ["include"],
@@ -239,6 +250,23 @@ cc_library(
         ":index_or_value_storage",
     ],
     copts = ["-std=c++20"],
+)
+
+cc_library(
+    name = "fixed_list",
+    hdrs = ["include/fixed_containers/fixed_list.hpp"],
+    includes = ["include"],
+    deps = [
+        ":assert_or_abort",
+        ":bidirectional_iterator",
+        ":concepts",
+        ":fixed_doubly_linked_list",
+        ":iterator_utils",
+        ":max_size",
+        ":preconditions",
+        ":sequence_container_checking",
+        ":source_location",
+    ]
 )
 
 cc_library(
@@ -257,6 +285,76 @@ cc_library(
         ":source_location",
     ],
     copts = ["-std=c++20"],
+)
+
+cc_library(
+    name = "wyhash",
+    hdrs = ["include/fixed_containers/wyhash.hpp"],
+    includes = ["include"],
+    copts = ["-std=c++20"],
+)
+
+cc_library(
+    name = "fixed_robinhood_hashtable",
+    hdrs = ["include/fixed_containers/fixed_robinhood_hashtable.hpp",],
+    includes = ["include"],
+    deps = [
+        ":map_entry",
+        ":fixed_doubly_linked_list",
+    ],
+    copts = ["-std=c++20"],
+)
+
+cc_library(
+    name = "fixed_map_adapter",
+    hdrs = ["include/fixed_containers/fixed_map_adapter.hpp"],
+    includes = ["include"],
+    deps = [
+        ":erase_if",
+        ":forward_iterator",
+        ":source_location",
+        ":preconditions",
+        ":assert_or_abort",
+        ":emplace",
+    ],
+)
+
+cc_library(
+    name = "fixed_set_adapter",
+    hdrs = ["include/fixed_containers/fixed_set_adapter.hpp"],
+    includes = ["include"],
+    deps = [
+        ":erase_if",
+        ":forward_iterator",
+        ":source_location",
+        ":preconditions",
+        ":assert_or_abort",
+        ":emplace",
+    ],
+)
+
+cc_library(
+    name = "fixed_unordered_map",
+    hdrs = ["include/fixed_containers/fixed_unordered_map.hpp"],
+    includes = ["include"],
+    deps = [
+        ":wyhash",
+        ":fixed_robinhood_hashtable",
+        ":fixed_map_adapter",
+        ":map_checking",
+    ]
+)
+
+cc_library(
+    name = "fixed_unordered_set",
+    hdrs = ["include/fixed_containers/fixed_unordered_set.hpp"],
+    includes = ["include"],
+    deps = [
+        ":wyhash",
+        ":fixed_robinhood_hashtable",
+        ":fixed_set_adapter",
+        ":set_checking",
+    ]
 )
 
 cc_library(
@@ -372,6 +470,18 @@ cc_library(
 )
 
 cc_library(
+    name = "forward_iterator",
+    hdrs = ["include/fixed_containers/forward_iterator.hpp"],
+    includes = ["include"],
+    deps = [
+        ":arrow_proxy",
+        ":concepts",
+        ":iterator_utils",
+    ],
+    copts = ["-std=c++20"],
+)
+
+cc_library(
     name = "in_out",
     hdrs = ["include/fixed_containers/in_out.hpp"],
     includes = ["include"],
@@ -476,6 +586,17 @@ cc_library(
     name = "pair_view",
     hdrs = ["include/fixed_containers/pair_view.hpp"],
     includes = ["include"],
+    copts = ["-std=c++20"],
+)
+
+cc_library(
+    name = "map_entry",
+    hdrs = ["include/fixed_containers/map_entry.hpp"],
+    includes = ["include"],
+    deps = [
+        ":value_or_reference_storage",
+        ":concepts",
+        ],
     copts = ["-std=c++20"],
 )
 
@@ -647,7 +768,10 @@ cc_library(
 cc_library(
     name = "instance_counter",
     hdrs = ["test/instance_counter.hpp"],
-    deps = [":concepts"],
+    deps = [
+        ":concepts",
+        ":wyhash",
+    ],
     strip_include_prefix = "/test",
     copts = ["-std=c++20"],
     visibility = ["//visibility:private"],
@@ -825,10 +949,22 @@ cc_test(
     srcs = ["test/fixed_deque_test.cpp"],
     deps = [
         ":assert_or_abort",
+        ":concepts",
         ":fixed_deque",
         ":instance_counter",
         ":mock_testing_types",
         ":test_utilities_common",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = ["-std=c++20"],
+)
+
+cc_test(
+    name = "fixed_doubly_linked_list_test",
+    srcs = ["test/fixed_doubly_linked_list_test.cpp"],
+    deps = [
+        ":fixed_doubly_linked_list",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -847,6 +983,23 @@ cc_test(
 )
 
 cc_test(
+    name = "fixed_list_test",
+    srcs = ["test/fixed_list_test.cpp"],
+    deps = [
+        ":assert_or_abort",
+        ":concepts",
+        ":fixed_list",
+        ":instance_counter",
+        ":mock_testing_types",
+        ":test_utilities_common",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "@com_github_ericniebler_range-v3//:range-v3",
+    ],
+    copts = ["-std=c++20"],
+)
+
+cc_test(
     name = "fixed_map_test",
     srcs = ["test/fixed_map_test.cpp"],
     deps = [
@@ -854,6 +1007,40 @@ cc_test(
         ":concepts",
         ":consteval_compare",
         ":fixed_map",
+        ":instance_counter",
+        ":mock_testing_types",
+        ":test_utilities_common",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "@com_github_ericniebler_range-v3//:range-v3",
+    ],
+    copts = ["-std=c++20"],
+)
+
+cc_test(
+    name = "fixed_unordered_map_test",
+    srcs = ["test/fixed_unordered_map_test.cpp"],
+    deps = [
+        ":concepts",
+        ":consteval_compare",
+        ":fixed_unordered_map",
+        ":instance_counter",
+        ":mock_testing_types",
+        ":test_utilities_common",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "@com_github_ericniebler_range-v3//:range-v3",
+    ],
+    copts = ["-std=c++20"],
+)
+
+cc_test(
+    name = "fixed_unordered_set_test",
+    srcs = ["test/fixed_unordered_set_test.cpp"],
+    deps = [
+        ":concepts",
+        ":consteval_compare",
+        ":fixed_unordered_set",
         ":instance_counter",
         ":mock_testing_types",
         ":test_utilities_common",
@@ -910,6 +1097,21 @@ cc_test(
         "@com_github_ericniebler_range-v3//:range-v3",
     ],
     copts = ["-std=c++20"],
+)
+
+cc_test(
+    name = "fixed_robinhood_hashtable_test",
+    srcs = ["test/fixed_robinhood_hashtable_test.cpp"],
+    deps = [
+        ":concepts",
+        ":fixed_robinhood_hashtable",
+        ":instance_counter",
+        ":test_utilities_common",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "@com_github_ericniebler_range-v3//:range-v3",
+    ],
+    copts = ["-std=c++20",],
 )
 
 cc_test(

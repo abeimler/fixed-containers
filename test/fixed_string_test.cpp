@@ -23,7 +23,6 @@ static_assert(NotTrivial<FixedStringType>);
 static_assert(StandardLayout<FixedStringType>);
 static_assert(IsStructuralType<FixedStringType>);
 
-void const_ref(const int&) {}
 void const_span_ref(const std::span<char>&) {}
 void const_span_of_const_ref(const std::span<const char>&) {}
 
@@ -64,14 +63,10 @@ TEST(FixedString, ConstCharPointerConstructor)
 TEST(FixedString, InitializerConstructor)
 {
     constexpr FixedString<3> v1{'7', '9'};
-    static_assert(v1[0] == '7');
-    static_assert(v1[1] == '9');
-    static_assert(v1.size() == 2);
+    static_assert(std::ranges::equal(v1, std::array{'7', '9'}));
 
     constexpr FixedString<3> v2{{'6', '5'}};
-    static_assert(v2[0] == '6');
-    static_assert(v2[1] == '5');
-    static_assert(v2.size() == 2);
+    static_assert(std::ranges::equal(v2, std::array{'6', '5'}));
 
     EXPECT_EQ(v1, "79");
     EXPECT_EQ(v2, "65");
@@ -803,9 +798,9 @@ TEST(FixedString, IterationBasic)
     }
     EXPECT_EQ(ctr, '6');
 
-    v.erase(v.begin() + 5);
-    v.erase(v.begin() + 3);
-    v.erase(v.begin() + 1);
+    v.erase(std::next(v.begin(), 5));
+    v.erase(std::next(v.begin(), 3));
+    v.erase(std::next(v.begin(), 1));
 
     v_expected = "024";
     EXPECT_TRUE((v == v_expected));
@@ -818,10 +813,6 @@ TEST(FixedString, IterationBasic)
         ctr += 2;
     }
     EXPECT_EQ(ctr, '6');
-
-    const_ref(v[0]);
-    const_span_ref(v);
-    const_span_of_const_ref(v);
 }
 
 TEST(FixedString, Empty)
@@ -929,7 +920,7 @@ TEST(FixedString, InsertValue)
             FixedString<7> v{"0123"};
             v.insert(v.begin(), 'a');
             const char value = 'e';
-            v.insert(v.begin() + 2, value);
+            v.insert(std::next(v.begin(), 2), value);
             return v;
         }();
 
@@ -944,7 +935,7 @@ TEST(FixedString, InsertValue)
             FixedString<5> v{"012"};
             v.insert(v.begin(), 'a');
             const char value = 'e';
-            v.insert(v.begin() + 2, value);
+            v.insert(std::next(v.begin(), 2), value);
             return v;
         }();
 
@@ -957,7 +948,7 @@ TEST(FixedString, InsertValue)
 TEST(FixedString, InsertValue_ExceedsCapacity)
 {
     FixedString<4> v1{"0123"};
-    EXPECT_DEATH(v1.insert(v1.begin() + 1, '5'), "");
+    EXPECT_DEATH(v1.insert(std::next(v1.begin(), 1), '5'), "");
 }
 
 TEST(FixedString, InsertIterator)
@@ -967,7 +958,7 @@ TEST(FixedString, InsertIterator)
         {
             std::array<char, 2> a{'a', 'e'};
             FixedString<7> v{"0123"};
-            v.insert(v.begin() + 2, a.begin(), a.end());
+            v.insert(std::next(v.begin(), 2), a.begin(), a.end());
             return v;
         }();
 
@@ -981,7 +972,7 @@ TEST(FixedString, InsertIterator)
         {
             std::array<char, 2> a{'a', 'e'};
             FixedString<5> v{"012"};
-            v.insert(v.begin() + 2, a.begin(), a.end());
+            v.insert(std::next(v.begin(), 2), a.begin(), a.end());
             return v;
         }();
 
@@ -993,9 +984,9 @@ TEST(FixedString, InsertIterator)
     {
         std::array<char, 2> a{'a', 'e'};
         FixedString<7> v{"0123"};
-        auto it = v.insert(v.begin() + 2, a.begin(), a.end());
+        auto it = v.insert(std::next(v.begin(), 2), a.begin(), a.end());
         EXPECT_EQ(v, "01ae23");
-        EXPECT_EQ(it, v.begin() + 2);
+        EXPECT_EQ(it, std::next(v.begin(), 2));
     }
 }
 
@@ -1003,27 +994,27 @@ TEST(FixedString, InsertIterator_ExceedsCapacity)
 {
     FixedString<4> v1{"012"};
     std::array<char, 2> a{'3', '4'};
-    EXPECT_DEATH(v1.insert(v1.begin() + 1, a.begin(), a.end()), "");
+    EXPECT_DEATH(v1.insert(std::next(v1.begin(), 1), a.begin(), a.end()), "");
 }
 
 TEST(FixedString, InsertInputIterator)
 {
     MockIntegralStream<char> stream{static_cast<char>(3)};
     FixedString<14> v{"abcd"};
-    auto it = v.insert(v.begin() + 2, stream.begin(), stream.end());
+    auto it = v.insert(std::next(v.begin(), 2), stream.begin(), stream.end());
     ASSERT_EQ(7, v.size());
     EXPECT_TRUE(std::ranges::equal(
         v,
         std::array{
             'a', 'b', static_cast<char>(3), static_cast<char>(2), static_cast<char>(1), 'c', 'd'}));
-    EXPECT_EQ(it, v.begin() + 2);
+    EXPECT_EQ(it, std::next(v.begin(), 2));
 }
 
 TEST(FixedString, InsertInputIterator_ExceedsCapacity)
 {
     MockIntegralStream<char> stream{3};
     FixedString<6> v{"abcd"};
-    EXPECT_DEATH(v.insert(v.begin() + 2, stream.begin(), stream.end()), "");
+    EXPECT_DEATH(v.insert(std::next(v.begin(), 2), stream.begin(), stream.end()), "");
 }
 
 TEST(FixedString, InsertInitializerList)
@@ -1033,7 +1024,7 @@ TEST(FixedString, InsertInitializerList)
         constexpr auto v1 = []()
         {
             FixedString<5> v{"012"};
-            v.insert(v.begin() + 2, {'a', 'e'});
+            v.insert(std::next(v.begin(), 2), {'a', 'e'});
             return v;
         }();
 
@@ -1044,16 +1035,16 @@ TEST(FixedString, InsertInitializerList)
 
     {
         FixedString<7> v{"0123"};
-        auto it = v.insert(v.begin() + 2, {'a', 'e'});
+        auto it = v.insert(std::next(v.begin(), 2), {'a', 'e'});
         EXPECT_EQ(v, "01ae23");
-        EXPECT_EQ(it, v.begin() + 2);
+        EXPECT_EQ(it, std::next(v.begin(), 2));
     }
 }
 
 TEST(FixedString, InsertInitializerList_ExceedsCapacity)
 {
     FixedString<4> v1{"012"};
-    EXPECT_DEATH(v1.insert(v1.begin() + 1, {'3', '4'}), "");
+    EXPECT_DEATH(v1.insert(std::next(v1.begin(), 1), {'3', '4'}), "");
 }
 
 TEST(FixedString, InsertStringView)
@@ -1064,7 +1055,7 @@ TEST(FixedString, InsertStringView)
         {
             FixedString<5> v{"012"};
             std::string_view s = "ae";
-            v.insert(v.begin() + 2, s);
+            v.insert(std::next(v.begin(), 2), s);
             return v;
         }();
 
@@ -1076,9 +1067,9 @@ TEST(FixedString, InsertStringView)
     {
         FixedString<7> v{"0123"};
         std::string_view s = "ae";
-        auto it = v.insert(v.begin() + 2, s);
+        auto it = v.insert(std::next(v.begin(), 2), s);
         EXPECT_EQ(v, "01ae23");
-        EXPECT_EQ(it, v.begin() + 2);
+        EXPECT_EQ(it, std::next(v.begin(), 2));
     }
 }
 
@@ -1087,7 +1078,7 @@ TEST(FixedString, EraseRange)
     constexpr auto v1 = []()
     {
         FixedString<8> v{"012345"};
-        v.erase(v.cbegin() + 2, v.begin() + 4);
+        v.erase(std::next(v.cbegin(), 2), std::next(v.begin(), 4));
         return v;
     }();
 
@@ -1097,8 +1088,8 @@ TEST(FixedString, EraseRange)
 
     FixedString<8> v2{"214503"};
 
-    auto it = v2.erase(v2.begin() + 1, v2.cbegin() + 3);
-    EXPECT_EQ(it, v2.begin() + 1);
+    auto it = v2.erase(std::next(v2.begin(), 1), std::next(v2.cbegin(), 3));
+    EXPECT_EQ(it, std::next(v2.begin(), 1));
     EXPECT_EQ(*it, '5');
     EXPECT_EQ(v2, "2503");
 }
@@ -1109,7 +1100,7 @@ TEST(FixedString, EraseOne)
     {
         FixedString<8> v{"012345"};
         v.erase(v.cbegin());
-        v.erase(v.begin() + 2);
+        v.erase(std::next(v.begin(), 2));
         return v;
     }();
 
@@ -1123,9 +1114,9 @@ TEST(FixedString, EraseOne)
     EXPECT_EQ(it, v2.begin());
     EXPECT_EQ(*it, '1');
     EXPECT_EQ(v2, "14503");
-    it += 2;
+    std::advance(it, 2);
     it = v2.erase(it);
-    EXPECT_EQ(it, v2.begin() + 2);
+    EXPECT_EQ(it, std::next(v2.begin(), 2));
     EXPECT_EQ(*it, '0');
     EXPECT_EQ(v2, "1403");
     ++it;
@@ -1172,10 +1163,7 @@ TEST(FixedString, PushBack)
         return v;
     }();
 
-    static_assert(v1[0] == '0');
-    static_assert(v1[1] == '1');
-    static_assert(v1[2] == '2');
-    static_assert(v1.size() == 3);
+    static_assert(std::ranges::equal(v1, std::array{'0', '1', '2'}));
 }
 
 TEST(FixedString, PushBack_ExceedsCapacity)
@@ -1196,10 +1184,7 @@ TEST(FixedString, PopBack)
         return v;
     }();
 
-    static_assert(v1[0] == '0');
-    static_assert(v1[1] == '1');
-    static_assert(v1.size() == 2);
-    static_assert(v1.max_size() == 11);
+    static_assert(std::ranges::equal(v1, std::array{'0', '1'}));
 
     FixedString<17> v2{"abc"};
     v2.pop_back();
@@ -1515,11 +1500,6 @@ TEST(FixedString, Equality)
     EXPECT_NE(v1, v3);
     EXPECT_NE(v1, v4);
     EXPECT_NE(v1, v5);
-
-    const_ref(v1[0]);
-    const_ref(v2[0]);
-    const_span_of_const_ref(v1);
-    const_span_of_const_ref(v2);
 }
 
 TEST(FixedString, Equality_NonFixedString)
@@ -1761,34 +1741,21 @@ TEST(FixedString, Resize)
     {
         FixedString<7> v{"012"};
         v.resize(6);
-        v[4] = 'a';
         return v;
     }();
 
-    static_assert(v1[0] == '0');
-    static_assert(v1[1] == '1');
-    static_assert(v1[2] == '2');
-    static_assert(v1[3] == '\0');
-    static_assert(v1[4] == 'a');
-    static_assert(v1[5] == '\0');
-    static_assert(v1.size() == 6);
+    static_assert(std::ranges::equal(v1, std::array{'0', '1', '2', '\0', '\0', '\0'}));
     static_assert(v1.max_size() == 7);
 
     constexpr auto v2 = []()
     {
         FixedString<7> v{"012"};
         v.resize(7, 'c');
-        v[4] = 'x';
         v.resize(5, 'e');
         return v;
     }();
 
-    static_assert(v2[0] == '0');
-    static_assert(v2[1] == '1');
-    static_assert(v2[2] == '2');
-    static_assert(v2[3] == 'c');
-    static_assert(v2[4] == 'x');
-    static_assert(v2.size() == 5);
+    static_assert(std::ranges::equal(v2, std::array{'0', '1', '2', 'c', 'c'}));
     static_assert(v2.max_size() == 7);
 
     FixedString<8> v3{"0123"};
@@ -1833,16 +1800,53 @@ TEST(FixedString, Full)
     EXPECT_TRUE(is_full(v1));
 }
 
+TEST(FixedString, Span)
+{
+    {
+        constexpr auto v1 = []()
+        {
+            FixedString<7> v{'0', '1', '2'};
+            return v;
+        }();
+
+        std::span<const char> as_span{v1};
+        ASSERT_EQ(3, as_span.size());
+        ASSERT_EQ('0', as_span[0]);
+        ASSERT_EQ('1', as_span[1]);
+        ASSERT_EQ('2', as_span[2]);
+    }
+    {
+        auto v1 = []()
+        {
+            FixedString<7> v{'0', '1', '2'};
+            return v;
+        }();
+
+        std::span<const char> as_span{v1};
+        ASSERT_EQ(3, as_span.size());
+        ASSERT_EQ('0', as_span[0]);
+        ASSERT_EQ('1', as_span[1]);
+        ASSERT_EQ('2', as_span[2]);
+    }
+
+    {
+        std::string v1{};
+        std::span<const char> as_span_const{v1};
+        std::span<char> as_span_non_cost{v1};
+    }
+
+    {
+        FixedString<7> v{'0', '1', '2'};
+        const_span_ref(v);
+        const_span_of_const_ref(v);
+    }
+}
+
 TEST(FixedString, MaxSizeDeduction)
 {
     constexpr auto v1 = make_fixed_string("abcde");
-    static_assert(v1.size() == 5);
     static_assert(v1.max_size() == 5);
-    static_assert(v1[0] == 'a');
-    static_assert(v1[1] == 'b');
-    static_assert(v1[2] == 'c');
-    static_assert(v1[3] == 'd');
-    static_assert(v1[4] == 'e');
+    static_assert(std::ranges::equal(v1, std::array{'a', 'b', 'c', 'd', 'e'}));
 }
 
 TEST(FixedString, ClassTemplateArgumentDeduction)

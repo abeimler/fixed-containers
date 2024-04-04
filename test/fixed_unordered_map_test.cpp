@@ -1,4 +1,4 @@
-#include "fixed_containers/fixed_map.hpp"
+#include "fixed_containers/fixed_unordered_map.hpp"
 
 #include "instance_counter.hpp"
 #include "mock_testing_types.hpp"
@@ -14,15 +14,15 @@
 
 #include <algorithm>
 #include <cmath>
-#include <map>
 #include <memory>
 #include <tuple>
+#include <unordered_map>
 
 namespace fixed_containers
 {
 namespace
 {
-using ES_1 = FixedMap<int, int, 10>;
+using ES_1 = FixedUnorderedMap<int, int, 10>;
 static_assert(TriviallyCopyable<ES_1>);
 static_assert(NotTrivial<ES_1>);
 static_assert(StandardLayout<ES_1>);
@@ -30,15 +30,13 @@ static_assert(TriviallyCopyAssignable<ES_1>);
 static_assert(TriviallyMoveAssignable<ES_1>);
 static_assert(IsStructuralType<ES_1>);
 
-static_assert(std::bidirectional_iterator<ES_1::iterator>);
-static_assert(std::bidirectional_iterator<ES_1::const_iterator>);
+static_assert(std::forward_iterator<ES_1::iterator>);
+static_assert(std::forward_iterator<ES_1::const_iterator>);
 static_assert(!std::random_access_iterator<ES_1::iterator>);
 static_assert(!std::random_access_iterator<ES_1::const_iterator>);
 
 static_assert(std::is_trivially_copyable_v<ES_1::const_iterator>);
 static_assert(std::is_trivially_copyable_v<ES_1::iterator>);
-static_assert(std::is_trivially_copyable_v<ES_1::reverse_iterator>);
-static_assert(std::is_trivially_copyable_v<ES_1::const_reverse_iterator>);
 
 static_assert(std::is_same_v<std::iter_value_t<ES_1::iterator>, std::pair<const int&, int&>>);
 static_assert(std::is_same_v<std::iter_reference_t<ES_1::iterator>, std::pair<const int&, int&>>);
@@ -46,7 +44,7 @@ static_assert(std::is_same_v<std::iter_difference_t<ES_1::iterator>, std::ptrdif
 static_assert(std::is_same_v<typename std::iterator_traits<ES_1::iterator>::pointer,
                              ArrowProxy<std::pair<const int&, int&>>>);
 static_assert(std::is_same_v<typename std::iterator_traits<ES_1::iterator>::iterator_category,
-                             std::bidirectional_iterator_tag>);
+                             std::forward_iterator_tag>);
 
 static_assert(
     std::is_same_v<std::iter_value_t<ES_1::const_iterator>, std::pair<const int&, const int&>>);
@@ -56,77 +54,77 @@ static_assert(std::is_same_v<std::iter_difference_t<ES_1::const_iterator>, std::
 static_assert(std::is_same_v<typename std::iterator_traits<ES_1::const_iterator>::pointer,
                              ArrowProxy<std::pair<const int&, const int&>>>);
 static_assert(std::is_same_v<typename std::iterator_traits<ES_1::const_iterator>::iterator_category,
-                             std::bidirectional_iterator_tag>);
+                             std::forward_iterator_tag>);
 
 static_assert(std::is_same_v<ES_1::reference, ES_1::iterator::reference>);
 
-using STD_MAP_INT_INT = std::map<int, int>;
-static_assert(ranges::bidirectional_iterator<STD_MAP_INT_INT::iterator>);
-static_assert(ranges::bidirectional_iterator<STD_MAP_INT_INT::const_iterator>);
+using STD_UNORDERED_MAP_INT_INT = std::unordered_map<int, int>;
+static_assert(ranges::forward_iterator<STD_UNORDERED_MAP_INT_INT::iterator>);
+static_assert(ranges::forward_iterator<STD_UNORDERED_MAP_INT_INT::const_iterator>);
 
 }  // namespace
 
-TEST(FixedMap, DefaultConstructor)
+TEST(FixedUnorderedMap, DefaultConstructor)
 {
-    constexpr FixedMap<int, int, 10> s1{};
+    constexpr FixedUnorderedMap<int, int, 10> s1{};
     static_assert(s1.empty());
 }
 
-TEST(FixedMap, IteratorConstructor)
+TEST(FixedUnorderedMap, IteratorConstructor)
 {
     constexpr std::array INPUT{std::pair{2, 20}, std::pair{4, 40}};
-    constexpr FixedMap<int, int, 10> s2{INPUT.begin(), INPUT.end()};
+    constexpr FixedUnorderedMap<int, int, 10> s2{INPUT.begin(), INPUT.end()};
     static_assert(s2.size() == 2);
 
     static_assert(s2.at(2) == 20);
     static_assert(s2.at(4) == 40);
 }
 
-TEST(FixedMap, Initializer)
+TEST(FixedUnorderedMap, Initializer)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
+    constexpr FixedUnorderedMap<int, int, 10> s1{{2, 20}, {4, 40}};
     static_assert(s1.size() == 2);
 
-    constexpr FixedMap<int, int, 10> s2{{3, 30}};
+    constexpr FixedUnorderedMap<int, int, 10> s2{{3, 30}};
     static_assert(s2.size() == 1);
 }
 
-TEST(FixedMap, MaxSize)
+TEST(FixedUnorderedMap, MaxSize)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
+    constexpr FixedUnorderedMap<int, int, 10> s1{{2, 20}, {4, 40}};
     static_assert(s1.max_size() == 10);
 
-    constexpr FixedMap<int, int, 4> s2{};
+    constexpr FixedUnorderedMap<int, int, 4> s2{};
     static_assert(s2.max_size() == 4);
 
-    static_assert(FixedMap<int, int, 4>::static_max_size() == 4);
-    EXPECT_EQ(4, (FixedMap<int, int, 4>::static_max_size()));
-    static_assert(max_size_v<FixedMap<int, int, 4>> == 4);
-    EXPECT_EQ(4, (max_size_v<FixedMap<int, int, 4>>));
+    static_assert(FixedUnorderedMap<int, int, 4>::static_max_size() == 4);
+    EXPECT_EQ(4, (FixedUnorderedMap<int, int, 4>::static_max_size()));
+    static_assert(max_size_v<FixedUnorderedMap<int, int, 4>> == 4);
+    EXPECT_EQ(4, (max_size_v<FixedUnorderedMap<int, int, 4>>));
 }
 
-TEST(FixedMap, EmptySizeFull)
+TEST(FixedUnorderedMap, EmptySizeFull)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
+    constexpr FixedUnorderedMap<int, int, 10> s1{{2, 20}, {4, 40}};
     static_assert(s1.size() == 2);
     static_assert(!s1.empty());
 
-    constexpr FixedMap<int, int, 10> s2{};
+    constexpr FixedUnorderedMap<int, int, 10> s2{};
     static_assert(s2.size() == 0);
     static_assert(s2.empty());
 
-    constexpr FixedMap<int, int, 2> s3{{2, 20}, {4, 40}};
+    constexpr FixedUnorderedMap<int, int, 2> s3{{2, 20}, {4, 40}};
     static_assert(is_full(s3));
 
-    constexpr FixedMap<int, int, 5> s4{{2, 20}, {4, 40}};
+    constexpr FixedUnorderedMap<int, int, 5> s4{{2, 20}, {4, 40}};
     static_assert(!is_full(s4));
 }
 
-TEST(FixedMap, OperatorBracket_Constexpr)
+TEST(FixedUnorderedMap, OperatorBracket_Constexpr)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{};
+        FixedUnorderedMap<int, int, 10> s{};
         s[2] = 20;
         s[4] = 40;
         return s;
@@ -139,9 +137,9 @@ TEST(FixedMap, OperatorBracket_Constexpr)
     static_assert(s1.contains(4));
 }
 
-TEST(FixedMap, MaxSizeDeduction)
+TEST(FixedUnorderedMap, MaxSizeDeduction)
 {
-    constexpr auto s1 = make_fixed_map({std::pair{30, 30}, std::pair{31, 54}});
+    constexpr auto s1 = make_fixed_unordered_map({std::pair{30, 30}, std::pair{31, 54}});
     static_assert(s1.size() == 2);
     static_assert(s1.max_size() == 2);
     static_assert(s1.contains(30));
@@ -149,9 +147,9 @@ TEST(FixedMap, MaxSizeDeduction)
     static_assert(!s1.contains(32));
 }
 
-TEST(FixedMap, OperatorBracket_NonConstexpr)
+TEST(FixedUnorderedMap, OperatorBracket_NonConstexpr)
 {
-    FixedMap<int, int, 10> s1{};
+    FixedUnorderedMap<int, int, 10> s1{};
     s1[2] = 25;
     s1[4] = 45;
     ASSERT_EQ(2, s1.size());
@@ -161,10 +159,10 @@ TEST(FixedMap, OperatorBracket_NonConstexpr)
     ASSERT_TRUE(s1.contains(4));
 }
 
-TEST(FixedMap, OperatorBracket_ExceedsCapacity)
+TEST(FixedUnorderedMap, OperatorBracket_ExceedsCapacity)
 {
     {
-        FixedMap<int, int, 2> s1{};
+        FixedUnorderedMap<int, int, 2> s1{};
         s1[2];
         s1[4];
         s1[4];
@@ -172,7 +170,7 @@ TEST(FixedMap, OperatorBracket_ExceedsCapacity)
         EXPECT_DEATH(s1[6], "");
     }
     {
-        FixedMap<int, int, 2> s1{};
+        FixedUnorderedMap<int, int, 2> s1{};
         s1[2];
         s1[4];
         s1[4];
@@ -206,9 +204,9 @@ struct ConstructionCounter
 int ConstructionCounter::counter = 0;
 }  // namespace
 
-TEST(FixedMap, OperatorBracket_EnsureNoUnnecessaryTemporaries)
+TEST(FixedUnorderedMap, OperatorBracket_EnsureNoUnnecessaryTemporaries)
 {
-    FixedMap<int, ConstructionCounter, 10> s1{};
+    FixedUnorderedMap<int, ConstructionCounter, 10> s1{};
     ASSERT_EQ(0, ConstructionCounter::counter);
     ConstructionCounter instance1{25};
     ConstructionCounter instance2{35};
@@ -221,11 +219,11 @@ TEST(FixedMap, OperatorBracket_EnsureNoUnnecessaryTemporaries)
     ASSERT_EQ(4, ConstructionCounter::counter);
 }
 
-TEST(FixedMap, Insert)
+TEST(FixedUnorderedMap, Insert)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{};
+        FixedUnorderedMap<int, int, 10> s{};
         s.insert({2, 20});
         s.insert({4, 40});
         return s;
@@ -238,10 +236,10 @@ TEST(FixedMap, Insert)
     static_assert(s1.contains(4));
 }
 
-TEST(FixedMap, Insert_ExceedsCapacity)
+TEST(FixedUnorderedMap, Insert_ExceedsCapacity)
 {
     {
-        FixedMap<int, int, 2> s1{};
+        FixedUnorderedMap<int, int, 2> s1{};
         s1.insert({2, 20});
         s1.insert({4, 40});
         s1.insert({4, 41});
@@ -249,7 +247,7 @@ TEST(FixedMap, Insert_ExceedsCapacity)
         EXPECT_DEATH(s1.insert({6, 60}), "");
     }
     {
-        FixedMap<int, int, 2> s1{};
+        FixedUnorderedMap<int, int, 2> s1{};
         s1.insert({2, 20});
         s1.insert({4, 40});
         s1.insert({4, 41});
@@ -259,11 +257,11 @@ TEST(FixedMap, Insert_ExceedsCapacity)
     }
 }
 
-TEST(FixedMap, InsertMultipleTimes)
+TEST(FixedUnorderedMap, InsertMultipleTimes)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{};
+        FixedUnorderedMap<int, int, 10> s{};
         {
             auto [it, was_inserted] = s.insert({2, 20});
             assert_or_abort(was_inserted);
@@ -298,13 +296,13 @@ TEST(FixedMap, InsertMultipleTimes)
     static_assert(s1.contains(4));
 }
 
-TEST(FixedMap, InsertIterators)
+TEST(FixedUnorderedMap, InsertIterators)
 {
-    constexpr FixedMap<int, int, 10> a{{2, 20}, {4, 40}};
+    constexpr FixedUnorderedMap<int, int, 10> a{{2, 20}, {4, 40}};
 
     constexpr auto s1 = [&]()
     {
-        FixedMap<int, int, 10> s{};
+        FixedUnorderedMap<int, int, 10> s{};
         s.insert(a.begin(), a.end());
         return s;
     }();
@@ -316,11 +314,11 @@ TEST(FixedMap, InsertIterators)
     static_assert(s1.contains(4));
 }
 
-TEST(FixedMap, InsertInitializer)
+TEST(FixedUnorderedMap, InsertInitializer)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{};
+        FixedUnorderedMap<int, int, 10> s{};
         s.insert({{2, 20}, {4, 40}});
         return s;
     }();
@@ -332,11 +330,11 @@ TEST(FixedMap, InsertInitializer)
     static_assert(s1.contains(4));
 }
 
-TEST(FixedMap, InsertOrAssign)
+TEST(FixedUnorderedMap, InsertOrAssign)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{};
+        FixedUnorderedMap<int, int, 10> s{};
         {
             auto [it, was_inserted] = s.insert_or_assign(2, 20);
             assert_or_abort(was_inserted);
@@ -373,10 +371,10 @@ TEST(FixedMap, InsertOrAssign)
     static_assert(s1.contains(4));
 }
 
-TEST(FixedMap, InsertOrAssign_ExceedsCapacity)
+TEST(FixedUnorderedMap, InsertOrAssign_ExceedsCapacity)
 {
     {
-        FixedMap<int, int, 2> s1{};
+        FixedUnorderedMap<int, int, 2> s1{};
         s1.insert_or_assign(2, 20);
         s1.insert_or_assign(4, 40);
         s1.insert_or_assign(4, 41);
@@ -384,7 +382,7 @@ TEST(FixedMap, InsertOrAssign_ExceedsCapacity)
         EXPECT_DEATH(s1.insert_or_assign(6, 60), "");
     }
     {
-        FixedMap<int, int, 2> s1{};
+        FixedUnorderedMap<int, int, 2> s1{};
         s1.insert_or_assign(2, 20);
         s1.insert_or_assign(4, 40);
         s1.insert_or_assign(4, 41);
@@ -394,12 +392,12 @@ TEST(FixedMap, InsertOrAssign_ExceedsCapacity)
     }
 }
 
-TEST(FixedMap, TryEmplace)
+TEST(FixedUnorderedMap, TryEmplace)
 {
     {
-        constexpr FixedMap<int, int, 10> s = []()
+        constexpr FixedUnorderedMap<int, int, 10> s = []()
         {
-            FixedMap<int, int, 10> s1{};
+            FixedUnorderedMap<int, int, 10> s1{};
             s1.try_emplace(2, 20);
             const int key = 2;
             s1.try_emplace(key, 209999999);
@@ -411,7 +409,7 @@ TEST(FixedMap, TryEmplace)
     }
 
     {
-        FixedMap<int, int, 10> s1{};
+        FixedUnorderedMap<int, int, 10> s1{};
 
         {
             auto [it, was_inserted] = s1.try_emplace(2, 20);
@@ -443,18 +441,18 @@ TEST(FixedMap, TryEmplace)
     }
 
     {
-        FixedMap<std::size_t, TypeWithMultipleConstructorParameters, 10> s1{};
+        FixedUnorderedMap<std::size_t, TypeWithMultipleConstructorParameters, 10> s1{};
         s1.try_emplace(1ULL, /*ImplicitlyConvertibleFromInt*/ 2, ExplicitlyConvertibleFromInt{3});
 
-        std::map<std::size_t, TypeWithMultipleConstructorParameters> s2{};
+        std::unordered_map<std::size_t, TypeWithMultipleConstructorParameters> s2{};
         s2.try_emplace(1ULL, /*ImplicitlyConvertibleFromInt*/ 2, ExplicitlyConvertibleFromInt{3});
     }
 }
 
-TEST(FixedMap, TryEmplace_ExceedsCapacity)
+TEST(FixedUnorderedMap, TryEmplace_ExceedsCapacity)
 {
     {
-        FixedMap<int, int, 2> s1{};
+        FixedUnorderedMap<int, int, 2> s1{};
         s1.try_emplace(2, 20);
         s1.try_emplace(4, 40);
         s1.try_emplace(4, 41);
@@ -462,7 +460,7 @@ TEST(FixedMap, TryEmplace_ExceedsCapacity)
         EXPECT_DEATH(s1.try_emplace(6, 60), "");
     }
     {
-        FixedMap<int, int, 2> s1{};
+        FixedUnorderedMap<int, int, 2> s1{};
         s1.try_emplace(2, 20);
         s1.try_emplace(4, 40);
         s1.try_emplace(4, 41);
@@ -472,26 +470,26 @@ TEST(FixedMap, TryEmplace_ExceedsCapacity)
     }
 }
 
-TEST(FixedMap, TryEmplace_TypeConversion)
+TEST(FixedUnorderedMap, TryEmplace_TypeConversion)
 {
     {
         int* raw_ptr = new int;
-        FixedMap<int, std::unique_ptr<int>, 10> s{};
+        FixedUnorderedMap<int, std::unique_ptr<int>, 10> s{};
         s.try_emplace(3, raw_ptr);
     }
     {
         int* raw_ptr = new int;
-        std::map<int, std::unique_ptr<int>> s{};
+        std::unordered_map<int, std::unique_ptr<int>> s{};
         s.try_emplace(3, raw_ptr);
     }
 }
 
-TEST(FixedMap, Emplace)
+TEST(FixedUnorderedMap, Emplace)
 {
     {
-        constexpr FixedMap<int, int, 10> s = []()
+        constexpr FixedUnorderedMap<int, int, 10> s = []()
         {
-            FixedMap<int, int, 10> s1{};
+            FixedUnorderedMap<int, int, 10> s1{};
             s1.emplace(2, 20);
             const int key = 2;
             s1.emplace(key, 209999999);
@@ -503,7 +501,7 @@ TEST(FixedMap, Emplace)
     }
 
     {
-        FixedMap<int, int, 10> s1{};
+        FixedUnorderedMap<int, int, 10> s1{};
 
         {
             auto [it, was_inserted] = s1.emplace(2, 20);
@@ -547,25 +545,25 @@ TEST(FixedMap, Emplace)
     }
 
     {
-        FixedMap<int, MockMoveableButNotCopyable, 5> s2{};
+        FixedUnorderedMap<int, MockMoveableButNotCopyable, 5> s2{};
         s2.emplace(1, MockMoveableButNotCopyable{});
     }
 
     {
-        FixedMap<int, MockTriviallyCopyableButNotCopyableOrMoveable, 5> s2{};
+        FixedUnorderedMap<int, MockTriviallyCopyableButNotCopyableOrMoveable, 5> s2{};
         s2.emplace(1);
     }
 
     {
-        FixedMap<int, std::pair<int, int>, 5> s3{};
+        FixedUnorderedMap<int, std::pair<int, int>, 5> s3{};
         s3.emplace(std::piecewise_construct, std::make_tuple(1), std::make_tuple(2, 3));
     }
 }
 
-TEST(FixedMap, Emplace_ExceedsCapacity)
+TEST(FixedUnorderedMap, Emplace_ExceedsCapacity)
 {
     {
-        FixedMap<int, int, 2> s1{};
+        FixedUnorderedMap<int, int, 2> s1{};
         s1.emplace(2, 20);
         s1.emplace(4, 40);
         s1.emplace(4, 41);
@@ -573,7 +571,7 @@ TEST(FixedMap, Emplace_ExceedsCapacity)
         EXPECT_DEATH(s1.emplace(6, 60), "");
     }
     {
-        FixedMap<int, int, 2> s1{};
+        FixedUnorderedMap<int, int, 2> s1{};
         s1.emplace(2, 20);
         s1.emplace(4, 40);
         s1.emplace(4, 41);
@@ -583,11 +581,11 @@ TEST(FixedMap, Emplace_ExceedsCapacity)
     }
 }
 
-TEST(FixedMap, Clear)
+TEST(FixedUnorderedMap, Clear)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+        FixedUnorderedMap<int, int, 10> s{{2, 20}, {4, 40}};
         s.clear();
         return s;
     }();
@@ -595,11 +593,11 @@ TEST(FixedMap, Clear)
     static_assert(s1.empty());
 }
 
-TEST(FixedMap, Erase)
+TEST(FixedUnorderedMap, Erase)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+        FixedUnorderedMap<int, int, 10> s{{2, 20}, {4, 40}};
         auto removed_count = s.erase(2);
         assert_or_abort(removed_count == 1);
         removed_count = s.erase(3);
@@ -614,11 +612,11 @@ TEST(FixedMap, Erase)
     static_assert(s1.contains(4));
 }
 
-TEST(FixedMap, EraseIterator)
+TEST(FixedUnorderedMap, EraseIterator)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {3, 30}, {4, 40}};
+        FixedUnorderedMap<int, int, 10> s{{2, 20}, {3, 30}, {4, 40}};
         {
             auto it = s.begin();
             auto next = s.erase(it);
@@ -642,17 +640,17 @@ TEST(FixedMap, EraseIterator)
     static_assert(s1.contains(4));
 }
 
-TEST(FixedMap, EraseIterator_Ambiguity)
+TEST(FixedUnorderedMap, EraseIterator_Ambiguity)
 {
     // If the iterator has extraneous auto-conversions, it might cause ambiguity between the various
     // overloads
-    FixedMap<std::string, int, 5> s1{};
+    FixedUnorderedMap<std::string, int, 5> s1{};
     s1.erase("");
 }
 
-TEST(FixedMap, EraseIterator_InvalidIterator)
+TEST(FixedUnorderedMap, EraseIterator_InvalidIterator)
 {
-    FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+    FixedUnorderedMap<int, int, 10> s{{2, 20}, {4, 40}};
     {
         auto it = s.begin();
         std::advance(it, 2);
@@ -660,12 +658,12 @@ TEST(FixedMap, EraseIterator_InvalidIterator)
     }
 }
 
-TEST(FixedMap, EraseRange)
+TEST(FixedUnorderedMap, EraseRange)
 {
     {
         constexpr auto s1 = []()
         {
-            FixedMap<int, int, 10> s{{2, 20}, {3, 30}, {4, 40}};
+            FixedUnorderedMap<int, int, 10> s{{2, 20}, {3, 30}, {4, 40}};
             auto from = s.begin();
             std::advance(from, 1);
             auto to = s.begin();
@@ -685,7 +683,7 @@ TEST(FixedMap, EraseRange)
     {
         constexpr auto s1 = []()
         {
-            FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+            FixedUnorderedMap<int, int, 10> s{{2, 20}, {4, 40}};
             auto from = s.begin();
             auto to = s.begin();
             auto next = s.erase(from, to);
@@ -703,7 +701,7 @@ TEST(FixedMap, EraseRange)
     {
         constexpr auto s1 = []()
         {
-            FixedMap<int, int, 10> s{{1, 10}, {4, 40}};
+            FixedUnorderedMap<int, int, 10> s{{1, 10}, {4, 40}};
             auto from = s.begin();
             auto to = s.end();
             auto next = s.erase(from, to);
@@ -719,11 +717,11 @@ TEST(FixedMap, EraseRange)
     }
 }
 
-TEST(FixedMap, EraseIf)
+TEST(FixedUnorderedMap, EraseIf)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {3, 30}, {4, 40}};
+        FixedUnorderedMap<int, int, 10> s{{2, 20}, {3, 30}, {4, 40}};
         std::size_t removed_count = fixed_containers::erase_if(s,
                                                                [](const auto& entry)
                                                                {
@@ -743,11 +741,11 @@ TEST(FixedMap, EraseIf)
     static_assert(s1.at(3) == 30);
 }
 
-TEST(FixedMap, Iterator_StructuredBinding)
+TEST(FixedUnorderedMap, Iterator_StructuredBinding)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{};
+        FixedUnorderedMap<int, int, 10> s{};
         s.insert({3, 30});
         s.insert({4, 40});
         s.insert({1, 10});
@@ -761,9 +759,9 @@ TEST(FixedMap, Iterator_StructuredBinding)
     }
 }
 
-TEST(FixedMap, IteratorBasic)
+TEST(FixedUnorderedMap, IteratorBasic)
 {
-    constexpr FixedMap<int, int, 10> s1{{1, 10}, {2, 20}, {3, 30}, {4, 40}};
+    constexpr FixedUnorderedMap<int, int, 10> s1{{1, 10}, {2, 20}, {3, 30}, {4, 40}};
 
     static_assert(std::distance(s1.cbegin(), s1.cend()) == 4);
 
@@ -775,22 +773,13 @@ TEST(FixedMap, IteratorBasic)
     static_assert(std::next(s1.begin(), 2)->second == 30);
     static_assert(std::next(s1.begin(), 3)->first == 4);
     static_assert(std::next(s1.begin(), 3)->second == 40);
-
-    static_assert(std::prev(s1.end(), 1)->first == 4);
-    static_assert(std::prev(s1.end(), 1)->second == 40);
-    static_assert(std::prev(s1.end(), 2)->first == 3);
-    static_assert(std::prev(s1.end(), 2)->second == 30);
-    static_assert(std::prev(s1.end(), 3)->first == 2);
-    static_assert(std::prev(s1.end(), 3)->second == 20);
-    static_assert(std::prev(s1.end(), 4)->first == 1);
-    static_assert(std::prev(s1.end(), 4)->second == 10);
 }
 
-TEST(FixedMap, IteratorTypes)
+TEST(FixedUnorderedMap, IteratorTypes)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+        FixedUnorderedMap<int, int, 10> s{{2, 20}, {4, 40}};
 
         for (const auto& key_and_value : s)  // "-Wrange-loop-bind-reference"
         {
@@ -846,7 +835,7 @@ TEST(FixedMap, IteratorTypes)
     static_assert(std::is_same_v<decltype(*lvalue_it), std::pair<const int&, const int&>>);
     static_assert(std::is_same_v<decltype(*s1.begin()), std::pair<const int&, const int&>>);
 
-    FixedMap<int, int, 10> s_non_const{};
+    FixedUnorderedMap<int, int, 10> s_non_const{};
     auto lvalue_it_of_non_const = s_non_const.begin();
     static_assert(std::is_same_v<decltype(*lvalue_it_of_non_const), std::pair<const int&, int&>>);
     static_assert(std::is_same_v<decltype(*s_non_const.begin()), std::pair<const int&, int&>>);
@@ -864,7 +853,7 @@ TEST(FixedMap, IteratorTypes)
     }
 
     {
-        std::map<int, int> s{};
+        std::unordered_map<int, int> s{};
 
         for (const auto& key_and_value : s)
         {
@@ -905,11 +894,11 @@ TEST(FixedMap, IteratorTypes)
     }
 }
 
-TEST(FixedMap, IteratorMutableValue)
+TEST(FixedUnorderedMap, IteratorMutableValue)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+        FixedUnorderedMap<int, int, 10> s{{2, 20}, {4, 40}};
 
         for (auto&& [key, value] : s)
         {
@@ -925,16 +914,11 @@ TEST(FixedMap, IteratorMutableValue)
     static_assert(s1.begin()->second == 40);
     static_assert(std::next(s1.begin(), 1)->first == 4);
     static_assert(std::next(s1.begin(), 1)->second == 80);
-
-    static_assert(std::prev(s1.end(), 1)->first == 4);
-    static_assert(std::prev(s1.end(), 1)->second == 80);
-    static_assert(std::prev(s1.end(), 2)->first == 2);
-    static_assert(std::prev(s1.end(), 2)->second == 40);
 }
 
-TEST(FixedMap, IteratorComparisonOperator)
+TEST(FixedUnorderedMap, IteratorComparisonOperator)
 {
-    constexpr FixedMap<int, int, 10> s1{{{1, 10}, {4, 40}}};
+    constexpr FixedUnorderedMap<int, int, 10> s1{{{1, 10}, {4, 40}}};
 
     // All combinations of [==, !=]x[const, non-const]
     static_assert(s1.cbegin() == s1.cbegin());
@@ -945,17 +929,16 @@ TEST(FixedMap, IteratorComparisonOperator)
     static_assert(s1.begin() != s1.cend());
 
     static_assert(std::next(s1.begin(), 2) == s1.end());
-    static_assert(std::prev(s1.end(), 2) == s1.begin());
 }
 
-TEST(FixedMap, IteratorAssignment)
+TEST(FixedUnorderedMap, IteratorAssignment)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+        FixedUnorderedMap<int, int, 10> s{{2, 20}, {4, 40}};
 
         {
-            FixedMap<int, int, 10>::const_iterator it;  // Default construction
+            FixedUnorderedMap<int, int, 10>::const_iterator it;  // Default construction
             it = s.cbegin();
             assert_or_abort(it == s.begin());
             assert_or_abort(it->first == 2);
@@ -965,7 +948,7 @@ TEST(FixedMap, IteratorAssignment)
             assert_or_abort(it == s.cend());
 
             {
-                FixedMap<int, int, 10>::iterator non_const_it;  // Default construction
+                FixedUnorderedMap<int, int, 10>::iterator non_const_it;  // Default construction
                 non_const_it = s.end();
                 it = non_const_it;  // Non-const needs to be assignable to const
                 assert_or_abort(it == s.end());
@@ -973,16 +956,18 @@ TEST(FixedMap, IteratorAssignment)
 
             for (it = s.cbegin(); it != s.cend(); it++)
             {
-                static_assert(std::is_same_v<decltype(it), FixedMap<int, int, 10>::const_iterator>);
+                static_assert(
+                    std::is_same_v<decltype(it), FixedUnorderedMap<int, int, 10>::const_iterator>);
             }
 
             for (it = s.begin(); it != s.end(); it++)
             {
-                static_assert(std::is_same_v<decltype(it), FixedMap<int, int, 10>::const_iterator>);
+                static_assert(
+                    std::is_same_v<decltype(it), FixedUnorderedMap<int, int, 10>::const_iterator>);
             }
         }
         {
-            FixedMap<int, int, 10>::iterator it = s.begin();
+            FixedUnorderedMap<int, int, 10>::iterator it = s.begin();
             assert_or_abort(it == s.begin());  // Asserts are just to make the value used.
 
             // Const should not be assignable to non-const
@@ -993,7 +978,8 @@ TEST(FixedMap, IteratorAssignment)
 
             for (it = s.begin(); it != s.end(); it++)
             {
-                static_assert(std::is_same_v<decltype(it), FixedMap<int, int, 10>::iterator>);
+                static_assert(
+                    std::is_same_v<decltype(it), FixedUnorderedMap<int, int, 10>::iterator>);
             }
         }
         return s;
@@ -1002,9 +988,9 @@ TEST(FixedMap, IteratorAssignment)
     static_assert(s1.size() == 2);
 }
 
-TEST(FixedMap, Iterator_OffByOneIssues)
+TEST(FixedUnorderedMap, Iterator_OffByOneIssues)
 {
-    constexpr FixedMap<int, int, 10> s1{{{1, 10}, {4, 40}}};
+    constexpr FixedUnorderedMap<int, int, 10> s1{{{1, 10}, {4, 40}}};
 
     static_assert(std::distance(s1.cbegin(), s1.cend()) == 2);
 
@@ -1012,21 +998,16 @@ TEST(FixedMap, Iterator_OffByOneIssues)
     static_assert(s1.begin()->second == 10);
     static_assert(std::next(s1.begin(), 1)->first == 4);
     static_assert(std::next(s1.begin(), 1)->second == 40);
-
-    static_assert(std::prev(s1.end(), 1)->first == 4);
-    static_assert(std::prev(s1.end(), 1)->second == 40);
-    static_assert(std::prev(s1.end(), 2)->first == 1);
-    static_assert(std::prev(s1.end(), 2)->second == 10);
 }
 
-TEST(FixedMap, Iterator_EnsureOrder)
+TEST(FixedUnorderedMap, Iterator_EnsureOrder)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{};
+        FixedUnorderedMap<int, int, 10> s{};
+        s.insert({1, 10});
         s.insert({3, 30});
         s.insert({4, 40});
-        s.insert({1, 10});
         return s;
     }();
 
@@ -1038,40 +1019,33 @@ TEST(FixedMap, Iterator_EnsureOrder)
     static_assert(std::next(s1.begin(), 1)->second == 30);
     static_assert(std::next(s1.begin(), 2)->first == 4);
     static_assert(std::next(s1.begin(), 2)->second == 40);
-
-    static_assert(std::prev(s1.end(), 1)->first == 4);
-    static_assert(std::prev(s1.end(), 1)->second == 40);
-    static_assert(std::prev(s1.end(), 2)->first == 3);
-    static_assert(std::prev(s1.end(), 2)->second == 30);
-    static_assert(std::prev(s1.end(), 3)->first == 1);
-    static_assert(std::prev(s1.end(), 3)->second == 10);
 }
 
-TEST(FixedMap, DereferencedIteratorAssignability)
+TEST(FixedUnorderedMap, DereferencedIteratorAssignability)
 {
     {
-        using DereferencedIt = std::map<int, int>::iterator::value_type;
+        using DereferencedIt = std::unordered_map<int, int>::iterator::value_type;
         static_assert(NotMoveAssignable<DereferencedIt>);
         static_assert(NotCopyAssignable<DereferencedIt>);
     }
 
     {
-        using DereferencedIt = FixedMap<int, int, 10>::iterator::value_type;
+        using DereferencedIt = FixedUnorderedMap<int, int, 10>::iterator::value_type;
         static_assert(NotMoveAssignable<DereferencedIt>);
         static_assert(NotCopyAssignable<DereferencedIt>);
     }
 }
 
-TEST(FixedMap, Iterator_AccessingDefaultConstructedIteratorFails)
+TEST(FixedUnorderedMap, Iterator_AccessingDefaultConstructedIteratorFails)
 {
-    auto it = FixedMap<int, int, 10>::iterator{};
+    auto it = FixedUnorderedMap<int, int, 10>::iterator{};
 
     EXPECT_DEATH(it->second++, "");
 }
 
-static constexpr FixedMap<int, int, 7> LIVENESS_TEST_INSTANCE{{1, 100}};
+static constexpr FixedUnorderedMap<int, int, 7> LIVENESS_TEST_INSTANCE{{1, 100}};
 
-TEST(FixedMap, IteratorDereferenceLiveness)
+TEST(FixedUnorderedMap, IteratorDereferenceLiveness)
 {
     {
         constexpr auto ref = []() { return *LIVENESS_TEST_INSTANCE.begin(); }();
@@ -1081,14 +1055,14 @@ TEST(FixedMap, IteratorDereferenceLiveness)
 
     {
         // this test needs ubsan/asan
-        FixedMap<int, int, 7> m = {{1, 100}};
+        FixedUnorderedMap<int, int, 7> m = {{1, 100}};
         decltype(m)::reference ref = *m.begin();  // Fine
         EXPECT_EQ(1, ref.first);
         EXPECT_EQ(100, ref.second);
     }
     {
         // this test needs ubsan/asan
-        FixedMap<int, int, 7> m = {{1, 100}};
+        FixedUnorderedMap<int, int, 7> m = {{1, 100}};
         auto ref = *m.begin();  // Fine
         EXPECT_EQ(1, ref.first);
         EXPECT_EQ(100, ref.second);
@@ -1096,7 +1070,7 @@ TEST(FixedMap, IteratorDereferenceLiveness)
     {
         /*
         // this test needs ubsan/asan
-        FixedMap<int, int, 7> m = {{1, 100}};
+        FixedUnorderedMap<int, int, 7> m = {{1, 100}};
         auto& ref = *m.begin();  // Fails to compile, instead of allowing dangling pointers
         EXPECT_EQ(1, ref.first);
         EXPECT_EQ(100, ref.second);
@@ -1104,51 +1078,9 @@ TEST(FixedMap, IteratorDereferenceLiveness)
     }
 }
 
-TEST(FixedMap, ReverseIteratorBasic)
+TEST(FixedUnorderedMap, IteratorInvalidation)
 {
-    constexpr FixedMap<int, int, 10> s1{{1, 10}, {2, 20}, {3, 30}, {4, 40}};
-
-    static_assert(consteval_compare::equal<4, std::distance(s1.crbegin(), s1.crend())>);
-
-    static_assert(consteval_compare::equal<4, s1.rbegin()->first>);
-    static_assert(consteval_compare::equal<40, s1.rbegin()->second>);
-    static_assert(consteval_compare::equal<3, std::next(s1.rbegin(), 1)->first>);
-    static_assert(consteval_compare::equal<30, std::next(s1.rbegin(), 1)->second>);
-    static_assert(consteval_compare::equal<2, std::next(s1.rbegin(), 2)->first>);
-    static_assert(consteval_compare::equal<20, std::next(s1.rbegin(), 2)->second>);
-    static_assert(consteval_compare::equal<1, std::next(s1.rbegin(), 3)->first>);
-    static_assert(consteval_compare::equal<10, std::next(s1.rbegin(), 3)->second>);
-
-    static_assert(consteval_compare::equal<1, std::prev(s1.rend(), 1)->first>);
-    static_assert(consteval_compare::equal<10, std::prev(s1.rend(), 1)->second>);
-    static_assert(consteval_compare::equal<2, std::prev(s1.rend(), 2)->first>);
-    static_assert(consteval_compare::equal<20, std::prev(s1.rend(), 2)->second>);
-    static_assert(consteval_compare::equal<3, std::prev(s1.rend(), 3)->first>);
-    static_assert(consteval_compare::equal<30, std::prev(s1.rend(), 3)->second>);
-    static_assert(consteval_compare::equal<4, std::prev(s1.rend(), 4)->first>);
-    static_assert(consteval_compare::equal<40, std::prev(s1.rend(), 4)->second>);
-}
-
-TEST(FixedMap, ReverseIteratorBase)
-{
-    constexpr auto s1 = []()
-    {
-        FixedMap<int, int, 7> s{{1, 10}, {2, 20}, {3, 30}};
-        auto it = s.rbegin();  // points to 3
-        std::advance(it, 1);   // points to 2
-        // https://stackoverflow.com/questions/1830158/how-to-call-erase-with-a-reverse-iterator
-        s.erase(std::next(it).base());
-        return s;
-    }();
-
-    static_assert(s1.size() == 2);
-    static_assert(s1.at(1) == 10);
-    static_assert(s1.at(3) == 30);
-}
-
-TEST(FixedMap, IteratorInvalidation)
-{
-    FixedMap<int, int, 10> s1{{10, 100}, {20, 200}, {30, 300}, {40, 400}};
+    FixedUnorderedMap<int, int, 10> s1{{10, 100}, {20, 200}, {30, 300}, {40, 400}};
     auto it1 = s1.begin();
     auto it2 = std::next(s1.begin(), 1);
     auto it3 = std::next(s1.begin(), 2);
@@ -1201,9 +1133,9 @@ TEST(FixedMap, IteratorInvalidation)
     }
 }
 
-TEST(FixedMap, Find)
+TEST(FixedUnorderedMap, Find)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
+    constexpr FixedUnorderedMap<int, int, 10> s1{{2, 20}, {4, 40}};
     static_assert(s1.size() == 2);
 
     static_assert(s1.find(1) == s1.cend());
@@ -1215,18 +1147,18 @@ TEST(FixedMap, Find)
     static_assert(s1.at(4) == 40);
 }
 
-TEST(FixedMap, Find_TransparentComparator)
-{
-    constexpr FixedMap<MockAComparableToB, int, 3, std::less<>> s{};
-    constexpr MockBComparableToA b{5};
-    static_assert(s.find(b) == s.end());
-}
+// TEST(FixedUnorderedMap, Find_TransparentComparator)
+// {
+//     constexpr FixedMap<MockAComparableToB, int, 3, std::less<>> s{};
+//     constexpr MockBComparableToA b{5};
+//     static_assert(s.find(b) == s.end());
+// }
 
-TEST(FixedMap, MutableFind)
+TEST(FixedUnorderedMap, MutableFind)
 {
     constexpr auto s1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+        FixedUnorderedMap<int, int, 10> s{{2, 20}, {4, 40}};
         auto it = s.find(2);
         it->second = 25;
         it++;
@@ -1238,9 +1170,9 @@ TEST(FixedMap, MutableFind)
     static_assert(s1.at(4) == 45);
 }
 
-TEST(FixedMap, Contains)
+TEST(FixedUnorderedMap, Contains)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
+    constexpr FixedUnorderedMap<int, int, 10> s1{{2, 20}, {4, 40}};
     static_assert(s1.size() == 2);
 
     static_assert(!s1.contains(1));
@@ -1252,17 +1184,17 @@ TEST(FixedMap, Contains)
     static_assert(s1.at(4) == 40);
 }
 
-TEST(FixedMap, Contains_TransparentComparator)
-{
-    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
-        {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
-    constexpr MockBComparableToA b{5};
-    static_assert(s.contains(b));
-}
+// TEST(FixedUnorderedMap, Contains_TransparentComparator)
+// {
+//     constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
+//         {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
+//     constexpr MockBComparableToA b{5};
+//     static_assert(s.contains(b));
+// }
 
-TEST(FixedMap, Count)
+TEST(FixedUnorderedMap, Count)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
+    constexpr FixedUnorderedMap<int, int, 10> s1{{2, 20}, {4, 40}};
     static_assert(s1.size() == 2);
 
     static_assert(s1.count(1) == 0);
@@ -1274,91 +1206,21 @@ TEST(FixedMap, Count)
     static_assert(s1.at(4) == 40);
 }
 
-TEST(FixedMap, Count_TransparentComparator)
-{
-    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
-        {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
-    constexpr MockBComparableToA b{5};
-    static_assert(s.count(b) == 1);
-}
+// TEST(FixedUnorderedMap, Count_TransparentComparator)
+// {
+//     constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
+//         {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
+//     constexpr MockBComparableToA b{5};
+//     static_assert(s.count(b) == 1);
+// }
 
-TEST(FixedMap, LowerBound)
-{
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
-
-    static_assert(s1.lower_bound(1)->first == 2);
-    static_assert(s1.lower_bound(2)->first == 2);
-    static_assert(s1.lower_bound(3)->first == 4);
-    static_assert(s1.lower_bound(4)->first == 4);
-    static_assert(s1.lower_bound(5) == s1.cend());
-}
-
-TEST(FixedMap, LowerBound_TransparentComparator)
-{
-    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
-        {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
-    constexpr MockBComparableToA b{3};
-    static_assert(s.lower_bound(b)->first == MockAComparableToB{3});
-}
-
-TEST(FixedMap, UpperBound)
-{
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
-
-    static_assert(s1.upper_bound(1)->first == 2);
-    static_assert(s1.upper_bound(2)->first == 4);
-    static_assert(s1.upper_bound(3)->first == 4);
-    static_assert(s1.upper_bound(4) == s1.cend());
-    static_assert(s1.upper_bound(5) == s1.cend());
-}
-
-TEST(FixedMap, UpperBound_TransparentComparator)
-{
-    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
-        {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
-    constexpr MockBComparableToA b{3};
-    static_assert(s.upper_bound(b)->first == MockAComparableToB{5});
-}
-
-TEST(FixedMap, EqualRange)
-{
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
-
-    static_assert(s1.equal_range(1).first == s1.lower_bound(1));
-    static_assert(s1.equal_range(1).second == s1.upper_bound(1));
-
-    static_assert(s1.equal_range(2).first == s1.lower_bound(2));
-    static_assert(s1.equal_range(2).second == s1.upper_bound(2));
-
-    static_assert(s1.equal_range(3).first == s1.lower_bound(3));
-    static_assert(s1.equal_range(3).second == s1.upper_bound(3));
-
-    static_assert(s1.equal_range(4).first == s1.lower_bound(4));
-    static_assert(s1.equal_range(4).second == s1.upper_bound(4));
-
-    static_assert(s1.equal_range(5).first == s1.lower_bound(5));
-    static_assert(s1.equal_range(5).second == s1.upper_bound(5));
-}
-
-TEST(FixedMap, EqualRange_TransparentComparator)
-{
-    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
-        {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
-    constexpr MockBComparableToA b{3};
-    static_assert(s.equal_range(b).first == s.lower_bound(b));
-    static_assert(s.equal_range(b).second == s.upper_bound(b));
-}
-
-TEST(FixedMap, Equality)
+TEST(FixedUnorderedMap, Equality)
 {
     {
-        constexpr FixedMap<int, int, 10> s1{{1, 10}, {4, 40}};
-        constexpr FixedMap<int, int, 11> s2{{4, 40}, {1, 10}};
-        constexpr FixedMap<int, int, 10> s3{{1, 10}, {3, 30}};
-        constexpr FixedMap<int, int, 10> s4{{1, 10}};
+        constexpr FixedUnorderedMap<int, int, 10> s1{{1, 10}, {4, 40}};
+        constexpr FixedUnorderedMap<int, int, 11> s2{{4, 40}, {1, 10}};
+        constexpr FixedUnorderedMap<int, int, 10> s3{{1, 10}, {3, 30}};
+        constexpr FixedUnorderedMap<int, int, 10> s4{{1, 10}};
 
         static_assert(s1 == s2);
         static_assert(s2 == s1);
@@ -1372,18 +1234,18 @@ TEST(FixedMap, Equality)
 
     // Values
     {
-        constexpr FixedMap<int, int, 10> s1{{1, 10}, {4, 40}};
-        constexpr FixedMap<int, int, 10> s2{{1, 10}, {4, 44}};
-        constexpr FixedMap<int, int, 10> s3{{1, 40}, {4, 10}};
+        constexpr FixedUnorderedMap<int, int, 10> s1{{1, 10}, {4, 40}};
+        constexpr FixedUnorderedMap<int, int, 10> s2{{1, 10}, {4, 44}};
+        constexpr FixedUnorderedMap<int, int, 10> s3{{1, 40}, {4, 10}};
 
         static_assert(s1 != s2);
         static_assert(s1 != s3);
     }
 }
 
-TEST(FixedMap, Ranges)
+TEST(FixedUnorderedMap, Ranges)
 {
-    FixedMap<int, int, 10> s1{{1, 10}, {4, 40}};
+    FixedUnorderedMap<int, int, 10> s1{{1, 10}, {4, 40}};
     auto f = s1 | ranges::views::filter([](const auto& v) -> bool { return v.second == 10; });
 
     EXPECT_EQ(1, ranges::distance(f));
@@ -1392,37 +1254,37 @@ TEST(FixedMap, Ranges)
     EXPECT_EQ(10, first_entry);
 }
 
-TEST(FixedMap, ClassTemplateArgumentDeduction)
+TEST(FixedUnorderedMap, ClassTemplateArgumentDeduction)
 {
     // Compile-only test
-    FixedMap a = FixedMap<int, int, 5>{};
+    FixedUnorderedMap a = FixedUnorderedMap<int, int, 5>{};
     (void)a;
 }
 
-TEST(FixedMap, NonDefaultConstructible)
+TEST(FixedUnorderedMap, NonDefaultConstructible)
 {
     {
-        constexpr FixedMap<int, MockNonDefaultConstructible, 10> s1{};
+        constexpr FixedUnorderedMap<int, MockNonDefaultConstructible, 10> s1{};
         static_assert(s1.empty());
     }
     {
-        FixedMap<int, MockNonDefaultConstructible, 10> s2{};
+        FixedUnorderedMap<int, MockNonDefaultConstructible, 10> s2{};
         s2.emplace(1, 3);
     }
 }
 
-TEST(FixedMap, MoveableButNotCopyable)
+TEST(FixedUnorderedMap, MoveableButNotCopyable)
 {
     {
-        FixedMap<std::string_view, MockMoveableButNotCopyable, 10> s{};
+        FixedUnorderedMap<std::string_view, MockMoveableButNotCopyable, 10> s{};
         s.emplace("", MockMoveableButNotCopyable{});
     }
 }
 
-TEST(FixedMap, NonAssignable)
+TEST(FixedUnorderedMap, NonAssignable)
 {
     {
-        FixedMap<int, MockNonAssignable, 10> s{};
+        FixedUnorderedMap<int, MockNonAssignable, 10> s{};
         s[1];
         s[2];
         s[3];
@@ -1435,11 +1297,11 @@ static constexpr int INT_VALUE_10 = 10;
 static constexpr int INT_VALUE_20 = 20;
 static constexpr int INT_VALUE_30 = 30;
 
-TEST(FixedMap, ConstRef)
+TEST(FixedUnorderedMap, ConstRef)
 {
     {
-#if !defined(_LIBCPP_VERSION)
-        std::map<int, const int&> s{{1, INT_VALUE_10}};
+#if !defined(_LIBCPP_VERSION) and !defined(_MSC_VER)
+        std::unordered_map<int, const int&> s{{1, INT_VALUE_10}};
         s.insert({2, INT_VALUE_20});
         s.emplace(3, INT_VALUE_30);
         s.erase(3);
@@ -1458,7 +1320,7 @@ TEST(FixedMap, ConstRef)
     }
 
     {
-        FixedMap<int, const int&, 10> s{{1, INT_VALUE_10}};
+        FixedUnorderedMap<int, const int&, 10> s{{1, INT_VALUE_10}};
         s.insert({2, INT_VALUE_20});
         s.emplace(3, INT_VALUE_30);
         s.erase(3);
@@ -1476,9 +1338,9 @@ TEST(FixedMap, ConstRef)
     }
 
     {
-        constexpr FixedMap<double, const int&, 10> s1 = []()
+        constexpr FixedUnorderedMap<double, const int&, 10> s1 = []()
         {
-            FixedMap<double, const int&, 10> s{{1.0, INT_VALUE_10}};
+            FixedUnorderedMap<double, const int&, 10> s{{1.0, INT_VALUE_10}};
             s.insert({2, INT_VALUE_20});
             s.emplace(3, INT_VALUE_30);
             s.erase(3);
@@ -1499,65 +1361,65 @@ TEST(FixedMap, ConstRef)
     }
 
     static_assert(NotTriviallyCopyable<const int&>);
-    static_assert(NotTriviallyCopyable<FixedMap<int, const int&, 5>>);
+    static_assert(NotTriviallyCopyable<FixedUnorderedMap<int, const int&, 5>>);
 }
 
 namespace
 {
-template <FixedMap<int, int, 5> /*INSTANCE*/>
-struct FixedMapInstanceCanBeUsedAsATemplateParameter
+template <FixedUnorderedMap<int, int, 5> /*INSTANCE*/>
+struct FixedUnorderedMapInstanceCanBeUsedAsATemplateParameter
 {
 };
 
-template <FixedMap<int, int, 5> /*INSTANCE*/>
+template <FixedUnorderedMap<int, int, 5> /*INSTANCE*/>
 constexpr void fixed_map_instance_can_be_used_as_a_template_parameter()
 {
 }
 }  // namespace
 
-TEST(FixedMap, UsageAsTemplateParameter)
+TEST(FixedUnorderedMap, UsageAsTemplateParameter)
 {
-    static constexpr FixedMap<int, int, 5> INSTANCE1{};
+    static constexpr FixedUnorderedMap<int, int, 5> INSTANCE1{};
     fixed_map_instance_can_be_used_as_a_template_parameter<INSTANCE1>();
-    FixedMapInstanceCanBeUsedAsATemplateParameter<INSTANCE1> my_struct{};
+    FixedUnorderedMapInstanceCanBeUsedAsATemplateParameter<INSTANCE1> my_struct{};
     static_cast<void>(my_struct);
 }
 
 namespace
 {
-struct FixedMapInstanceCounterUniquenessToken
+struct FixedUnorderedMapInstanceCounterUniquenessToken
 {
 };
 
-using InstanceCounterNonTrivialAssignment =
-    instance_counter::InstanceCounterNonTrivialAssignment<FixedMapInstanceCounterUniquenessToken>;
+using InstanceCounterNonTrivialAssignment = instance_counter::InstanceCounterNonTrivialAssignment<
+    FixedUnorderedMapInstanceCounterUniquenessToken>;
 
-using FixedMapOfInstanceCounterNonTrivial =
-    FixedMap<InstanceCounterNonTrivialAssignment, InstanceCounterNonTrivialAssignment, 5>;
-static_assert(!TriviallyCopyAssignable<FixedMapOfInstanceCounterNonTrivial>);
-static_assert(!TriviallyMoveAssignable<FixedMapOfInstanceCounterNonTrivial>);
-static_assert(!TriviallyDestructible<FixedMapOfInstanceCounterNonTrivial>);
+using FixedUnorderedMapOfInstanceCounterNonTrivial =
+    FixedUnorderedMap<InstanceCounterNonTrivialAssignment, InstanceCounterNonTrivialAssignment, 5>;
+static_assert(!TriviallyCopyAssignable<FixedUnorderedMapOfInstanceCounterNonTrivial>);
+static_assert(!TriviallyMoveAssignable<FixedUnorderedMapOfInstanceCounterNonTrivial>);
+static_assert(!TriviallyDestructible<FixedUnorderedMapOfInstanceCounterNonTrivial>);
 
-using InstanceCounterTrivialAssignment =
-    instance_counter::InstanceCounterTrivialAssignment<FixedMapInstanceCounterUniquenessToken>;
+using InstanceCounterTrivialAssignment = instance_counter::InstanceCounterTrivialAssignment<
+    FixedUnorderedMapInstanceCounterUniquenessToken>;
 
-using FixedMapOfInstanceCounterTrivial =
-    FixedMap<InstanceCounterTrivialAssignment, InstanceCounterTrivialAssignment, 5>;
-static_assert(TriviallyCopyAssignable<FixedMapOfInstanceCounterTrivial>);
-static_assert(TriviallyMoveAssignable<FixedMapOfInstanceCounterTrivial>);
-static_assert(!TriviallyDestructible<FixedMapOfInstanceCounterTrivial>);
+using FixedUnorderedMapOfInstanceCounterTrivial =
+    FixedUnorderedMap<InstanceCounterTrivialAssignment, InstanceCounterTrivialAssignment, 5>;
+static_assert(TriviallyCopyAssignable<FixedUnorderedMapOfInstanceCounterTrivial>);
+static_assert(TriviallyMoveAssignable<FixedUnorderedMapOfInstanceCounterTrivial>);
+static_assert(!TriviallyDestructible<FixedUnorderedMapOfInstanceCounterTrivial>);
 
-static_assert(FixedMapOfInstanceCounterNonTrivial::const_iterator{} ==
-              FixedMapOfInstanceCounterNonTrivial::const_iterator{});
+static_assert(FixedUnorderedMapOfInstanceCounterNonTrivial::const_iterator{} ==
+              FixedUnorderedMapOfInstanceCounterNonTrivial::const_iterator{});
 
 template <typename T>
-struct FixedMapInstanceCheckFixture : public ::testing::Test
+struct FixedUnorderedMapInstanceCheckFixture : public ::testing::Test
 {
 };
-TYPED_TEST_SUITE_P(FixedMapInstanceCheckFixture);
+TYPED_TEST_SUITE_P(FixedUnorderedMapInstanceCheckFixture);
 }  // namespace
 
-TYPED_TEST_P(FixedMapInstanceCheckFixture, FixedMap_InstanceCheck)
+TYPED_TEST_P(FixedUnorderedMapInstanceCheckFixture, FixedUnorderedMap_InstanceCheck)
 {
     using MapOfInstanceCounterType = TypeParam;
     using InstanceCounterType = typename MapOfInstanceCounterType::key_type;
@@ -1822,28 +1684,28 @@ TYPED_TEST_P(FixedMapInstanceCheckFixture, FixedMap_InstanceCheck)
     ASSERT_EQ(0, InstanceCounterType::counter);
 }
 
-REGISTER_TYPED_TEST_SUITE_P(FixedMapInstanceCheckFixture, FixedMap_InstanceCheck);
+REGISTER_TYPED_TEST_SUITE_P(FixedUnorderedMapInstanceCheckFixture, FixedUnorderedMap_InstanceCheck);
 
-// We want same semantics as std::map, so run it with std::map as well
-using FixedMapInstanceCheckTypes = testing::Types<
-    std::map<InstanceCounterNonTrivialAssignment, InstanceCounterNonTrivialAssignment>,
-    std::map<InstanceCounterTrivialAssignment, InstanceCounterTrivialAssignment>,
-    FixedMap<InstanceCounterNonTrivialAssignment, InstanceCounterNonTrivialAssignment, 17>,
-    FixedMap<InstanceCounterTrivialAssignment, InstanceCounterTrivialAssignment, 17>>;
+// We want same semantics as std::unordered_map, so run it with std::unordered_map as well
+using FixedUnorderedMapInstanceCheckTypes = testing::Types<
+    std::unordered_map<InstanceCounterNonTrivialAssignment, InstanceCounterNonTrivialAssignment>,
+    std::unordered_map<InstanceCounterTrivialAssignment, InstanceCounterTrivialAssignment>,
+    FixedUnorderedMap<InstanceCounterNonTrivialAssignment, InstanceCounterNonTrivialAssignment, 17>,
+    FixedUnorderedMap<InstanceCounterTrivialAssignment, InstanceCounterTrivialAssignment, 17>>;
 
-INSTANTIATE_TYPED_TEST_SUITE_P(FixedMap,
-                               FixedMapInstanceCheckFixture,
-                               FixedMapInstanceCheckTypes,
+INSTANTIATE_TYPED_TEST_SUITE_P(FixedUnorderedMap,
+                               FixedUnorderedMapInstanceCheckFixture,
+                               FixedUnorderedMapInstanceCheckTypes,
                                NameProviderForTypeParameterizedTest);
 
 }  // namespace fixed_containers
 
 namespace another_namespace_unrelated_to_the_fixed_containers_namespace
 {
-TEST(FixedMap, ArgumentDependentLookup)
+TEST(FixedUnorderedMap, ArgumentDependentLookup)
 {
     // Compile-only test
-    fixed_containers::FixedMap<int, int, 5> a{};
+    fixed_containers::FixedUnorderedMap<int, int, 5> a{};
     erase_if(a, [](auto&&) { return true; });
     (void)is_full(a);
 }

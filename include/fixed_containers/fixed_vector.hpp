@@ -103,6 +103,7 @@ class FixedVectorBase
     static_assert(std::same_as<std::remove_cv_t<T>, T>,
                   "Vector must have a non-const, non-volatile value_type");
     using Checking = CheckingType;
+    using Array = std::array<OptionalT, MAXIMUM_SIZE>;
 
     struct Mapper
     {
@@ -118,12 +119,11 @@ class FixedVectorBase
     };
 
     template <IteratorConstness CONSTNESS>
-    using IteratorImpl = RandomAccessIteratorTransformer<
-        typename std::array<OptionalT, MAXIMUM_SIZE>::const_iterator,
-        typename std::array<OptionalT, MAXIMUM_SIZE>::iterator,
-        Mapper,
-        Mapper,
-        CONSTNESS>;
+    using IteratorImpl = RandomAccessIteratorTransformer<typename Array::const_iterator,
+                                                         typename Array::iterator,
+                                                         Mapper,
+                                                         Mapper,
+                                                         CONSTNESS>;
 
 public:
     using value_type = T;
@@ -153,7 +153,7 @@ private:
 
 public:  // Public so this type is a structural type and can thus be used in template parameters
     std::size_t IMPLEMENTATION_DETAIL_DO_NOT_USE_size_;
-    std::array<OptionalT, MAXIMUM_SIZE> IMPLEMENTATION_DETAIL_DO_NOT_USE_array_;
+    Array IMPLEMENTATION_DETAIL_DO_NOT_USE_array_;
 
 public:
     constexpr FixedVectorBase() noexcept
@@ -167,7 +167,7 @@ public:
         {
             if (std::is_constant_evaluated())
             {
-                std::construct_at(&IMPLEMENTATION_DETAIL_DO_NOT_USE_array_);
+                std::construct_at(&array());
             }
         }
     }
@@ -238,8 +238,8 @@ public:
         // Destroy extras if we are making it smaller.
         while (size() > count)
         {
+            destroy_at(back_index());
             decrement_size();
-            destroy_at(end_index());
         }
     }
 
@@ -417,7 +417,7 @@ public:
                              const std_transition::source_location& loc =
                                  std_transition::source_location::current()) noexcept
     {
-        return erase(it, it + 1, loc);
+        return erase(it, std::next(it), loc);
     }
 
     /**
@@ -491,13 +491,10 @@ public:
         return unchecked_at(back_index());
     }
 
-    constexpr value_type* data() noexcept
-    {
-        return &optional_storage_detail::get(*IMPLEMENTATION_DETAIL_DO_NOT_USE_array_.data());
-    }
+    constexpr value_type* data() noexcept { return &optional_storage_detail::get(*array().data()); }
     constexpr const value_type* data() const noexcept
     {
-        return &optional_storage_detail::get(*IMPLEMENTATION_DETAIL_DO_NOT_USE_array_.data());
+        return &optional_storage_detail::get(*array().data());
     }
 
     /**
@@ -561,40 +558,14 @@ public:
             }
         }
 
-        if (this->size() != other.size())
-        {
-            return false;
-        }
-
-        for (std::size_t i = 0; i < this->size(); i++)
-        {
-            if (this->unchecked_at(i) != other.at(i))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return std::ranges::equal(*this, other);
     }
 
     template <std::size_t MAXIMUM_SIZE_2, customize::SequenceContainerChecking CheckingType2>
     constexpr auto operator<=>(const FixedVectorBase<T, MAXIMUM_SIZE_2, CheckingType2>& other) const
     {
-        using OrderingType = decltype(std::declval<T>() <=> std::declval<T>());
-        const std::size_t min_size = (std::min)(this->size(), other.size());
-        for (std::size_t i = 0; i < min_size; i++)
-        {
-            if (unchecked_at(i) < other.at(i))
-            {
-                return OrderingType::less;
-            }
-            if (unchecked_at(i) > other.at(i))
-            {
-                return OrderingType::greater;
-            }
-        }
-
-        return this->size() <=> other.size();
+        return std::lexicographical_compare_three_way(
+            cbegin(), cend(), other.cbegin(), other.cend());
     }
 
 private:
@@ -665,16 +636,16 @@ private:
 
     constexpr iterator create_iterator(const std::size_t offset_from_start) noexcept
     {
-        auto array_it = std::next(std::begin(IMPLEMENTATION_DETAIL_DO_NOT_USE_array_),
-                                  static_cast<difference_type>(offset_from_start));
+        auto array_it =
+            std::next(std::begin(array()), static_cast<difference_type>(offset_from_start));
         return iterator{array_it, Mapper{}};
     }
 
     constexpr const_iterator create_const_iterator(
         const std::size_t offset_from_start) const noexcept
     {
-        auto array_it = std::next(std::begin(IMPLEMENTATION_DETAIL_DO_NOT_USE_array_),
-                                  static_cast<difference_type>(offset_from_start));
+        auto array_it =
+            std::next(std::begin(array()), static_cast<difference_type>(offset_from_start));
         return const_iterator{array_it, Mapper{}};
     }
 
@@ -703,6 +674,9 @@ private:
     [[nodiscard]] constexpr std::size_t back_index() const { return end_index() - 1; }
     [[nodiscard]] constexpr std::size_t end_index() const { return size(); }
 
+    constexpr const Array& array() const { return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_; }
+    constexpr Array& array() { return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_; }
+
     constexpr void increment_size(const std::size_t n = 1)
     {
         IMPLEMENTATION_DETAIL_DO_NOT_USE_size_ += n;
@@ -715,14 +689,8 @@ private:
     {
         IMPLEMENTATION_DETAIL_DO_NOT_USE_size_ = size;
     }
-    constexpr const OptionalT& array_unchecked_at(const std::size_t i) const
-    {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_[i];
-    }
-    constexpr OptionalT& array_unchecked_at(const std::size_t i)
-    {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_[i];
-    }
+    constexpr const OptionalT& array_unchecked_at(const std::size_t i) const { return array()[i]; }
+    constexpr OptionalT& array_unchecked_at(const std::size_t i) { return array()[i]; }
     constexpr const T& unchecked_at(const std::size_t i) const
     {
         return optional_storage_detail::get(array_unchecked_at(i));
@@ -1058,7 +1026,6 @@ template <typename T,
 struct tuple_size<fixed_containers::FixedVector<T, MAXIMUM_SIZE, CheckingType>>
   : std::integral_constant<std::size_t, 0>
 {
-    static_assert(fixed_containers::AlwaysFalseV<T, decltype(MAXIMUM_SIZE), CheckingType>,
-                  "Implicit Structured Binding due to the fields being public is disabled");
+    // Implicit Structured Binding due to the fields being public is disabled
 };
 }  // namespace std

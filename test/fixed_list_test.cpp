@@ -1,4 +1,4 @@
-#include "fixed_containers/fixed_vector.hpp"
+#include "fixed_containers/fixed_list.hpp"
 
 #include "instance_counter.hpp"
 #include "mock_testing_types.hpp"
@@ -15,107 +15,90 @@
 
 #include <algorithm>
 #include <array>
-#include <span>
-#include <vector>
+#include <list>
 
 namespace fixed_containers
 {
 namespace
 {
 // Static assert for expected type properties
-namespace trivially_copyable_vector
+namespace trivially_copyable_list
 {
-using VecType = FixedVector<int, 5>;
-static_assert(TriviallyCopyable<VecType>);
-static_assert(NotTrivial<VecType>);
-static_assert(StandardLayout<VecType>);
-static_assert(IsStructuralType<VecType>);
+using ListType = FixedList<int, 5>;
+static_assert(TriviallyCopyable<ListType>);
+static_assert(NotTrivial<ListType>);
+static_assert(StandardLayout<ListType>);
+static_assert(IsStructuralType<ListType>);
 
-static_assert(std::contiguous_iterator<VecType::iterator>);
-static_assert(std::contiguous_iterator<VecType::const_iterator>);
-static_assert(std::ranges::contiguous_range<VecType>);
-static_assert(std::ranges::contiguous_range<const VecType>);
+static_assert(std::bidirectional_iterator<ListType::iterator>);
+static_assert(std::bidirectional_iterator<ListType::const_iterator>);
+static_assert(std::ranges::bidirectional_range<ListType>);
+static_assert(std::ranges::bidirectional_range<const ListType>);
 
-static_assert(std::is_same_v<std::iter_value_t<VecType::iterator>, int>);
-static_assert(std::is_same_v<std::iter_reference_t<VecType::iterator>, int&>);
-static_assert(std::is_same_v<std::iter_difference_t<VecType::iterator>, std::ptrdiff_t>);
-static_assert(std::is_same_v<typename std::iterator_traits<VecType::iterator>::pointer, int*>);
-static_assert(std::is_same_v<typename std::iterator_traits<VecType::iterator>::iterator_category,
-                             std::contiguous_iterator_tag>);
-static_assert(std::is_same_v<typename std::pointer_traits<VecType::iterator>::element_type, int>);
-
-static_assert(std::is_same_v<std::iter_value_t<VecType::const_iterator>, int>);
-static_assert(std::is_same_v<std::iter_reference_t<VecType::const_iterator>, const int&>);
-static_assert(std::is_same_v<std::iter_difference_t<VecType::const_iterator>, std::ptrdiff_t>);
+static_assert(std::is_same_v<std::iter_value_t<ListType::const_iterator>, int>);
+static_assert(std::is_same_v<std::iter_reference_t<ListType::const_iterator>, const int&>);
+static_assert(std::is_same_v<std::iter_difference_t<ListType::const_iterator>, std::ptrdiff_t>);
 static_assert(
-    std::is_same_v<typename std::iterator_traits<VecType::const_iterator>::pointer, const int*>);
+    std::is_same_v<typename std::iterator_traits<ListType::const_iterator>::pointer, const int*>);
 static_assert(
-    std::is_same_v<typename std::iterator_traits<VecType::const_iterator>::iterator_category,
-                   std::contiguous_iterator_tag>);
-static_assert(
-    std::is_same_v<typename std::pointer_traits<VecType::const_iterator>::element_type, const int>);
+    std::is_same_v<typename std::iterator_traits<ListType::const_iterator>::iterator_category,
+                   std::bidirectional_iterator_tag>);
 
-using ConstVecType = const VecType;
-static_assert(std::is_same_v<int, typename ConstVecType::iterator::value_type>);
-static_assert(std::is_same_v<int, typename ConstVecType::const_iterator::value_type>);
-}  // namespace trivially_copyable_vector
+using ConstListType = const ListType;
+static_assert(std::is_same_v<int, typename ConstListType::iterator::value_type>);
+static_assert(std::is_same_v<int, typename ConstListType::const_iterator::value_type>);
+}  // namespace trivially_copyable_list
 
-namespace trivially_copyable_but_not_copyable_or_moveable_vector
+namespace trivially_copyable_but_not_copyable_or_moveable_list
 {
-using VecType = FixedVector<MockTriviallyCopyableButNotCopyableOrMoveable, 5>;
+using ListType = FixedList<MockTriviallyCopyableButNotCopyableOrMoveable, 5>;
 #if defined(__clang__) || defined(__GNUC__)
-static_assert(TriviallyCopyable<VecType>);
-static_assert(NotCopyAssignable<VecType>);
-static_assert(NotCopyConstructible<VecType>);
-static_assert(NotMoveAssignable<VecType>);
-static_assert(TriviallyDestructible<VecType>);
+static_assert(TriviallyCopyable<ListType>);
+static_assert(NotCopyAssignable<ListType>);
+static_assert(NotCopyConstructible<ListType>);
+static_assert(NotMoveAssignable<ListType>);
+static_assert(TriviallyDestructible<ListType>);
 #elif defined(_MSC_VER)
-static_assert(NotTriviallyCopyable<VecType>);
-static_assert(CopyAssignable<VecType>);
-static_assert(CopyConstructible<VecType>);
-static_assert(MoveAssignable<VecType>);
-static_assert(NotTriviallyDestructible<VecType>);
+static_assert(NotTriviallyCopyable<ListType>);
+static_assert(CopyAssignable<ListType>);
+static_assert(CopyConstructible<ListType>);
+static_assert(MoveAssignable<ListType>);
+static_assert(NotTriviallyDestructible<ListType>);
 #endif
 
-static_assert(NotTrivial<VecType>);
-static_assert(StandardLayout<VecType>);
-}  // namespace trivially_copyable_but_not_copyable_or_moveable_vector
+static_assert(NotTrivial<ListType>);
+static_assert(StandardLayout<ListType>);
+}  // namespace trivially_copyable_but_not_copyable_or_moveable_list
 
-namespace not_trivially_copyable_vector
+namespace not_trivially_copyable_list
 {
 using T = MockNonTrivialInt;
-using VecType = FixedVector<T, 5>;
-static_assert(!TriviallyCopyable<VecType>);
-static_assert(NotTrivial<VecType>);
-static_assert(StandardLayout<VecType>);
+using ListType = FixedList<T, 5>;
+static_assert(!TriviallyCopyable<ListType>);
+static_assert(NotTrivial<ListType>);
+static_assert(StandardLayout<ListType>);
 
-static_assert(std::contiguous_iterator<VecType::iterator>);
-static_assert(std::contiguous_iterator<VecType::const_iterator>);
-static_assert(std::ranges::contiguous_range<VecType>);
-static_assert(std::ranges::contiguous_range<const VecType>);
+static_assert(std::bidirectional_iterator<ListType::iterator>);
+static_assert(std::bidirectional_iterator<ListType::const_iterator>);
+static_assert(std::ranges::bidirectional_range<ListType>);
+static_assert(std::ranges::bidirectional_range<const ListType>);
 
-static_assert(std::is_same_v<std::iter_value_t<VecType::iterator>, T>);
-static_assert(std::is_same_v<std::iter_reference_t<VecType::iterator>, T&>);
-static_assert(std::is_same_v<std::iter_difference_t<VecType::iterator>, std::ptrdiff_t>);
-static_assert(std::is_same_v<typename std::iterator_traits<VecType::iterator>::pointer, T*>);
-static_assert(std::is_same_v<typename std::iterator_traits<VecType::iterator>::iterator_category,
-                             std::contiguous_iterator_tag>);
-static_assert(std::is_same_v<typename std::pointer_traits<VecType::iterator>::element_type, T>);
+static_assert(std::is_same_v<std::iter_value_t<ListType::iterator>, T>);
+static_assert(std::is_same_v<std::iter_reference_t<ListType::iterator>, T&>);
+static_assert(std::is_same_v<std::iter_difference_t<ListType::iterator>, std::ptrdiff_t>);
+static_assert(std::is_same_v<typename std::iterator_traits<ListType::iterator>::pointer, T*>);
+static_assert(std::is_same_v<typename std::iterator_traits<ListType::iterator>::iterator_category,
+                             std::bidirectional_iterator_tag>);
 
-static_assert(std::is_same_v<std::iter_value_t<VecType::const_iterator>, T>);
-static_assert(std::is_same_v<std::iter_reference_t<VecType::const_iterator>, const T&>);
-static_assert(std::is_same_v<std::iter_difference_t<VecType::const_iterator>, std::ptrdiff_t>);
+static_assert(std::is_same_v<std::iter_value_t<ListType::const_iterator>, T>);
+static_assert(std::is_same_v<std::iter_reference_t<ListType::const_iterator>, const T&>);
+static_assert(std::is_same_v<std::iter_difference_t<ListType::const_iterator>, std::ptrdiff_t>);
 static_assert(
-    std::is_same_v<typename std::iterator_traits<VecType::const_iterator>::pointer, const T*>);
+    std::is_same_v<typename std::iterator_traits<ListType::const_iterator>::pointer, const T*>);
 static_assert(
-    std::is_same_v<typename std::iterator_traits<VecType::const_iterator>::iterator_category,
-                   std::contiguous_iterator_tag>);
-static_assert(
-    std::is_same_v<typename std::pointer_traits<VecType::const_iterator>::element_type, const T>);
-}  // namespace not_trivially_copyable_vector
-
-void const_span_ref(const std::span<int>&) {}
-void const_span_of_const_ref(const std::span<const int>&) {}
+    std::is_same_v<typename std::iterator_traits<ListType::const_iterator>::iterator_category,
+                   std::bidirectional_iterator_tag>);
+}  // namespace not_trivially_copyable_list
 
 struct ComplexStruct
 {
@@ -133,27 +116,27 @@ struct ComplexStruct
 
 }  // namespace
 
-TEST(FixedVector, DefaultConstructor)
+TEST(FixedList, DefaultConstructor)
 {
-    constexpr FixedVector<int, 8> v1{};
+    constexpr FixedList<int, 8> v1{};
     static_assert(v1.empty());
     static_assert(v1.max_size() == 8);
 
-    constexpr FixedVector<std::pair<int, int>, 5> v2{};
+    constexpr FixedList<std::pair<int, int>, 5> v2{};
     static_assert(v2.empty());
 }
 
-TEST(FixedVector, DefaultConstructorNonDefaultConstructible)
+TEST(FixedList, DefaultConstructorNonDefaultConstructible)
 {
     {
-        constexpr FixedVector<MockNonDefaultConstructible, 8> v1{};
+        constexpr FixedList<MockNonDefaultConstructible, 8> v1{};
         static_assert(v1.empty());
         static_assert(v1.max_size() == 8);
     }
     {
         constexpr auto v2 = []()
         {
-            FixedVector<MockNonDefaultConstructible, 11> v{};
+            FixedList<MockNonDefaultConstructible, 11> v{};
             v.push_back({0});
             return v;
         }();
@@ -162,44 +145,36 @@ TEST(FixedVector, DefaultConstructorNonDefaultConstructible)
     }
 }
 
-TEST(FixedVector, MockNonTrivialDestructible)
+TEST(FixedList, MockNonTrivialDestructible)
 {
     {
-        std::vector<MockNonTrivialDestructible> stdv{};
+        std::list<MockNonTrivialDestructible> stdv{};
         stdv.push_back({});
         // stdv.at(0) = {};
         stdv.clear();
     }
 
     {
-        FixedVector<MockNonTrivialDestructible, 5> v{};
+        FixedList<MockNonTrivialDestructible, 5> v{};
         v.push_back({});
         v.clear();
     }
 
     {
-        std::vector<MockNonCopyAssignable> stdv{};
+        std::list<MockNonCopyAssignable> stdv{};
         stdv.push_back({});
         // stdv.at(0) = {};
         stdv.clear();
     }
 
     {
-        FixedVector<MockNonCopyAssignable, 5> v1{};
+        FixedList<MockNonCopyAssignable, 5> v1{};
         v1.push_back({});
         v1.clear();
     }
 
     {
-        std::vector<MockNonTrivialCopyAssignable> v1{};
-        v1.push_back({});
-        v1.clear();
-
-        auto v2 = v1;
-    }
-
-    {
-        FixedVector<MockNonTrivialCopyAssignable, 5> v1{};
+        std::list<MockNonTrivialCopyAssignable> v1{};
         v1.push_back({});
         v1.clear();
 
@@ -207,7 +182,7 @@ TEST(FixedVector, MockNonTrivialDestructible)
     }
 
     {
-        std::vector<MockNonTrivialCopyConstructible> v1{};
+        FixedList<MockNonTrivialCopyAssignable, 5> v1{};
         v1.push_back({});
         v1.clear();
 
@@ -215,7 +190,7 @@ TEST(FixedVector, MockNonTrivialDestructible)
     }
 
     {
-        FixedVector<MockNonTrivialCopyConstructible, 5> v1{};
+        std::list<MockNonTrivialCopyConstructible> v1{};
         v1.push_back({});
         v1.clear();
 
@@ -223,198 +198,96 @@ TEST(FixedVector, MockNonTrivialDestructible)
     }
 
     {
-        FixedVector<MockMoveableButNotCopyable, 5> v1{};
+        FixedList<MockNonTrivialCopyConstructible, 5> v1{};
+        v1.push_back({});
+        v1.clear();
+
+        auto v2 = v1;
+    }
+
+    {
+        FixedList<MockMoveableButNotCopyable, 5> v1{};
         v1.push_back({});
         v1.clear();
     }
 }
 
-TEST(FixedVector, MockNonAssignable)
+TEST(FixedList, MockNonAssignable)
 {
     const MockNonAssignable tt = {5};
 
     {
-        FixedVector<MockNonAssignable, 5> v1{};
+        FixedList<MockNonAssignable, 5> v1{};
         v1.push_back({5});
         v1.push_back(tt);
     }
 
     {
-        std::vector<MockNonAssignable> v1{};
+        std::list<MockNonAssignable> v1{};
         v1.push_back({5});
         v1.push_back(tt);
     }
 }
 
-TEST(FixedVector, MockNonTriviallyCopyAssignable)
+TEST(FixedList, MockNonTriviallyCopyAssignable)
 {
     const MockNonTriviallyCopyAssignable tt = {};
 
     {
-        FixedVector<MockNonTriviallyCopyAssignable, 5> v1{};
+        FixedList<MockNonTriviallyCopyAssignable, 5> v1{};
         v1.push_back({});
         v1.push_back(tt);
         v1.erase(v1.begin());
     }
 
     {
-        std::vector<MockNonTriviallyCopyAssignable> v1{};
+        std::list<MockNonTriviallyCopyAssignable> v1{};
         v1.push_back({});
         v1.push_back(tt);
         v1.erase(v1.begin());
     }
 }
 
-TEST(FixedVector, MockTriviallyCopyableButNotCopyableOrMoveable)
+TEST(FixedList, MockTriviallyCopyableButNotCopyableOrMoveable)
 {
     {
-        FixedVector<MockTriviallyCopyableButNotCopyableOrMoveable, 5> v1{};
+        FixedList<MockTriviallyCopyableButNotCopyableOrMoveable, 5> v1{};
         (void)v1;
-        // can't populate the vector
+        // can't populate the list
     }
 
     {
-        std::vector<MockTriviallyCopyableButNotCopyableOrMoveable> v1{};
+        std::list<MockTriviallyCopyableButNotCopyableOrMoveable> v1{};
         (void)v1;
-        // can't populate the vector
+        // can't populate the list
     }
 }
 
-TEST(FixedVector, Builder_FluentSyntaxWithNoExtraCopies)
+TEST(FixedList, MaxSizeDeduction)
 {
-    {
-        constexpr std::array<int, 2> a{2, 4};
-        constexpr int b = 12;
-
-        constexpr auto s1 = FixedVector<int, 17>::Builder{}
-                                .push_back_all(a.begin(), a.end())
-                                .push_back(b)
-                                .push_back_all(a)
-                                .push_back(b)
-                                .push_back_all({22, 24})
-                                .build();
-
-        static_assert(s1.size() == 8);
-        static_assert(std::ranges::equal(s1, std::array{2, 4, 12, 2, 4, 12, 22, 24}));
-    }
-
-    {
-        constexpr std::array<int, 2> a{2, 4};
-        constexpr int b = 12;
-
-        auto s1 = FixedVector<int, 17>::Builder{}
-                      .push_back_all(a.begin(), a.end())
-                      .push_back(b)
-                      .push_back_all(a)
-                      .push_back(b)
-                      .push_back_all({22, 24})
-                      .build();
-
-        EXPECT_EQ(8, s1.size());
-        EXPECT_TRUE(std::ranges::equal(s1, std::array{2, 4, 12, 2, 4, 12, 22, 24}));
-    }
-}
-
-TEST(FixedVector, Builder_MultipleOuts)
-{
-    {
-        constexpr std::array<int, 2> a{2, 4};
-        constexpr int b = 12;
-
-        constexpr std::array<FixedVector<int, 17>, 2> s_all = [&]()
-        {
-            FixedVector<int, 17>::Builder builder{};
-
-            builder.push_back(b);
-            auto out1 = builder.build();
-
-            // l-value overloads
-            builder.push_back_all(a.begin(), a.end());
-            builder.push_back(b);
-            builder.push_back_all(a);
-            builder.push_back(b);
-            builder.push_back_all({22, 24});
-            auto out2 = builder.build();
-
-            return std::array<FixedVector<int, 17>, 2>{out1, out2};
-        }();
-
-        {
-            // out1 should be unaffected by out2's addition of extra elements
-            constexpr FixedVector<int, 17> s1 = s_all[0];
-            static_assert(s1.size() == 1);
-            static_assert(std::ranges::equal(s1, std::array{12}));
-        }
-
-        {
-            constexpr FixedVector<int, 17> s2 = s_all[1];
-            static_assert(s2.size() == 9);
-            static_assert(std::ranges::equal(s2, std::array{12, 2, 4, 12, 2, 4, 12, 22, 24}));
-        }
-    }
-
-    {
-        constexpr std::array<int, 2> a{2, 4};
-        constexpr int b = 12;
-
-        std::array<FixedVector<int, 17>, 2> s_all = [&]()
-        {
-            FixedVector<int, 17>::Builder builder{};
-
-            builder.push_back(b);
-            auto out1 = builder.build();
-
-            // l-value overloads
-            builder.push_back_all(a.begin(), a.end());
-            builder.push_back(b);
-            builder.push_back_all(a);
-            builder.push_back(b);
-            builder.push_back_all({22, 24});
-            auto out2 = builder.build();
-
-            return std::array<FixedVector<int, 17>, 2>{out1, out2};
-        }();
-
-        {
-            // out1 should be unaffected by out2's addition of extra elements
-            FixedVector<int, 17> s1 = s_all[0];
-            EXPECT_EQ(1, s1.size());
-            EXPECT_TRUE(std::ranges::equal(s1, std::array{12}));
-        }
-
-        {
-            FixedVector<int, 17> s2 = s_all[1];
-            EXPECT_EQ(9, s2.size());
-            EXPECT_TRUE(std::ranges::equal(s2, std::array{12, 2, 4, 12, 2, 4, 12, 22, 24}));
-        }
-    }
-}
-
-TEST(FixedVector, MaxSizeDeduction)
-{
-    constexpr auto v1 = make_fixed_vector({10, 11, 12, 13, 14});
+    constexpr auto v1 = make_fixed_list({10, 11, 12, 13, 14});
     static_assert(v1.max_size() == 5);
     static_assert(std::ranges::equal(v1, std::array{10, 11, 12, 13, 14}));
 }
 
-TEST(FixedVector, CountConstructor)
+TEST(FixedList, CountConstructor)
 {
     // Caution: Using braces calls initializer list ctor!
     {
-        constexpr FixedVector<int, 8> v{5};
+        constexpr FixedList<int, 8> v{5};
         static_assert(v.size() == 1);
     }
 
     // Use parens to get the count ctor!
     {
-        constexpr FixedVector<int, 8> v1(5);
+        constexpr FixedList<int, 8> v1(5);
         static_assert(v1.size() == 5);
         static_assert(v1.max_size() == 8);
         static_assert(std::ranges::equal(v1, std::array{0, 0, 0, 0, 0}));
     }
 
     {
-        constexpr FixedVector<int, 8> v2(5, 3);
+        constexpr FixedList<int, 8> v2(5, 3);
         static_assert(v2.size() == 5);
         static_assert(v2.max_size() == 8);
         static_assert(std::ranges::equal(v2, std::array{3, 3, 3, 3, 3}));
@@ -422,67 +295,67 @@ TEST(FixedVector, CountConstructor)
 
     // NonAssignable<T>
     {
-        FixedVector<MockNonAssignable, 8> v{5};
+        FixedList<MockNonAssignable, 8> v{5};
         ASSERT_EQ(5, v.size());
     }
 }
 
-TEST(FixedVector, CountConstructor_ExceedsCapacity)
+TEST(FixedList, CountConstructor_ExceedsCapacity)
 {
-    EXPECT_DEATH((FixedVector<int, 8>(1000, 3)), "");
+    EXPECT_DEATH((FixedList<int, 8>(1000, 3)), "");
 }
 
-TEST(FixedVector, IteratorConstructor)
+TEST(FixedList, IteratorConstructor)
 {
     constexpr std::array<int, 2> v1{77, 99};
 
-    constexpr FixedVector<int, 15> v2{v1.begin(), v1.end()};
+    constexpr FixedList<int, 15> v2{v1.begin(), v1.end()};
     static_assert(std::ranges::equal(v2, std::array{77, 99}));
 }
 
-TEST(FixedVector, IteratorConstructor_ExceedsCapacity)
+TEST(FixedList, IteratorConstructor_ExceedsCapacity)
 {
     constexpr std::array<int, 5> v1{1, 2, 3, 4, 5};
 
-    EXPECT_DEATH((FixedVector<int, 3>(v1.begin(), v1.end())), "");
+    EXPECT_DEATH((FixedList<int, 3>(v1.begin(), v1.end())), "");
 }
 
-TEST(FixedVector, InputIteratorConstructor)
+TEST(FixedList, InputIteratorConstructor)
 {
     MockIntegralStream<int> stream{3};
-    FixedVector<int, 14> v{stream.begin(), stream.end()};
+    FixedList<int, 14> v{stream.begin(), stream.end()};
     ASSERT_EQ(3, v.size());
     EXPECT_TRUE(std::ranges::equal(v, std::array{3, 2, 1}));
 }
 
-TEST(FixedVector, InputIteratorConstructor_ExceedsCapacity)
+TEST(FixedList, InputIteratorConstructor_ExceedsCapacity)
 {
     MockIntegralStream<int> stream{7};
-    EXPECT_DEATH((FixedVector<int, 3>{stream.begin(), stream.end()}), "");
+    EXPECT_DEATH((FixedList<int, 3>{stream.begin(), stream.end()}), "");
 }
 
-TEST(FixedVector, InitializerConstructor)
+TEST(FixedList, InitializerConstructor)
 {
-    constexpr FixedVector<int, 3> v1{77, 99};
+    constexpr FixedList<int, 3> v1{77, 99};
     static_assert(std::ranges::equal(v1, std::array{77, 99}));
 
-    constexpr FixedVector<int, 3> v2{{66, 55}};
+    constexpr FixedList<int, 3> v2{{66, 55}};
     static_assert(std::ranges::equal(v2, std::array{66, 55}));
 
     EXPECT_TRUE(std::ranges::equal(v1, std::array{77, 99}));
     EXPECT_TRUE(std::ranges::equal(v2, std::array{66, 55}));
 }
 
-TEST(FixedVector, InitializerConstructor_ExceedsCapacity)
+TEST(FixedList, InitializerConstructor_ExceedsCapacity)
 {
-    EXPECT_DEATH((FixedVector<int, 3>{1, 2, 3, 4, 5}), "");
+    EXPECT_DEATH((FixedList<int, 3>{1, 2, 3, 4, 5}), "");
 }
 
-TEST(FixedVector, PushBack)
+TEST(FixedList, PushBack)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 11> v{};
+        FixedList<int, 11> v{};
         v.push_back(0);
         const int value = 1;
         v.push_back(value);
@@ -494,28 +367,28 @@ TEST(FixedVector, PushBack)
 
     constexpr auto v2 = []()
     {
-        FixedVector<MockNonTrivialCopyConstructible, 5> aaa{};
+        FixedList<MockNonTrivialCopyConstructible, 5> aaa{};
         aaa.push_back(MockNonTrivialCopyConstructible{});
         return aaa;
     }();
     static_assert(v2.size() == 1);
 }
 
-TEST(FixedVector, PushBack_ExceedsCapacity)
+TEST(FixedList, PushBack_ExceedsCapacity)
 {
-    FixedVector<int, 2> v{};
+    FixedList<int, 2> v{};
     v.push_back(0);
     const char value = 1;
     v.push_back(value);
     EXPECT_DEATH(v.push_back(2), "");
 }
 
-TEST(FixedVector, EmplaceBack)
+TEST(FixedList, EmplaceBack)
 {
     {
         constexpr auto v1 = []()
         {
-            FixedVector<int, 11> v{0, 1, 2};
+            FixedList<int, 11> v{0, 1, 2};
             v.emplace_back(3);
             v.emplace_back(4);
             return v;
@@ -526,7 +399,7 @@ TEST(FixedVector, EmplaceBack)
     {
         auto v1 = []()
         {
-            FixedVector<int, 11> v{0, 1, 2};
+            FixedList<int, 11> v{0, 1, 2};
             v.emplace_back(3);
             v.emplace_back(4);
             return v;
@@ -535,7 +408,7 @@ TEST(FixedVector, EmplaceBack)
         EXPECT_TRUE(std::ranges::equal(v1, std::array{0, 1, 2, 3, 4}));
     }
     {
-        FixedVector<ComplexStruct, 11> v2{};
+        FixedList<ComplexStruct, 11> v2{};
         v2.emplace_back(1, 2, 3, 4);
         auto ref = v2.emplace_back(101, 202, 303, 404);
 
@@ -544,177 +417,178 @@ TEST(FixedVector, EmplaceBack)
     }
 
     {
-        FixedVector<MockNonAssignable, 11> v3{};
+        FixedList<MockNonAssignable, 11> v3{};
         v3.emplace_back();  // Should compile
     }
 }
 
-TEST(FixedVector, EmplaceBack_ExceedsCapacity)
+TEST(FixedList, EmplaceBack_ExceedsCapacity)
 {
-    FixedVector<int, 2> v{};
+    FixedList<int, 2> v{};
     v.emplace_back(0);
     v.emplace_back(1);
     EXPECT_DEATH(v.emplace_back(2), "");
 }
 
-TEST(FixedVector, CapacityAndMaxSize)
+TEST(FixedList, MaxSize)
 {
     {
-        constexpr FixedVector<int, 3> v1{};
-        static_assert(v1.capacity() == 3);
+        constexpr FixedList<int, 3> v1{};
         static_assert(v1.max_size() == 3);
     }
 
     {
-        FixedVector<int, 3> v1{};
-        EXPECT_EQ(3, v1.capacity());
+        FixedList<int, 3> v1{};
         EXPECT_EQ(3, v1.max_size());
     }
 
     {
-        static_assert(FixedVector<int, 3>::static_max_size() == 3);
-        EXPECT_EQ(3, (FixedVector<int, 3>::static_max_size()));
-        static_assert(max_size_v<FixedVector<int, 3>> == 3);
-        EXPECT_EQ(3, (max_size_v<FixedVector<int, 3>>));
+        static_assert(FixedList<int, 3>::static_max_size() == 3);
+        EXPECT_EQ(3, (FixedList<int, 3>::static_max_size()));
+        static_assert(max_size_v<FixedList<int, 3>> == 3);
+        EXPECT_EQ(3, (max_size_v<FixedList<int, 3>>));
     }
 }
 
-TEST(FixedVector, Reserve)
+TEST(FixedList, ExceedsCapacity)
 {
-    constexpr auto v1 = []()
-    {
-        FixedVector<int, 11> v{};
-        v.reserve(5);
-        return v;
-    }();
-
-    static_assert(v1.capacity() == 11);
-    static_assert(v1.max_size() == 11);
-
-    FixedVector<int, 7> v2{};
-    v2.reserve(5);
-    EXPECT_DEATH(v2.reserve(15), "");
-}
-
-TEST(FixedVector, ReserveFailure)
-{
-    FixedVector<int, 3> v1{};
-    EXPECT_DEATH(v1.reserve(15), "");
-}
-
-TEST(FixedVector, ExceedsCapacity)
-{
-    FixedVector<int, 3> v1{0, 1, 2};
+    FixedList<int, 3> v1{0, 1, 2};
     EXPECT_DEATH(v1.push_back(3), "");
     const int value = 1;
     EXPECT_DEATH(v1.push_back(value), "");
 }
 
-TEST(FixedVector, PopBack)
+TEST(FixedList, PopBack)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 11> v{0, 1, 2};
+        FixedList<int, 11> v{0, 1, 2};
         v.pop_back();
         return v;
     }();
 
     static_assert(std::ranges::equal(v1, std::array{0, 1}));
 
-    FixedVector<int, 17> v2{10, 11, 12};
+    FixedList<int, 17> v2{10, 11, 12};
     v2.pop_back();
     EXPECT_TRUE(std::ranges::equal(v2, std::array{10, 11}));
 }
 
-TEST(FixedVector, PopBack_Empty)
+TEST(FixedList, PopBack_Empty)
 {
-    FixedVector<int, 5> v1{};
+    FixedList<int, 5> v1{};
     EXPECT_DEATH(v1.pop_back(), "");
 }
 
-TEST(FixedVector, BracketOperator)
+TEST(FixedList, PushFront)
+{
+    constexpr auto v1 = []()
+    {
+        FixedList<int, 11> v{};
+        v.push_front(0);
+        const int value = 1;
+        v.push_front(value);
+        v.push_front(2);
+        return v;
+    }();
+
+    static_assert(std::ranges::equal(v1, std::array{2, 1, 0}));
+
+    constexpr auto v2 = []()
+    {
+        FixedList<MockNonTrivialCopyConstructible, 5> aaa{};
+        aaa.push_front(MockNonTrivialCopyConstructible{});
+        return aaa;
+    }();
+    static_assert(v2.size() == 1);
+}
+
+TEST(FixedList, PushFront_ExceedsCapacity)
+{
+    FixedList<int, 2> v{};
+    v.push_front(0);
+    const char value = 1;
+    v.push_front(value);
+    EXPECT_DEATH(v.push_front(2), "");
+}
+
+TEST(FixedList, EmplaceFront)
 {
     {
         constexpr auto v1 = []()
         {
-            FixedVector<int, 11> v{};
-            v.resize(3);
-            v[0] = 100;
-            v[1] = 101;
-            v[2] = 102;
-            v[1] = 201;
-
+            FixedList<int, 11> v{0, 1, 2};
+            v.emplace_front(3);
+            v.emplace_front(4);
             return v;
         }();
 
-        static_assert(v1[0] == 100);
-        static_assert(v1[1] == 201);
-        static_assert(v1[2] == 102);
-        static_assert(v1.size() == 3);
+        static_assert(std::ranges::equal(v1, std::array{4, 3, 0, 1, 2}));
+    }
+    {
+        auto v1 = []()
+        {
+            FixedList<int, 11> v{0, 1, 2};
+            v.emplace_front(3);
+            v.emplace_front(4);
+            return v;
+        }();
 
-        auto v2 = FixedVector<int, 11>{0, 1, 2};
-        v2[1] = 901;
-        EXPECT_EQ(v2[0], 0);
-        EXPECT_EQ(v2[1], 901);
-        EXPECT_EQ(v2[2], 2);
+        EXPECT_TRUE(std::ranges::equal(v1, std::array{4, 3, 0, 1, 2}));
+    }
+    {
+        FixedList<ComplexStruct, 11> v2{};
+        v2.emplace_front(1, 2, 3, 4);
+        auto ref = v2.emplace_front(101, 202, 303, 404);
 
-        const auto& v3 = v2;
-        EXPECT_EQ(v3[0], 0);
-        EXPECT_EQ(v3[1], 901);
-        EXPECT_EQ(v3[2], 2);
+        EXPECT_EQ(ref.a, 101);
+        EXPECT_EQ(ref.c, 404);
+    }
+
+    {
+        FixedList<MockNonAssignable, 11> v3{};
+        v3.emplace_front();  // Should compile
     }
 }
 
-TEST(FixedVector, At)
+TEST(FixedList, EmplaceFront_ExceedsCapacity)
+{
+    FixedList<int, 2> v{};
+    v.emplace_front(0);
+    v.emplace_front(1);
+    EXPECT_DEATH(v.emplace_front(2), "");
+}
+
+TEST(FixedList, PopFront)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 11> v{};
-        v.resize(3);
-        v.at(0) = 100;
-        v.at(1) = 101;
-        v.at(2) = 102;
-        v.at(1) = 201;
-
+        FixedList<int, 11> v{0, 1, 2};
+        v.pop_front();
         return v;
     }();
 
-    static_assert(v1.at(0) == 100);
-    static_assert(v1.at(1) == 201);
-    static_assert(v1.at(2) == 102);
-    static_assert(v1.size() == 3);
+    static_assert(std::ranges::equal(v1, std::array{1, 2}));
 
-    auto v2 = FixedVector<int, 11>{0, 1, 2};
-    v2.at(1) = 901;
-    EXPECT_EQ(v2.at(0), 0);
-    EXPECT_EQ(v2.at(1), 901);
-    EXPECT_EQ(v2.at(2), 2);
-
-    const auto& v3 = v2;
-    EXPECT_EQ(v3.at(0), 0);
-    EXPECT_EQ(v3.at(1), 901);
-    EXPECT_EQ(v3.at(2), 2);
+    FixedList<int, 17> v2{10, 11, 12};
+    v2.pop_front();
+    EXPECT_TRUE(std::ranges::equal(v2, std::array{11, 12}));
 }
 
-TEST(FixedVector, At_OutOfBounds)
+TEST(FixedList, PopFront_Empty)
 {
-    auto v2 = FixedVector<int, 11>{0, 1, 2};
-    EXPECT_DEATH(v2.at(3) = 901, "");
-    EXPECT_DEATH(v2.at(v2.size()) = 901, "");
-
-    const auto& v3 = v2;
-    EXPECT_DEATH(v3.at(5), "");
-    EXPECT_DEATH(v3.at(v2.size()), "");
+    FixedList<int, 5> v1{};
+    EXPECT_DEATH(v1.pop_front(), "");
 }
 
-TEST(FixedVector, Equality)
+TEST(FixedList, Equality)
 {
-    constexpr auto v1 = FixedVector<int, 12>{0, 1, 2};
+    constexpr auto v1 = FixedList<int, 12>{0, 1, 2};
     // Capacity difference should not affect equality
-    constexpr auto v2 = FixedVector<int, 11>{0, 1, 2};
-    constexpr auto v3 = FixedVector<int, 12>{0, 101, 2};
-    constexpr auto v4 = FixedVector<int, 12>{0, 1};
-    constexpr auto v5 = FixedVector<int, 12>{0, 1, 2, 3, 4, 5};
+    constexpr auto v2 = FixedList<int, 11>{0, 1, 2};
+    constexpr auto v3 = FixedList<int, 12>{0, 101, 2};
+    constexpr auto v4 = FixedList<int, 12>{0, 1};
+    constexpr auto v5 = FixedList<int, 12>{0, 1, 2, 3, 4, 5};
 
     static_assert(v1 == v1);
     static_assert(v1 == v2);
@@ -729,14 +603,14 @@ TEST(FixedVector, Equality)
     EXPECT_NE(v1, v5);
 }
 
-TEST(FixedVector, Comparison)
+TEST(FixedList, Comparison)
 {
     // Using ASSERT_TRUE for symmetry with static_assert
 
     // Equal size, left < right
     {
-        std::vector<int> left{1, 2, 3};
-        std::vector<int> right{1, 2, 4};
+        std::list<int> left{1, 2, 3};
+        std::list<int> right{1, 2, 4};
 
         ASSERT_TRUE(left < right);
         ASSERT_TRUE(left <= right);
@@ -745,8 +619,8 @@ TEST(FixedVector, Comparison)
     }
 
     {
-        constexpr FixedVector<int, 5> left{1, 2, 3};
-        constexpr FixedVector<int, 5> right{1, 2, 4};
+        constexpr FixedList<int, 5> left{1, 2, 3};
+        constexpr FixedList<int, 5> right{1, 2, 4};
 
         static_assert(left < right);
         static_assert(left <= right);
@@ -761,8 +635,8 @@ TEST(FixedVector, Comparison)
 
     // Left has fewer elements, left > right
     {
-        std::vector<int> left{1, 5};
-        std::vector<int> right{1, 2, 4};
+        std::list<int> left{1, 5};
+        std::list<int> right{1, 2, 4};
 
         ASSERT_TRUE(!(left < right));
         ASSERT_TRUE(!(left <= right));
@@ -771,8 +645,8 @@ TEST(FixedVector, Comparison)
     }
 
     {
-        constexpr FixedVector<int, 5> left{1, 5};
-        constexpr FixedVector<int, 5> right{1, 2, 4};
+        constexpr FixedList<int, 5> left{1, 5};
+        constexpr FixedList<int, 5> right{1, 2, 4};
 
         static_assert(!(left < right));
         static_assert(!(left <= right));
@@ -787,8 +661,8 @@ TEST(FixedVector, Comparison)
 
     // Right has fewer elements, left < right
     {
-        std::vector<int> left{1, 2, 3};
-        std::vector<int> right{1, 5};
+        std::list<int> left{1, 2, 3};
+        std::list<int> right{1, 5};
 
         ASSERT_TRUE(left < right);
         ASSERT_TRUE(left <= right);
@@ -797,8 +671,8 @@ TEST(FixedVector, Comparison)
     }
 
     {
-        constexpr FixedVector<int, 5> left{1, 2, 3};
-        constexpr FixedVector<int, 5> right{1, 5};
+        constexpr FixedList<int, 5> left{1, 2, 3};
+        constexpr FixedList<int, 5> right{1, 5};
 
         static_assert(left < right);
         static_assert(left <= right);
@@ -813,8 +687,8 @@ TEST(FixedVector, Comparison)
 
     // Left has one additional element
     {
-        std::vector<int> left{1, 2, 3};
-        std::vector<int> right{1, 2};
+        std::list<int> left{1, 2, 3};
+        std::list<int> right{1, 2};
 
         ASSERT_TRUE(!(left < right));
         ASSERT_TRUE(!(left <= right));
@@ -823,8 +697,8 @@ TEST(FixedVector, Comparison)
     }
 
     {
-        constexpr FixedVector<int, 5> left{1, 2, 3};
-        constexpr FixedVector<int, 5> right{1, 2};
+        constexpr FixedList<int, 5> left{1, 2, 3};
+        constexpr FixedList<int, 5> right{1, 2};
 
         static_assert(!(left < right));
         static_assert(!(left <= right));
@@ -839,8 +713,8 @@ TEST(FixedVector, Comparison)
 
     // Right has one additional element
     {
-        std::vector<int> left{1, 2};
-        std::vector<int> right{1, 2, 3};
+        std::list<int> left{1, 2};
+        std::list<int> right{1, 2, 3};
 
         ASSERT_TRUE(left < right);
         ASSERT_TRUE(left <= right);
@@ -849,8 +723,8 @@ TEST(FixedVector, Comparison)
     }
 
     {
-        constexpr FixedVector<int, 5> left{1, 2};
-        constexpr FixedVector<int, 5> right{1, 2, 3};
+        constexpr FixedList<int, 5> left{1, 2};
+        constexpr FixedList<int, 5> right{1, 2, 3};
 
         static_assert(left < right);
         static_assert(left <= right);
@@ -864,18 +738,18 @@ TEST(FixedVector, Comparison)
     }
 }
 
-TEST(FixedVector, IteratorAssignment)
+TEST(FixedList, IteratorAssignment)
 {
-    FixedVector<int, 8>::iterator it;              // Default construction
-    FixedVector<int, 8>::const_iterator const_it;  // Default construction
+    FixedList<int, 8>::iterator it;              // Default construction
+    FixedList<int, 8>::const_iterator const_it;  // Default construction
 
     const_it = it;  // Non-const needs to be assignable to const
 }
 
-TEST(FixedVector, TrivialIterators)
+TEST(FixedList, TrivialIterators)
 {
     {
-        constexpr FixedVector<int, 3> v1{77, 88, 99};
+        constexpr FixedList<int, 3> v1{77, 88, 99};
 
         static_assert(std::distance(v1.cbegin(), v1.cend()) == 3);
 
@@ -889,7 +763,7 @@ TEST(FixedVector, TrivialIterators)
     }
 
     {
-        /*non-const*/ FixedVector<int, 8> v{};
+        /*non-const*/ FixedList<int, 8> v{};
         v.push_back(0);
         v.push_back(1);
         v.push_back(2);
@@ -916,7 +790,7 @@ TEST(FixedVector, TrivialIterators)
         }
     }
     {
-        const FixedVector<int, 8> v = {0, 1, 2, 3};
+        const FixedList<int, 8> v = {0, 1, 2, 3};
         {
             int ctr = 0;
             for (auto it = v.begin(); it != v.end(); it++)
@@ -940,7 +814,7 @@ TEST(FixedVector, TrivialIterators)
     }
 }
 
-TEST(FixedVector, NonTrivialIterators)
+TEST(FixedList, NonTrivialIterators)
 {
     struct S
     {
@@ -953,7 +827,7 @@ TEST(FixedVector, NonTrivialIterators)
     };
     static_assert(!std::is_trivially_copyable_v<S>);
     {
-        FixedVector<S, 8> v = {0, 1};
+        FixedList<S, 8> v = {0, 1};
         v.push_back(2);
         v.push_back(3);
         {
@@ -981,10 +855,10 @@ TEST(FixedVector, NonTrivialIterators)
     }
 }
 
-TEST(FixedVector, ReverseIterators)
+TEST(FixedList, ReverseIterators)
 {
     {
-        constexpr FixedVector<int, 3> v1{77, 88, 99};
+        constexpr FixedList<int, 3> v1{77, 88, 99};
 
         static_assert(std::distance(v1.crbegin(), v1.crend()) == 3);
 
@@ -998,7 +872,7 @@ TEST(FixedVector, ReverseIterators)
     }
 
     {
-        /*non-cost*/ FixedVector<int, 8> v{};
+        /*non-cost*/ FixedList<int, 8> v{};
         v.push_back(0);
         v.push_back(1);
         v.push_back(2);
@@ -1025,7 +899,7 @@ TEST(FixedVector, ReverseIterators)
         }
     }
     {
-        const FixedVector<int, 8> v = {0, 1, 2, 3};
+        const FixedList<int, 8> v = {0, 1, 2, 3};
         {
             int ctr = 3;
             for (auto it = v.rbegin(); it != v.rend(); it++)
@@ -1049,11 +923,11 @@ TEST(FixedVector, ReverseIterators)
     }
 }
 
-TEST(FixedVector, ReverseIteratorBase)
+TEST(FixedList, ReverseIteratorBase)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 7> v{1, 2, 3};
+        FixedList<int, 7> v{1, 2, 3};
         auto it = v.rbegin();  // points to 3
         std::advance(it, 1);   // points to 2
         // https://stackoverflow.com/questions/1830158/how-to-call-erase-with-a-reverse-iterator
@@ -1064,11 +938,11 @@ TEST(FixedVector, ReverseIteratorBase)
     static_assert(std::ranges::equal(v1, std::array<int, 2>{1, 3}));
 }
 
-TEST(FixedVector, IterationBasic)
+TEST(FixedList, IterationBasic)
 {
-    FixedVector<int, 13> v_expected{};
+    FixedList<int, 13> v_expected{};
 
-    FixedVector<int, 8> v{};
+    FixedList<int, 8> v{};
     v.push_back(0);
     v.push_back(1);
     v.push_back(2);
@@ -1119,11 +993,11 @@ TEST(FixedVector, IterationBasic)
     EXPECT_EQ(ctr, 6);
 }
 
-TEST(FixedVector, Resize)
+TEST(FixedList, Resize)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 7> v{0, 1, 2};
+        FixedList<int, 7> v{0, 1, 2};
         v.resize(6);
         return v;
     }();
@@ -1133,7 +1007,7 @@ TEST(FixedVector, Resize)
 
     constexpr auto v2 = []()
     {
-        FixedVector<int, 7> v{0, 1, 2};
+        FixedList<int, 7> v{0, 1, 2};
         v.resize(7, 300);
         v.resize(5, 500);
         return v;
@@ -1142,7 +1016,7 @@ TEST(FixedVector, Resize)
     static_assert(std::ranges::equal(v2, std::array{0, 1, 2, 300, 300}));
     static_assert(v2.max_size() == 7);
 
-    FixedVector<int, 8> v3{0, 1, 2, 3};
+    FixedList<int, 8> v3{0, 1, 2, 3};
     v3.resize(6);
 
     EXPECT_TRUE(std::ranges::equal(v3, std::array<int, 6>{{0, 1, 2, 3, 0, 0}}));
@@ -1154,15 +1028,15 @@ TEST(FixedVector, Resize)
     EXPECT_TRUE(std::ranges::equal(v3, std::array<int, 5>{{0, 1, 3, 3, 3}}));
 
     {
-        FixedVector<MockNonTrivialInt, 5> v{};
+        FixedList<MockNonTrivialInt, 5> v{};
         v.resize(5);
         EXPECT_EQ(v.size(), 5);
     }
 }
 
-TEST(FixedVector, Resize_ExceedsCapacity)
+TEST(FixedList, Resize_ExceedsCapacity)
 {
-    FixedVector<int, 3> v1{};
+    FixedList<int, 3> v1{};
     EXPECT_DEATH(v1.resize(6), "");
     EXPECT_DEATH(v1.resize(6, 5), "");
     const size_t to_size = 7;
@@ -1170,34 +1044,34 @@ TEST(FixedVector, Resize_ExceedsCapacity)
     EXPECT_DEATH(v1.resize(to_size, 5), "");
 }
 
-TEST(FixedVector, Size)
+TEST(FixedList, Size)
 {
     {
-        constexpr auto v1 = []() { return FixedVector<int, 7>{}; }();
+        constexpr auto v1 = []() { return FixedList<int, 7>{}; }();
         static_assert(v1.size() == 0);
         static_assert(v1.max_size() == 7);
     }
 
     {
-        constexpr auto v1 = []() { return FixedVector<int, 7>{1, 2, 3}; }();
+        constexpr auto v1 = []() { return FixedList<int, 7>{1, 2, 3}; }();
         static_assert(v1.size() == 3);
         static_assert(v1.max_size() == 7);
     }
 }
 
-TEST(FixedVector, Empty)
+TEST(FixedList, Empty)
 {
-    constexpr auto v1 = []() { return FixedVector<int, 7>{}; }();
+    constexpr auto v1 = []() { return FixedList<int, 7>{}; }();
 
     static_assert(v1.empty());
     static_assert(v1.max_size() == 7);
 }
 
-TEST(FixedVector, Full)
+TEST(FixedList, Full)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 4> v{};
+        FixedList<int, 4> v{};
         v.assign(4, 100);
         return v;
     }();
@@ -1210,69 +1084,26 @@ TEST(FixedVector, Full)
     EXPECT_TRUE(is_full(v1));
 }
 
-TEST(FixedVector, Span)
-{
-    {
-        constexpr auto v1 = []()
-        {
-            FixedVector<int, 7> v{0, 1, 2};
-            return v;
-        }();
-
-        std::span<const int> as_span{v1};
-        ASSERT_EQ(3, as_span.size());
-        ASSERT_EQ(0, as_span[0]);
-        ASSERT_EQ(1, as_span[1]);
-        ASSERT_EQ(2, as_span[2]);
-    }
-    {
-        auto v1 = []()
-        {
-            FixedVector<int, 7> v{0, 1, 2};
-            return v;
-        }();
-
-        std::span<const int> as_span{v1};
-        ASSERT_EQ(3, as_span.size());
-        ASSERT_EQ(0, as_span[0]);
-        ASSERT_EQ(1, as_span[1]);
-        ASSERT_EQ(2, as_span[2]);
-    }
-
-    {
-        std::vector<int> v1{};
-        std::span<const int> as_span_const{v1};
-        std::span<int> as_span_non_cost{v1};
-    }
-
-    {
-        FixedVector<int, 7> v{0, 1, 2};
-        const_span_ref(v);
-        const_span_of_const_ref(v);
-    }
-}
-
-TEST(FixedVector, Clear)
+TEST(FixedList, Clear)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 7> v{0, 1, 2};
+        FixedList<int, 7> v{0, 1, 2};
         v.assign(5, 100);
         v.clear();
         return v;
     }();
 
     static_assert(v1.empty());
-    static_assert(v1.capacity() == 7);
     static_assert(v1.max_size() == 7);
 }
 
-TEST(FixedVector, Emplace)
+TEST(FixedList, Emplace)
 {
     {
         constexpr auto v1 = []()
         {
-            FixedVector<int, 11> v{0, 1, 2};
+            FixedList<int, 11> v{0, 1, 2};
             v.emplace(std::next(v.begin(), 1), 3);
             v.emplace(std::next(v.begin(), 1), 4);
             return v;
@@ -1283,7 +1114,7 @@ TEST(FixedVector, Emplace)
     {
         auto v1 = []()
         {
-            FixedVector<int, 11> v{0, 1, 2};
+            FixedList<int, 11> v{0, 1, 2};
             v.emplace(std::next(v.begin(), 1), 3);
             v.emplace(std::next(v.begin(), 1), 4);
             return v;
@@ -1292,7 +1123,7 @@ TEST(FixedVector, Emplace)
         EXPECT_TRUE(std::ranges::equal(v1, std::array{0, 4, 3, 1, 2}));
     }
     {
-        FixedVector<ComplexStruct, 11> v2{};
+        FixedList<ComplexStruct, 11> v2{};
         v2.emplace(v2.begin(), 1, 2, 3, 4);
         auto ref = v2.emplace(v2.begin(), 101, 202, 303, 404);
 
@@ -1301,20 +1132,20 @@ TEST(FixedVector, Emplace)
     }
 }
 
-TEST(FixedVector, Emplace_ExceedsCapacity)
+TEST(FixedList, Emplace_ExceedsCapacity)
 {
-    FixedVector<int, 2> v{};
+    FixedList<int, 2> v{};
     v.emplace(v.begin(), 0);
     v.emplace(v.begin(), 1);
     EXPECT_DEATH(v.emplace(v.begin(), 2), "");
 }
 
-TEST(FixedVector, AssignValue)
+TEST(FixedList, AssignValue)
 {
     {
         constexpr auto v1 = []()
         {
-            FixedVector<int, 7> v{0, 1, 2};
+            FixedList<int, 7> v{0, 1, 2};
             v.assign(5, 100);
             return v;
         }();
@@ -1326,7 +1157,7 @@ TEST(FixedVector, AssignValue)
     {
         constexpr auto v2 = []()
         {
-            FixedVector<int, 7> v{0, 1, 2};
+            FixedList<int, 7> v{0, 1, 2};
             v.assign(5, 100);
             v.assign(2, 300);
             return v;
@@ -1340,7 +1171,7 @@ TEST(FixedVector, AssignValue)
     {
         auto v3 = []()
         {
-            FixedVector<int, 7> v{0, 1, 2};
+            FixedList<int, 7> v{0, 1, 2};
             v.assign(5, 100);
             v.assign(2, 300);
             return v;
@@ -1351,19 +1182,19 @@ TEST(FixedVector, AssignValue)
     }
 }
 
-TEST(FixedVector, AssignValue_ExceedsCapacity)
+TEST(FixedList, AssignValue_ExceedsCapacity)
 {
-    FixedVector<int, 3> v1{0, 1, 2};
+    FixedList<int, 3> v1{0, 1, 2};
     EXPECT_DEATH(v1.assign(5, 100), "");
 }
 
-TEST(FixedVector, AssignIterator)
+TEST(FixedList, AssignIterator)
 {
     {
         constexpr auto v1 = []()
         {
             std::array<int, 2> a{300, 300};
-            FixedVector<int, 7> v{0, 1, 2};
+            FixedList<int, 7> v{0, 1, 2};
             v.assign(a.begin(), a.end());
             return v;
         }();
@@ -1376,7 +1207,7 @@ TEST(FixedVector, AssignIterator)
         auto v2 = []()
         {
             std::array<int, 2> a{300, 300};
-            FixedVector<int, 7> v{0, 1, 2};
+            FixedList<int, 7> v{0, 1, 2};
             v.assign(a.begin(), a.end());
             return v;
         }();
@@ -1386,35 +1217,35 @@ TEST(FixedVector, AssignIterator)
     }
 }
 
-TEST(FixedVector, AssignIterator_ExceedsCapacity)
+TEST(FixedList, AssignIterator_ExceedsCapacity)
 {
-    FixedVector<int, 3> v1{0, 1, 2};
+    FixedList<int, 3> v1{0, 1, 2};
     std::array<int, 5> a{300, 300, 300, 300, 300};
     EXPECT_DEATH(v1.assign(a.begin(), a.end()), "");
 }
 
-TEST(FixedVector, AssignInputIterator)
+TEST(FixedList, AssignInputIterator)
 {
     MockIntegralStream<int> stream{3};
-    FixedVector<int, 14> v{10, 20, 30, 40};
+    FixedList<int, 14> v{10, 20, 30, 40};
     v.assign(stream.begin(), stream.end());
     ASSERT_EQ(3, v.size());
     EXPECT_TRUE(std::ranges::equal(v, std::array{3, 2, 1}));
 }
 
-TEST(FixedVector, AssignInputIterator_ExceedsCapacity)
+TEST(FixedList, AssignInputIterator_ExceedsCapacity)
 {
     MockIntegralStream<int> stream{7};
-    FixedVector<int, 2> v{};
+    FixedList<int, 2> v{};
     EXPECT_DEATH(v.assign(stream.begin(), stream.end()), "");
 }
 
-TEST(FixedVector, AssignInitializerList)
+TEST(FixedList, AssignInitializerList)
 {
     {
         constexpr auto v1 = []()
         {
-            FixedVector<int, 7> v{0, 1, 2};
+            FixedList<int, 7> v{0, 1, 2};
             v.assign({300, 300});
             return v;
         }();
@@ -1426,7 +1257,7 @@ TEST(FixedVector, AssignInitializerList)
     {
         auto v2 = []()
         {
-            FixedVector<int, 7> v{0, 1, 2};
+            FixedList<int, 7> v{0, 1, 2};
             v.assign({300, 300});
             return v;
         }();
@@ -1436,18 +1267,18 @@ TEST(FixedVector, AssignInitializerList)
     }
 }
 
-TEST(FixedVector, AssignInitializerList_ExceedsCapacity)
+TEST(FixedList, AssignInitializerList_ExceedsCapacity)
 {
-    FixedVector<int, 3> v{0, 1, 2};
+    FixedList<int, 3> v{0, 1, 2};
     EXPECT_DEATH(v.assign({300, 300, 300, 300, 300}), "");
 }
 
-TEST(FixedVector, InsertValue)
+TEST(FixedList, InsertValue)
 {
     {
         constexpr auto v1 = []()
         {
-            FixedVector<int, 7> v{0, 1, 2, 3};
+            FixedList<int, 7> v{0, 1, 2, 3};
             v.insert(v.begin(), 100);
             const int value = 500;
             v.insert(std::next(v.begin(), 2), value);
@@ -1462,7 +1293,7 @@ TEST(FixedVector, InsertValue)
         // For off-by-one issues, make the capacity just fit
         constexpr auto v2 = []()
         {
-            FixedVector<int, 5> v{0, 1, 2};
+            FixedList<int, 5> v{0, 1, 2};
             v.insert(v.begin(), 100);
             const int value = 500;
             v.insert(std::next(v.begin(), 2), value);
@@ -1476,7 +1307,7 @@ TEST(FixedVector, InsertValue)
 
     // NonTriviallyCopyable<T>
     {
-        FixedVector<MockNonTrivialInt, 8> v3{};
+        FixedList<MockNonTrivialInt, 8> v3{};
         v3.insert(v3.begin(), 0);
         EXPECT_TRUE(std::ranges::equal(v3, std::array<MockNonTrivialInt, 1>{{0}}));
         v3.insert(v3.begin(), 1);
@@ -1486,9 +1317,9 @@ TEST(FixedVector, InsertValue)
         const MockNonTrivialInt value = 3;
         v3.insert(v3.end(), value);
         EXPECT_TRUE(std::ranges::equal(v3, std::array<MockNonTrivialInt, 4>{{2, 1, 0, 3}}));
-        v3.insert(std::next(v3.cbegin(), 2), 4);
+        v3.insert(std::next(v3.begin(), 2), 4);
         EXPECT_TRUE(std::ranges::equal(v3, std::array<MockNonTrivialInt, 5>{{2, 1, 4, 0, 3}}));
-        v3.insert(std::next(v3.cbegin(), 3), 5);
+        v3.insert(std::next(v3.begin(), 3), 5);
         EXPECT_TRUE(std::ranges::equal(v3, std::array<MockNonTrivialInt, 6>{{2, 1, 4, 5, 0, 3}}));
         auto v4 = v3;
         v3.clear();
@@ -1497,19 +1328,19 @@ TEST(FixedVector, InsertValue)
     }
 }
 
-TEST(FixedVector, InsertValue_ExceedsCapacity)
+TEST(FixedList, InsertValue_ExceedsCapacity)
 {
-    FixedVector<int, 4> v1{0, 1, 2, 3};
+    FixedList<int, 4> v1{0, 1, 2, 3};
     EXPECT_DEATH(v1.insert(std::next(v1.begin(), 1), 5), "");
 }
 
-TEST(FixedVector, InsertIterator)
+TEST(FixedList, InsertIterator)
 {
     {
         constexpr auto v1 = []()
         {
             std::array<int, 2> a{100, 500};
-            FixedVector<int, 7> v{0, 1, 2, 3};
+            FixedList<int, 7> v{0, 1, 2, 3};
             v.insert(std::next(v.begin(), 2), a.begin(), a.end());
             return v;
         }();
@@ -1523,7 +1354,7 @@ TEST(FixedVector, InsertIterator)
         constexpr auto v2 = []()
         {
             std::array<int, 2> a{100, 500};
-            FixedVector<int, 5> v{0, 1, 2};
+            FixedList<int, 5> v{0, 1, 2};
             v.insert(std::next(v.begin(), 2), a.begin(), a.end());
             return v;
         }();
@@ -1535,44 +1366,44 @@ TEST(FixedVector, InsertIterator)
 
     {
         std::array<int, 2> a{100, 500};
-        FixedVector<int, 7> v{0, 1, 2, 3};
+        FixedList<int, 7> v{0, 1, 2, 3};
         auto it = v.insert(std::next(v.begin(), 2), a.begin(), a.end());
         EXPECT_TRUE(std::ranges::equal(v, std::array<int, 6>{0, 1, 100, 500, 2, 3}));
         EXPECT_EQ(it, std::next(v.begin(), 2));
     }
 }
 
-TEST(FixedVector, InsertIterator_ExceedsCapacity)
+TEST(FixedList, InsertIterator_ExceedsCapacity)
 {
-    FixedVector<int, 4> v1{0, 1, 2};
+    FixedList<int, 4> v1{0, 1, 2};
     std::array<int, 2> a{3, 4};
     EXPECT_DEATH(v1.insert(std::next(v1.begin(), 1), a.begin(), a.end()), "");
 }
 
-TEST(FixedVector, InsertInputIterator)
+TEST(FixedList, InsertInputIterator)
 {
     MockIntegralStream<int> stream{3};
-    FixedVector<int, 14> v{10, 20, 30, 40};
+    FixedList<int, 14> v{10, 20, 30, 40};
     auto it = v.insert(std::next(v.begin(), 2), stream.begin(), stream.end());
     ASSERT_EQ(7, v.size());
     EXPECT_TRUE(std::ranges::equal(v, std::array{10, 20, 3, 2, 1, 30, 40}));
     EXPECT_EQ(it, std::next(v.begin(), 2));
 }
 
-TEST(FixedVector, InsertInputIterator_ExceedsCapacity)
+TEST(FixedList, InsertInputIterator_ExceedsCapacity)
 {
     MockIntegralStream<int> stream{3};
-    FixedVector<int, 6> v{10, 20, 30, 40};
+    FixedList<int, 6> v{10, 20, 30, 40};
     EXPECT_DEATH(v.insert(std::next(v.begin(), 2), stream.begin(), stream.end()), "");
 }
 
-TEST(FixedVector, InsertInitializerList)
+TEST(FixedList, InsertInitializerList)
 {
     {
         // For off-by-one issues, make the capacity just fit
         constexpr auto v1 = []()
         {
-            FixedVector<int, 5> v{0, 1, 2};
+            FixedList<int, 5> v{0, 1, 2};
             v.insert(std::next(v.begin(), 2), {100, 500});
             return v;
         }();
@@ -1583,24 +1414,114 @@ TEST(FixedVector, InsertInitializerList)
     }
 
     {
-        FixedVector<int, 7> v{0, 1, 2, 3};
+        FixedList<int, 7> v{0, 1, 2, 3};
         auto it = v.insert(std::next(v.begin(), 2), {100, 500});
         EXPECT_TRUE(std::ranges::equal(v, std::array<int, 6>{0, 1, 100, 500, 2, 3}));
         EXPECT_EQ(it, std::next(v.begin(), 2));
     }
 }
 
-TEST(FixedVector, InsertInitializerList_ExceedsCapacity)
+TEST(FixedList, InsertInitializerList_ExceedsCapacity)
 {
-    FixedVector<int, 4> v1{0, 1, 2};
+    FixedList<int, 4> v1{0, 1, 2};
     EXPECT_DEATH(v1.insert(std::next(v1.begin(), 1), {3, 4}), "");
 }
 
-TEST(FixedVector, EraseRange)
+TEST(FixedList, Remove)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 8> v{0, 1, 2, 3, 4, 5};
+        FixedList<int, 8> v{3, 0, 1, 2, 3, 4, 5, 3};
+        std::size_t removed_count = v.remove(3);
+        assert_or_abort(3 == removed_count);
+        return v;
+    }();
+
+    static_assert(std::ranges::equal(v1, std::array<int, 5>{0, 1, 2, 4, 5}));
+}
+
+TEST(FixedList, Remove_Invalidation)
+{
+    FixedList<int, 10> v{10, 20, 30, 40, 50};
+    auto it1 = v.begin();
+    auto it2 = std::next(v.begin(), 1);
+    auto it3 = std::next(v.begin(), 2);
+    auto it4 = std::next(v.begin(), 3);
+    auto it5 = std::next(v.begin(), 4);
+
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(30, *it3);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    const int* address_1{&*it1};
+    const int* address_2{&*it2};
+    const int* address_4{&*it4};
+    const int* address_5{&*it5};
+
+    v.remove(30);
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    EXPECT_EQ(address_1, &*it1);
+    EXPECT_EQ(address_2, &*it2);
+    EXPECT_EQ(address_4, &*it4);
+    EXPECT_EQ(address_5, &*it5);
+}
+
+TEST(FixedList, RemoveIf)
+{
+    constexpr auto v1 = []()
+    {
+        FixedList<int, 8> v{0, 1, 2, 3, 4, 5};
+        std::size_t removed_count = v.remove_if([](const int& a) { return (a % 2) == 0; });
+        assert_or_abort(3 == removed_count);
+        return v;
+    }();
+
+    static_assert(std::ranges::equal(v1, std::array<int, 3>{1, 3, 5}));
+}
+
+TEST(FixedList, RemoveIf_Invalidation)
+{
+    FixedList<int, 10> v{10, 20, 30, 40, 50};
+    auto it1 = v.begin();
+    auto it2 = std::next(v.begin(), 1);
+    auto it3 = std::next(v.begin(), 2);
+    auto it4 = std::next(v.begin(), 3);
+    auto it5 = std::next(v.begin(), 4);
+
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(30, *it3);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    const int* address_1{&*it1};
+    const int* address_2{&*it2};
+    const int* address_4{&*it4};
+    const int* address_5{&*it5};
+
+    v.remove_if([](const int& a) { return (a % 30) == 0; });
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    EXPECT_EQ(address_1, &*it1);
+    EXPECT_EQ(address_2, &*it2);
+    EXPECT_EQ(address_4, &*it4);
+    EXPECT_EQ(address_5, &*it5);
+}
+
+TEST(FixedList, EraseRange)
+{
+    constexpr auto v1 = []()
+    {
+        FixedList<int, 8> v{0, 1, 2, 3, 4, 5};
         v.erase(std::next(v.cbegin(), 2), std::next(v.begin(), 4));
         return v;
     }();
@@ -1609,7 +1530,7 @@ TEST(FixedVector, EraseRange)
     static_assert(v1.size() == 4);
     static_assert(v1.max_size() == 8);
 
-    FixedVector<int, 8> v2{2, 1, 4, 5, 0, 3};
+    FixedList<int, 8> v2{2, 1, 4, 5, 0, 3};
 
     auto it = v2.erase(std::next(v2.begin(), 1), std::next(v2.cbegin(), 3));
     EXPECT_EQ(it, std::next(v2.begin(), 1));
@@ -1617,11 +1538,40 @@ TEST(FixedVector, EraseRange)
     EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{2, 5, 0, 3}}));
 }
 
-TEST(FixedVector, EraseOne)
+TEST(FixedList, EraseRange_Invalidation)
+{
+    FixedList<int, 10> v{10, 20, 30, 40, 50};
+    auto it1 = v.begin();
+    auto it2 = std::next(v.begin(), 1);
+    auto it3 = std::next(v.begin(), 2);
+    auto it4 = std::next(v.begin(), 3);
+    auto it5 = std::next(v.begin(), 4);
+
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(30, *it3);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    const int* address_1{&*it1};
+    const int* address_2{&*it2};
+    const int* address_5{&*it5};
+
+    v.erase(it3, it5);
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(50, *it5);
+
+    EXPECT_EQ(address_1, &*it1);
+    EXPECT_EQ(address_2, &*it2);
+    EXPECT_EQ(address_5, &*it5);
+}
+
+TEST(FixedList, EraseOne)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 8> v{0, 1, 2, 3, 4, 5};
+        FixedList<int, 8> v{0, 1, 2, 3, 4, 5};
         v.erase(v.cbegin());
         v.erase(std::next(v.begin(), 2));
         return v;
@@ -1631,7 +1581,7 @@ TEST(FixedVector, EraseOne)
     static_assert(v1.size() == 4);
     static_assert(v1.max_size() == 8);
 
-    FixedVector<int, 8> v2{2, 1, 4, 5, 0, 3};
+    FixedList<int, 8> v2{2, 1, 4, 5, 0, 3};
 
     auto it = v2.erase(v2.begin());
     EXPECT_EQ(it, v2.begin());
@@ -1649,10 +1599,42 @@ TEST(FixedVector, EraseOne)
     EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 3>{{1, 4, 0}}));
 }
 
-TEST(FixedVector, Erase_Empty)
+TEST(FixedList, EraseOne_Invalidation)
+{
+    FixedList<int, 10> v{10, 20, 30, 40, 50};
+    auto it1 = v.begin();
+    auto it2 = std::next(v.begin(), 1);
+    auto it3 = std::next(v.begin(), 2);
+    auto it4 = std::next(v.begin(), 3);
+    auto it5 = std::next(v.begin(), 4);
+
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(30, *it3);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    const int* address_1{&*it1};
+    const int* address_2{&*it2};
+    const int* address_4{&*it4};
+    const int* address_5{&*it5};
+
+    v.erase(it3);
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    EXPECT_EQ(address_1, &*it1);
+    EXPECT_EQ(address_2, &*it2);
+    EXPECT_EQ(address_4, &*it4);
+    EXPECT_EQ(address_5, &*it5);
+}
+
+TEST(FixedList, Erase_Empty)
 {
     {
-        FixedVector<int, 3> v1{};
+        FixedList<int, 3> v1{};
 
         // Don't Expect Death
         v1.erase(std::remove_if(v1.begin(), v1.end(), [&](const auto&) { return true; }), v1.end());
@@ -1661,24 +1643,27 @@ TEST(FixedVector, Erase_Empty)
     }
 
     {
-        std::vector<int> v1{};
+        std::list<int> v1{};
 
         // Don't Expect Death
         v1.erase(std::remove_if(v1.begin(), v1.end(), [&](const auto&) { return true; }), v1.end());
 
         // The iterator pos must be valid and dereferenceable. Thus the end() iterator (which is
         // valid, but is not dereferenceable) cannot be used as a value for pos.
-        // https://en.cppreference.com/w/cpp/container/vector/erase
+        // https://en.cppreference.com/w/cpp/container/list/erase
+        // In contrast to std::vector, this does not die for std::list with msvc
+#if defined(__clang__) || defined(__GNUC__)
         EXPECT_DEATH(v1.erase(v1.begin()), "");
+#endif
     }
 }
 
-TEST(FixedVector, EraseFreeFunction)
+TEST(FixedList, EraseFreeFunction)
 {
     {
         constexpr auto v1 = []()
         {
-            FixedVector<int, 8> v{3, 0, 1, 2, 3, 4, 5, 3};
+            FixedList<int, 8> v{3, 0, 1, 2, 3, 4, 5, 3};
             std::size_t removed_count = fixed_containers::erase(v, 3);
             assert_or_abort(3 == removed_count);
             return v;
@@ -1690,16 +1675,48 @@ TEST(FixedVector, EraseFreeFunction)
     {
         // Accepts heterogeneous types
         // Compile-only test
-        FixedVector<MockAComparableToB, 5> v{};
+        FixedList<MockAComparableToB, 5> v{};
         erase(v, MockBComparableToA{});
     }
 }
 
-TEST(FixedVector, EraseIf)
+TEST(FixedList, EraseFreeFunction_Invalidation)
+{
+    FixedList<int, 10> v{10, 20, 30, 40, 50};
+    auto it1 = v.begin();
+    auto it2 = std::next(v.begin(), 1);
+    auto it3 = std::next(v.begin(), 2);
+    auto it4 = std::next(v.begin(), 3);
+    auto it5 = std::next(v.begin(), 4);
+
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(30, *it3);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    const int* address_1{&*it1};
+    const int* address_2{&*it2};
+    const int* address_4{&*it4};
+    const int* address_5{&*it5};
+
+    erase(v, 30);
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    EXPECT_EQ(address_1, &*it1);
+    EXPECT_EQ(address_2, &*it2);
+    EXPECT_EQ(address_4, &*it4);
+    EXPECT_EQ(address_5, &*it5);
+}
+
+TEST(FixedList, EraseIf)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 8> v{0, 1, 2, 3, 4, 5, 6};
+        FixedList<int, 8> v{0, 1, 2, 3, 4, 5, 6};
         std::size_t removed_count =
             fixed_containers::erase_if(v, [](const int& a) { return (a % 2) == 0; });
         assert_or_abort(4 == removed_count);
@@ -1709,11 +1726,43 @@ TEST(FixedVector, EraseIf)
     static_assert(std::ranges::equal(v1, std::array<int, 3>{1, 3, 5}));
 }
 
-TEST(FixedVector, Front)
+TEST(FixedList, EraseIf_Invalidation)
+{
+    FixedList<int, 10> v{10, 20, 30, 40, 50};
+    auto it1 = v.begin();
+    auto it2 = std::next(v.begin(), 1);
+    auto it3 = std::next(v.begin(), 2);
+    auto it4 = std::next(v.begin(), 3);
+    auto it5 = std::next(v.begin(), 4);
+
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(30, *it3);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    const int* address_1{&*it1};
+    const int* address_2{&*it2};
+    const int* address_4{&*it4};
+    const int* address_5{&*it5};
+
+    erase_if(v, [](const int& a) { return (a % 30) == 0; });
+    EXPECT_EQ(10, *it1);
+    EXPECT_EQ(20, *it2);
+    EXPECT_EQ(40, *it4);
+    EXPECT_EQ(50, *it5);
+
+    EXPECT_EQ(address_1, &*it1);
+    EXPECT_EQ(address_2, &*it2);
+    EXPECT_EQ(address_4, &*it4);
+    EXPECT_EQ(address_5, &*it5);
+}
+
+TEST(FixedList, Front)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 8> v{99, 1, 2};
+        FixedList<int, 8> v{99, 1, 2};
         return v;
     }();
 
@@ -1721,7 +1770,7 @@ TEST(FixedVector, Front)
     static_assert(std::ranges::equal(v1, std::array<int, 3>{99, 1, 2}));
     static_assert(v1.size() == 3);
 
-    FixedVector<int, 8> v2{100, 101, 102};
+    FixedList<int, 8> v2{100, 101, 102};
     const auto& v2_const_ref = v2;
 
     EXPECT_EQ(v2.front(), 100);  // non-const variant
@@ -1729,23 +1778,23 @@ TEST(FixedVector, Front)
     EXPECT_EQ(v2_const_ref.front(), 777);  // const variant
 }
 
-TEST(FixedVector, Front_EmptyContainer)
+TEST(FixedList, Front_EmptyContainer)
 {
     {
-        const FixedVector<int, 3> v{};
+        const FixedList<int, 3> v{};
         EXPECT_DEATH(v.front(), "");
     }
     {
-        FixedVector<int, 3> v{};
+        FixedList<int, 3> v{};
         EXPECT_DEATH(v.front(), "");
     }
 }
 
-TEST(FixedVector, Back)
+TEST(FixedList, Back)
 {
     constexpr auto v1 = []()
     {
-        FixedVector<int, 8> v{0, 1, 77};
+        FixedList<int, 8> v{0, 1, 77};
         return v;
     }();
 
@@ -1753,7 +1802,7 @@ TEST(FixedVector, Back)
     static_assert(std::ranges::equal(v1, std::array<int, 3>{0, 1, 77}));
     static_assert(v1.size() == 3);
 
-    FixedVector<int, 8> v2{100, 101, 102};
+    FixedList<int, 8> v2{100, 101, 102};
     const auto& v2_const_ref = v2;
 
     EXPECT_EQ(v2.back(), 102);  // non-const variant
@@ -1761,76 +1810,43 @@ TEST(FixedVector, Back)
     EXPECT_EQ(v2_const_ref.back(), 999);  // const variant
 }
 
-TEST(FixedVector, Back_EmptyContainer)
+TEST(FixedList, Back_EmptyContainer)
 {
     {
-        const FixedVector<int, 3> v{};
+        const FixedList<int, 3> v{};
         EXPECT_DEATH(v.back(), "");
     }
     {
-        FixedVector<int, 3> v{};
+        FixedList<int, 3> v{};
         EXPECT_DEATH(v.back(), "");
     }
 }
 
-TEST(FixedVector, Data)
+TEST(FixedList, Ranges)
 {
-    {
-        constexpr auto v1 = []()
-        {
-            FixedVector<int, 8> v{0, 1, 2};
-            return v;
-        }();
-
-        static_assert(*std::next(v1.data(), 0) == 0);
-        static_assert(*std::next(v1.data(), 1) == 1);
-        static_assert(*std::next(v1.data(), 2) == 2);
-
-        EXPECT_EQ(*std::next(v1.data(), 0), 0);
-        EXPECT_EQ(*std::next(v1.data(), 1), 1);
-        EXPECT_EQ(*std::next(v1.data(), 2), 2);
-
-        static_assert(v1.size() == 3);
-    }
-
-    {
-        FixedVector<int, 8> v2{100, 101, 102};
-        const auto& v2_const_ref = v2;
-
-        auto it = std::next(v2.data(), 1);
-        EXPECT_EQ(*it, 101);  // non-const variant
-        *it = 999;
-        EXPECT_EQ(*it, 999);
-
-        EXPECT_EQ(*std::next(v2_const_ref.data(), 1), 999);  // const variant
-    }
-}
-
-TEST(FixedVector, Ranges)
-{
-    FixedVector<int, 5> s1{10, 40};
+    FixedList<int, 5> s1{10, 40};
     auto f = s1 | ranges::views::filter([](const auto& v) -> bool { return v == 10; }) |
              ranges::views::transform([](const auto& v) { return 2 * v; }) |
              ranges::views::remove_if([](const auto& v) -> bool { return v == 10; }) |
-             ranges::to<FixedVector<int, 10>>;
+             ranges::to<FixedList<int, 10>>;
 
     EXPECT_EQ(1, f.size());
     int first_entry = *f.begin();
     EXPECT_EQ(20, first_entry);
 }
 
-TEST(FixedVector, MoveableButNotCopyable)
+TEST(FixedList, MoveableButNotCopyable)
 {
     // Compile-only test
     {
-        FixedVector<MockMoveableButNotCopyable, 13> a{};
+        FixedList<MockMoveableButNotCopyable, 13> a{};
         a.emplace_back();
         a.emplace_back();
         a.emplace(a.cbegin());
         a.erase(a.cbegin());
     }
     {
-        std::vector<MockMoveableButNotCopyable> a{};
+        std::list<MockMoveableButNotCopyable> a{};
         a.emplace_back();
         a.emplace_back();
         a.emplace(a.cbegin());
@@ -1838,25 +1854,25 @@ TEST(FixedVector, MoveableButNotCopyable)
     }
 }
 
-TEST(FixedVector, NonTriviallyCopyableCopyConstructor)
+TEST(FixedList, NonTriviallyCopyableCopyConstructor)
 {
-    FixedVector<MockNonTrivialInt, 11> v1{};
+    FixedList<MockNonTrivialInt, 11> v1{};
     v1.emplace_back(1);
     v1.emplace_back(2);
 
-    FixedVector<MockNonTrivialInt, 11> v2{v1};
+    FixedList<MockNonTrivialInt, 11> v2{v1};
 
     EXPECT_TRUE(std::ranges::equal(v1, std::array<MockNonTrivialInt, 2>{1, 2}));
     EXPECT_TRUE(std::ranges::equal(v2, std::array<MockNonTrivialInt, 2>{1, 2}));
 }
 
-TEST(FixedVector, NonTriviallyCopyableCopyAssignment)
+TEST(FixedList, NonTriviallyCopyableCopyAssignment)
 {
-    FixedVector<MockNonTrivialInt, 11> v1{};
+    FixedList<MockNonTrivialInt, 11> v1{};
     v1.emplace_back(1);
     v1.emplace_back(2);
 
-    FixedVector<MockNonTrivialInt, 11> v2 = v1;
+    FixedList<MockNonTrivialInt, 11> v2 = v1;
 
     EXPECT_TRUE(std::ranges::equal(v1, std::array<MockNonTrivialInt, 2>{1, 2}));
     EXPECT_TRUE(std::ranges::equal(v2, std::array<MockNonTrivialInt, 2>{1, 2}));
@@ -1867,25 +1883,25 @@ TEST(FixedVector, NonTriviallyCopyableCopyAssignment)
     EXPECT_TRUE(std::ranges::equal(v2, std::array<MockNonTrivialInt, 2>{1, 2}));
 }
 
-TEST(FixedVector, NonTriviallyCopyableMoveConstructor)
+TEST(FixedList, NonTriviallyCopyableMoveConstructor)
 {
-    FixedVector<MockNonTrivialInt, 11> v1{};
+    FixedList<MockNonTrivialInt, 11> v1{};
     v1.emplace_back(1);
     v1.emplace_back(2);
 
-    FixedVector<MockNonTrivialInt, 11> v2{std::move(v1)};
+    FixedList<MockNonTrivialInt, 11> v2{std::move(v1)};
 
     // Formally,v1 is in an unspecified-state
     EXPECT_TRUE(std::ranges::equal(v2, std::array<MockNonTrivialInt, 2>{1, 2}));
 }
 
-TEST(FixedVector, NonTriviallyCopyableMoveAssignment)
+TEST(FixedList, NonTriviallyCopyableMoveAssignment)
 {
-    FixedVector<MockNonTrivialInt, 11> v1{};
+    FixedList<MockNonTrivialInt, 11> v1{};
     v1.emplace_back(1);
     v1.emplace_back(2);
 
-    FixedVector<MockNonTrivialInt, 11> v2 = std::move(v1);
+    FixedList<MockNonTrivialInt, 11> v2 = std::move(v1);
 
     // Formally,v1 is in an unspecified-state
     EXPECT_TRUE(std::ranges::equal(v2, std::array<MockNonTrivialInt, 2>{1, 2}));
@@ -1896,68 +1912,68 @@ TEST(FixedVector, NonTriviallyCopyableMoveAssignment)
     EXPECT_TRUE(std::ranges::equal(v2, std::array<MockNonTrivialInt, 2>{1, 2}));
 }
 
-TEST(FixedVector, ClassTemplateArgumentDeduction)
+TEST(FixedList, ClassTemplateArgumentDeduction)
 {
     // Compile-only test
-    FixedVector a = FixedVector<int, 5>{};
+    FixedList a = FixedList<int, 5>{};
     (void)a;
 }
 
 namespace
 {
-template <FixedVector<int, 5> /*MY_VEC*/>
-struct FixedVectorInstanceCanBeUsedAsATemplateParameter
+template <FixedList<int, 5> /*MY_VEC*/>
+struct FixedListInstanceCanBeUsedAsATemplateParameter
 {
 };
 
-template <FixedVector<int, 5> /*MY_VEC*/>
-constexpr void fixed_vector_instance_can_be_used_as_a_template_parameter()
+template <FixedList<int, 5> /*MY_VEC*/>
+constexpr void fixed_list_instance_can_be_used_as_a_template_parameter()
 {
 }
 }  // namespace
 
-TEST(FixedVector, UsageAsTemplateParameter)
+TEST(FixedList, UsageAsTemplateParameter)
 {
-    static constexpr FixedVector<int, 5> VEC1{};
-    fixed_vector_instance_can_be_used_as_a_template_parameter<VEC1>();
-    FixedVectorInstanceCanBeUsedAsATemplateParameter<VEC1> my_struct{};
+    static constexpr FixedList<int, 5> VEC1{};
+    fixed_list_instance_can_be_used_as_a_template_parameter<VEC1>();
+    FixedListInstanceCanBeUsedAsATemplateParameter<VEC1> my_struct{};
     static_cast<void>(my_struct);
 }
 
 namespace
 {
-struct FixedVectorInstanceCounterUniquenessToken
+struct FixedListInstanceCounterUniquenessToken
 {
 };
 
-using InstanceCounterNonTrivialAssignment = instance_counter::InstanceCounterNonTrivialAssignment<
-    FixedVectorInstanceCounterUniquenessToken>;
+using InstanceCounterNonTrivialAssignment =
+    instance_counter::InstanceCounterNonTrivialAssignment<FixedListInstanceCounterUniquenessToken>;
 
-using FixedVectorOfInstanceCounterNonTrivial = FixedVector<InstanceCounterNonTrivialAssignment, 5>;
-static_assert(!TriviallyCopyAssignable<FixedVectorOfInstanceCounterNonTrivial>);
-static_assert(!TriviallyMoveAssignable<FixedVectorOfInstanceCounterNonTrivial>);
-static_assert(!TriviallyDestructible<FixedVectorOfInstanceCounterNonTrivial>);
+using FixedListOfInstanceCounterNonTrivial = FixedList<InstanceCounterNonTrivialAssignment, 5>;
+static_assert(!TriviallyCopyAssignable<FixedListOfInstanceCounterNonTrivial>);
+static_assert(!TriviallyMoveAssignable<FixedListOfInstanceCounterNonTrivial>);
+static_assert(!TriviallyDestructible<FixedListOfInstanceCounterNonTrivial>);
 
 using InstanceCounterTrivialAssignment =
-    instance_counter::InstanceCounterTrivialAssignment<FixedVectorInstanceCounterUniquenessToken>;
+    instance_counter::InstanceCounterTrivialAssignment<FixedListInstanceCounterUniquenessToken>;
 
-using FixedVectorOfInstanceCounterTrivial = FixedVector<InstanceCounterTrivialAssignment, 5>;
-static_assert(TriviallyCopyAssignable<FixedVectorOfInstanceCounterTrivial>);
-static_assert(TriviallyMoveAssignable<FixedVectorOfInstanceCounterTrivial>);
-static_assert(!TriviallyDestructible<FixedVectorOfInstanceCounterTrivial>);
+using FixedListOfInstanceCounterTrivial = FixedList<InstanceCounterTrivialAssignment, 5>;
+static_assert(TriviallyCopyAssignable<FixedListOfInstanceCounterTrivial>);
+static_assert(TriviallyMoveAssignable<FixedListOfInstanceCounterTrivial>);
+static_assert(!TriviallyDestructible<FixedListOfInstanceCounterTrivial>);
 
 template <typename T>
-struct FixedVectorInstanceCheckFixture : public ::testing::Test
+struct FixedListInstanceCheckFixture : public ::testing::Test
 {
 };
-TYPED_TEST_SUITE_P(FixedVectorInstanceCheckFixture);
+TYPED_TEST_SUITE_P(FixedListInstanceCheckFixture);
 }  // namespace
 
-TYPED_TEST_P(FixedVectorInstanceCheckFixture, FixedVector_InstanceCheck)
+TYPED_TEST_P(FixedListInstanceCheckFixture, FixedList_InstanceCheck)
 {
-    using VectorOfInstanceCounterType = TypeParam;
-    using InstanceCounterType = typename VectorOfInstanceCounterType::value_type;
-    VectorOfInstanceCounterType v1{};
+    using ListOfInstanceCounterType = TypeParam;
+    using InstanceCounterType = typename ListOfInstanceCounterType::value_type;
+    ListOfInstanceCounterType v1{};
 
     // Copy push_back()
     ASSERT_EQ(0, InstanceCounterType::counter);
@@ -2059,21 +2075,17 @@ TYPED_TEST_P(FixedVectorInstanceCheckFixture, FixedVector_InstanceCheck)
     v1.emplace_back();
     v1.emplace_back();
     ASSERT_EQ(3, InstanceCounterType::counter);
-    v1[1] = {};
-    ASSERT_EQ(3, InstanceCounterType::counter);
-    v1.at(1) = {};
-    ASSERT_EQ(3, InstanceCounterType::counter);
     v1.pop_back();
     ASSERT_EQ(2, InstanceCounterType::counter);
 
     {  // IMPORTANT SCOPE, don't remove.
-        VectorOfInstanceCounterType v2{v1};
+        ListOfInstanceCounterType v2{v1};
         ASSERT_EQ(4, InstanceCounterType::counter);
     }
     ASSERT_EQ(2, InstanceCounterType::counter);
 
     {  // IMPORTANT SCOPE, don't remove.
-        VectorOfInstanceCounterType v2 = v1;
+        ListOfInstanceCounterType v2 = v1;
         ASSERT_EQ(4, InstanceCounterType::counter);
         v1 = v2;
         ASSERT_EQ(4, InstanceCounterType::counter);
@@ -2081,7 +2093,7 @@ TYPED_TEST_P(FixedVectorInstanceCheckFixture, FixedVector_InstanceCheck)
     ASSERT_EQ(2, InstanceCounterType::counter);
 
     {  // IMPORTANT SCOPE, don't remove.
-        VectorOfInstanceCounterType v2{std::move(v1)};
+        ListOfInstanceCounterType v2{std::move(v1)};
         ASSERT_EQ(2, InstanceCounterType::counter);
     }
     ASSERT_EQ(0, InstanceCounterType::counter);
@@ -2091,7 +2103,7 @@ TYPED_TEST_P(FixedVectorInstanceCheckFixture, FixedVector_InstanceCheck)
     ASSERT_EQ(2, InstanceCounterType::counter);
 
     {  // IMPORTANT SCOPE, don't remove.
-        VectorOfInstanceCounterType v2 = std::move(v1);
+        ListOfInstanceCounterType v2 = std::move(v1);
         ASSERT_EQ(2, InstanceCounterType::counter);
     }
     ASSERT_EQ(0, InstanceCounterType::counter);
@@ -2102,13 +2114,13 @@ TYPED_TEST_P(FixedVectorInstanceCheckFixture, FixedVector_InstanceCheck)
     ASSERT_EQ(2, InstanceCounterType::counter);
 
     {  // IMPORTANT SCOPE, don't remove.
-        VectorOfInstanceCounterType v2{v1};
+        ListOfInstanceCounterType v2{v1};
         ASSERT_EQ(4, InstanceCounterType::counter);
         v1 = std::move(v2);
 
-        // Intentional discrepancy between std::vector and FixedVector. See implementation of
+        // Intentional discrepancy between std::list and FixedList. See implementation of
         // non-trivial move assignment operator for explanation
-        if constexpr (std::is_same_v<VectorOfInstanceCounterType, std::vector<InstanceCounterType>>)
+        if constexpr (std::is_same_v<ListOfInstanceCounterType, std::list<InstanceCounterType>>)
         {
             ASSERT_EQ(2, InstanceCounterType::counter);
         }
@@ -2117,34 +2129,34 @@ TYPED_TEST_P(FixedVectorInstanceCheckFixture, FixedVector_InstanceCheck)
             ASSERT_EQ(4, InstanceCounterType::counter);
         }
     }
-    // Both std::vector and FixedVector should be identical here
+    // Both std::list and FixedList should be identical here
     ASSERT_EQ(2, InstanceCounterType::counter);
     v1.clear();
     ASSERT_EQ(0, InstanceCounterType::counter);
 }
 
-REGISTER_TYPED_TEST_SUITE_P(FixedVectorInstanceCheckFixture, FixedVector_InstanceCheck);
+REGISTER_TYPED_TEST_SUITE_P(FixedListInstanceCheckFixture, FixedList_InstanceCheck);
 
-// We want same semantics as std::vector, so run it with std::vector as well
-using FixedVectorInstanceCheckTypes =
-    testing::Types<std::vector<InstanceCounterNonTrivialAssignment>,
-                   std::vector<InstanceCounterTrivialAssignment>,
-                   FixedVector<InstanceCounterNonTrivialAssignment, 17>,
-                   FixedVector<InstanceCounterTrivialAssignment, 17>>;
+// We want same semantics as std::list, so run it with std::list as well
+using FixedListInstanceCheckTypes =
+    testing::Types<std::list<InstanceCounterNonTrivialAssignment>,
+                   std::list<InstanceCounterTrivialAssignment>,
+                   FixedList<InstanceCounterNonTrivialAssignment, 17>,
+                   FixedList<InstanceCounterTrivialAssignment, 17>>;
 
-INSTANTIATE_TYPED_TEST_SUITE_P(FixedVector,
-                               FixedVectorInstanceCheckFixture,
-                               FixedVectorInstanceCheckTypes,
+INSTANTIATE_TYPED_TEST_SUITE_P(FixedList,
+                               FixedListInstanceCheckFixture,
+                               FixedListInstanceCheckTypes,
                                NameProviderForTypeParameterizedTest);
 
 }  // namespace fixed_containers
 
 namespace another_namespace_unrelated_to_the_fixed_containers_namespace
 {
-TEST(FixedVector, ArgumentDependentLookup)
+TEST(FixedList, ArgumentDependentLookup)
 {
     // Compile-only test
-    fixed_containers::FixedVector<int, 5> a{};
+    fixed_containers::FixedList<int, 5> a{};
     erase(a, 5);
     erase_if(a, [](int) { return true; });
     (void)is_full(a);

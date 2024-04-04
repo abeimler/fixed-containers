@@ -2,10 +2,10 @@
 
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/fixed_circular_deque.hpp"
+#include "fixed_containers/max_size.hpp"
 #include "fixed_containers/queue_adapter.hpp"
 #include "fixed_containers/sequence_container_checking.hpp"
 #include "fixed_containers/source_location.hpp"
-#include "fixed_containers/max_size.hpp"
 
 namespace fixed_containers
 {
@@ -55,7 +55,6 @@ template <typename T,
 struct tuple_size<fixed_containers::FixedCircularQueue<T, MAXIMUM_SIZE, CheckingType>>
   : std::integral_constant<std::size_t, 0>
 {
-    static_assert(fixed_containers::AlwaysFalseV<T, decltype(MAXIMUM_SIZE), CheckingType>,
-                  "Implicit Structured Binding due to the fields being public is disabled");
+    // Implicit Structured Binding due to the fields being public is disabled
 };
 }  // namespace std
