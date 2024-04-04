@@ -480,7 +480,7 @@ TEST(FixedString, Repair)
     {
         constexpr auto v1 = []()
         {
-            FixedString<8> v{"01234"};
+            FixedString<8> v{"456789"};
             // write string "by hand" (like read from buffer) ... scanf_s("%s", v.data(), v.max_size())
             v.resize(8);
             v[0] = '0';
@@ -488,7 +488,7 @@ TEST(FixedString, Repair)
             v[2] = '2';
             v[3] = '\0';
             v[4] = '\255';
-            v[5] = '\127';
+            v[5] = '\200';
             v[6] = '\123';
             v.repair();
             return v;
@@ -505,6 +505,92 @@ TEST(FixedString, Repair)
         EXPECT_EQ(*std::next(v1.c_str(), 3), '\0');
 
         static_assert(v1.size() == 3);
+    }
+
+    {
+        constexpr auto v1 = []()
+        {
+            FixedString<8> v{"456789"};
+            // write string "by hand" (like read from buffer) ... scanf_s("%s", v.data(), v.max_size())
+            // without internal resize
+            v.data()[0] = '0';
+            v.data()[1] = '1';
+            v.data()[2] = '2';
+            v.data()[3] = '\0';
+            v.data()[4] = '\255';
+            v.data()[5] = '\200';
+            v.data()[6] = '\123';
+            v.repair();
+            return v;
+        }();
+
+        static_assert(*std::next(v1.c_str(), 0) == '0');
+        static_assert(*std::next(v1.c_str(), 1) == '1');
+        static_assert(*std::next(v1.c_str(), 2) == '2');
+        static_assert(*std::next(v1.c_str(), 3) == '\0');
+
+        EXPECT_EQ(*std::next(v1.c_str(), 0), '0');
+        EXPECT_EQ(*std::next(v1.c_str(), 1), '1');
+        EXPECT_EQ(*std::next(v1.c_str(), 2), '2');
+        EXPECT_EQ(*std::next(v1.c_str(), 3), '\0');
+
+        static_assert(v1.size() == 3);
+    }
+}
+
+TEST(FixedString, RepairFailure)
+{
+    {
+        auto v1 = []()
+        {
+            FixedString<8> v{"456789"};
+            // write string "by hand" (like read from buffer) ... scanf_s("%s", v.data(), v.max_size())
+            // without internal resize
+            v.data()[0] = '0';
+            v.data()[1] = '1';
+            v.data()[2] = '2';
+            v.data()[3] = '\13';
+            v.data()[4] = '\255';
+            v.data()[5] = '\100';
+            v.data()[6] = '\123';
+            v.data()[7] = '\254';
+            return v;
+        }();
+
+        EXPECT_EQ(*std::next(v1.data(), 0), '0');
+        EXPECT_EQ(*std::next(v1.data(), 1), '1');
+        EXPECT_EQ(*std::next(v1.data(), 2), '2');
+
+        EXPECT_DEATH(v1.repair(), "");
+    }
+
+    {
+        constexpr auto v1 = []()
+        {
+            FixedStringTruncable<8> v{"01234"};
+            // write string "by hand" (like read from buffer) ... scanf_s("%s", v.data(), v.max_size())
+            // without internal resize
+            v.data()[0] = '0';
+            v.data()[1] = '1';
+            v.data()[2] = '2';
+            v.data()[3] = '\13';
+            v.data()[4] = '\255';
+            v.data()[5] = '\100';
+            v.data()[6] = '\123';
+            v.data()[7] = '\254';
+            v.repair();
+            return v;
+        }();
+
+        static_assert(*std::next(v1.data(), 0) == '0');
+        static_assert(*std::next(v1.data(), 1) == '1');
+        static_assert(*std::next(v1.data(), 2) == '2');
+
+        EXPECT_EQ(*std::next(v1.c_str(), 0), '0');
+        EXPECT_EQ(*std::next(v1.c_str(), 1), '1');
+        EXPECT_EQ(*std::next(v1.c_str(), 2), '2');
+
+        static_assert(v1.size() == 8);
     }
 }
 

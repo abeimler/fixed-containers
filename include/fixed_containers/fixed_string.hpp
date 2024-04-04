@@ -11,6 +11,7 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <string_view>
 
 namespace fixed_containers
@@ -526,12 +527,26 @@ public:
     }
 
     constexpr void repair(const std_transition::source_location& loc = std_transition::source_location::current()) {
-        if (auto it = std::find(vec().cbegin(), vec().cend(), '\0'); it != vec().cend()) {
-            std::size_t null_index = std::distance(vec().cbegin(), it);
+        /// @TODO: get underlying string array for searching null-terminated byte
+        if (auto it = std::find(vec().IMPLEMENTATION_DETAIL_DO_NOT_USE_array_.cbegin(), vec().IMPLEMENTATION_DETAIL_DO_NOT_USE_array_.cend(), '\0'); it != vec().IMPLEMENTATION_DETAIL_DO_NOT_USE_array_.cend())
+        {
+            std::size_t null_index = std::distance(vec().IMPLEMENTATION_DETAIL_DO_NOT_USE_array_.cbegin(), it);
             repair(null_index, loc);
         } else {
-            vec().clear();
-            null_terminate(loc);
+            // null-terminated byte string not found
+            if constexpr (STRING_TRUNCATION_IS_ERROR == customize::StringTruncationIsError::NoError)
+            {
+                if (vec().max_size() > 0)
+                {
+                    repair(vec().max_size(), loc);
+                } else {
+                    vec().clear();
+                    null_terminate(loc);
+                }
+            } else {
+                // without null character
+                Checking::out_of_range(vec().max_size(), vec().max_size(), loc);
+            }
         }
     }
     constexpr void repair(const std::size_t null_index,
@@ -540,6 +555,7 @@ public:
         {
             Checking::length_error(null_index, loc);
         }
+        vec().IMPLEMENTATION_DETAIL_DO_NOT_USE_size_ = null_index;
         vec().resize(null_index, CharT{}, loc);
         null_terminate(loc);
     }
