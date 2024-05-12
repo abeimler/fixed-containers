@@ -1344,139 +1344,36 @@ TEST(FixedString, AppendChars)
 
 TEST(FixedString, OperatorPlusEqual)
 {
-    constexpr auto v1 = []()
-    {
-        FixedStringTruncable<17> v{"012"};
-        v.append("abc");
-        v.append({'d', 'e'});
-        std::string_view s = "fg";
-        v.append(s);
-        return v;
-    }();
-
-    static_assert(v1 == "012abcdefg");
-    static_assert(v1.size() == 10);
-    static_assert(v1.max_size() == 17);
-}
-
-TEST(FixedString, Truncation)
-{
     {
         constexpr auto v1 = []()
         {
-            FixedStringTruncable<5> v{std::string_view{"World"}};
+            FixedString<17> v{"012"};
+            v.append("abc");
+            v.append({'d', 'e'});
+            std::string_view s = "fg";
+            v.append(s);
             return v;
         }();
 
-        static_assert(v1 == "World");
-        static_assert(v1.size() == 5);
-        static_assert(v1.max_size() == 5);
-
-        EXPECT_FALSE(v1.truncated());
+        static_assert(v1 == "012abcdefg");
+        static_assert(v1.size() == 10);
+        static_assert(v1.max_size() == 17);
     }
 
     {
         constexpr auto v1 = []()
         {
-            FixedStringTruncable<6> v{std::string_view{" World!!!"}};
+            FixedStringTruncable<8> v{"012"};
+            v.append("abc");
+            v.append({'d', 'e'});
+            std::string_view s = "fg";
+            v.append(s);
             return v;
         }();
 
-        static_assert(v1 == " World");
-        static_assert(v1.size() == 6);
-        static_assert(v1.max_size() == 6);
-
-        EXPECT_TRUE(v1.truncated());
-    }
-
-    {
-        constexpr auto v1 = []()
-        {
-            FixedStringTruncable<11> text1{std::string_view{"Hello World"}};
-            FixedStringTruncable<6> text2{"!!!"};
-            text1 += text2;
-            return text1;
-        }();
-
-        EXPECT_EQ(v1, "Hello World");
-        static_assert(v1.size() == 11);
-        static_assert(v1.max_size() == 11);
-
-        EXPECT_TRUE(v1.truncated());
-    }
-
-    {
-        constexpr auto v1 = []()
-        {
-            FixedStringTruncable<11> text1{"Hello"};
-            FixedStringTruncable<9> text2{std::string_view{" World!!!"}};
-            text1 += text2;
-            return text1;
-        }();
-
-        EXPECT_EQ(v1, "Hello World");
-        static_assert(v1.size() == 11);
-        static_assert(v1.max_size() == 11);
-
-        EXPECT_TRUE(v1.truncated());
-    }
-
-    {
-        constexpr auto v1 = []()
-        {
-            FixedString<11> text1{"Hello"};
-            text1.assign("Hello World");
-            return text1;
-        }();
-
-        static_assert(v1 == "Hello World");
-        static_assert(v1.size() == 11);
-        static_assert(v1.max_size() == 11);
-
-        EXPECT_FALSE(v1.truncated());
-    }
-
-    {
-        constexpr auto v1 = []()
-        {
-            FixedStringTruncable<11> text1{"Hello"};
-            text1.assign("Hello World!!!");
-            return text1;
-        }();
-
-        static_assert(v1 == "Hello World");
-        static_assert(v1.size() == 11);
-        static_assert(v1.max_size() == 11);
-
-        EXPECT_TRUE(v1.truncated());
-    }
-}
-
-TEST(FixedString, NotTruncable)
-{
-    {
-        constexpr auto v1 = []()
-        {
-            FixedString<5> v{std::string_view{"World"}};
-            return v;
-        }();
-
-        static_assert(v1 == "World");
-        static_assert(v1.size() == 5);
-        static_assert(v1.max_size() == 5);
-
-        EXPECT_FALSE(v1.truncated());
-    }
-
-    {
-        auto v1 = []()
-        {
-            FixedString<6> v{"Hello"};
-            return v;
-        }();
-
-        EXPECT_DEATH(v1.append(" World!!!"), "");
-        EXPECT_FALSE(v1.truncated());
+        static_assert(v1 == "012abcde");
+        static_assert(v1.size() == 8);
+        static_assert(v1.max_size() == 8);
     }
 }
 

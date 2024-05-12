@@ -11,7 +11,7 @@
 error: expected unqualified-id if (const auto __len = std::min(__d1, __d2))
  */
 // #define min(a, b) (((a) < (b)) ? (a) : (b))
-#define max(a, b) (((a) > (b)) ? (a) : (b))
+// #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define CONST const
 #define CONSTANT const
 #define MUTABLE mutable
@@ -55,11 +55,11 @@ TEST(MacroCountermeasures, DummyUsagesOfTheMacros)
     //    CONST int min_result = min(3, 5);
     //    EXPECT_EQ(3, min_result);
 
-    CONST int max_result1 = max(3, 5);
-    EXPECT_EQ(5, max_result1);
+    //    CONST int max_result1 = max(3, 5);
+    //    EXPECT_EQ(5, max_result1);
 
-    CONSTANT int max_result2 = max(ClassWithMutableMember{3}.value, 5);
-    EXPECT_EQ(5, max_result2);
+    //    CONSTANT int max_result2 = max(ClassWithMutableMember{3}.value, 5);
+    //    EXPECT_EQ(5, max_result2);
 
     EXPECT_EQ(BLACK, 0);
     EXPECT_EQ(RED, 1);

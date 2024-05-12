@@ -8,9 +8,6 @@
 #include "fixed_containers/filtered_integer_range_iterator.hpp"
 #include "fixed_containers/max_size.hpp"
 
-#ifdef USE_BIT_SET_FOR_ENUM_SET
-#include "bit_set.hpp"
-#endif
 #include <array>
 #include <cstddef>
 #include <initializer_list>
