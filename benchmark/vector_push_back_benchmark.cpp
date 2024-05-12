@@ -3,6 +3,8 @@
 #include <benchmark/benchmark.h>
 #include <vector>
 
+static inline constexpr size_t MaxSize = 8U<<12U;
+
 static void BM_std_vector_push_back_with_reserve(benchmark::State& state) {
     LookUpBenchmarkSuit suit (state.range(0));
     std::vector<int> v;
@@ -22,7 +24,7 @@ static void BM_std_vector_push_back_with_reserve(benchmark::State& state) {
         state.ResumeTiming();
     }
 }
-BENCHMARK(BM_std_vector_push_back_with_reserve)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_vector_push_back_with_reserve)->RangeMultiplier(2)->Range(8U, MaxSize);
 
 
 static void BM_std_vector_push_back_single(benchmark::State& state) {
@@ -74,7 +76,7 @@ static void BM_std_vector_emplace_back(benchmark::State& state) {
         state.ResumeTiming();
     }
 }
-BENCHMARK(BM_std_vector_emplace_back)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_vector_emplace_back)->RangeMultiplier(2)->Range(8U, MaxSize);
 
 
 static void BM_fixed_vector_push_back_single(benchmark::State& state) {
@@ -89,7 +91,6 @@ static void BM_fixed_vector_push_back_single(benchmark::State& state) {
 BENCHMARK(BM_fixed_vector_push_back_single);
 static void BM_fixed_vector_push_back(benchmark::State& state) {
     LookUpBenchmarkSuit suit (state.range(0));
-    constexpr size_t MaxSize = 8U<<10U;
     fixed_containers::FixedVector<int, MaxSize> v;
     for (auto _ : state) {
         auto data = v.data();
@@ -106,4 +107,4 @@ static void BM_fixed_vector_push_back(benchmark::State& state) {
         state.ResumeTiming();
     }
 }
-BENCHMARK(BM_fixed_vector_push_back)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_fixed_vector_push_back)->RangeMultiplier(2)->Range(8U, MaxSize);

@@ -4,6 +4,7 @@
 #include <benchmark/benchmark.h>
 #include <vector>
 
+static inline constexpr size_t MaxSize = 8U<<12U;
 
 static void BM_std_vector_random_access_with_reserve(benchmark::State& state) {
     LookUpBenchmarkSuit suit (state.range(0));
@@ -22,7 +23,7 @@ static void BM_std_vector_random_access_with_reserve(benchmark::State& state) {
         }
     }
 }
-BENCHMARK(BM_std_vector_random_access_with_reserve)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_vector_random_access_with_reserve)->RangeMultiplier(2)->Range(8U, MaxSize);
 
 static void BM_std_vector_random_access(benchmark::State& state) {
     LookUpBenchmarkSuit suit (state.range(0));
@@ -41,12 +42,11 @@ static void BM_std_vector_random_access(benchmark::State& state) {
         }
     }
 }
-BENCHMARK(BM_std_vector_random_access)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_vector_random_access)->RangeMultiplier(2)->Range(8U, MaxSize);
 
 
 static void BM_fixed_vector_random_access(benchmark::State& state) {
     LookUpBenchmarkSuit suit (state.range(0));
-    constexpr size_t MaxSize = 8U<<10U;
     fixed_containers::FixedVector<int, MaxSize> v;
     for (int i = 0; i < state.range(0); ++i) {
         v.push_back(suit.values[i]);
@@ -62,7 +62,7 @@ static void BM_fixed_vector_random_access(benchmark::State& state) {
         }
     }
 }
-BENCHMARK(BM_fixed_vector_random_access)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_fixed_vector_random_access)->RangeMultiplier(2)->Range(8U, MaxSize);
 
 
 static void BM_std_array_random_access(benchmark::State& state) {
@@ -83,4 +83,4 @@ static void BM_std_array_random_access(benchmark::State& state) {
         }
     }
 }
-BENCHMARK(BM_std_array_random_access)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_array_random_access)->RangeMultiplier(2)->Range(8U, MaxSize);
