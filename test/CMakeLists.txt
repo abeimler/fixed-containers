@@ -94,9 +94,9 @@ add_test_dependencies(tuples_test)
 add_executable(type_name_test type_name_test.cpp)
 add_test_dependencies(type_name_test)
 
-#add_executable(enum_map_bit_set_test enum_map_test.cpp)
-#target_compile_definitions(enum_map_bit_set_test PRIVATE USE_BIT_SET_IN_ENUM_MAP)
-#add_test_dependencies(enum_map_bit_set_test)
+add_executable(enum_map_bit_set_test enum_map_test.cpp)
+target_compile_definitions(enum_map_bit_set_test PRIVATE USE_BIT_SET_IN_ENUM_MAP)
+add_test_dependencies(enum_map_bit_set_test)
 
 #add_executable(enum_set_bit_set_test enum_set_test.cpp)
 #target_compile_definitions(enum_set_bit_set_test PRIVATE USE_BIT_SET_FOR_ENUM_SET)

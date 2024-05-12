@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fixed_containers/bit_set.hpp"
 #include "fixed_containers/assert_or_abort.hpp"
 #include "fixed_containers/bidirectional_iterator.hpp"
 #include "fixed_containers/concepts.hpp"
