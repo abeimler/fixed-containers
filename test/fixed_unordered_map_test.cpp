@@ -1149,7 +1149,7 @@ TEST(FixedUnorderedMap, Find)
 
 // TEST(FixedUnorderedMap, Find_TransparentComparator)
 // {
-//     constexpr FixedMap<MockAComparableToB, int, 3, std::less<>> s{};
+//     constexpr FixedUnorderedMap<MockAComparableToB, int, 3, std::less<>> s{};
 //     constexpr MockBComparableToA b{5};
 //     static_assert(s.find(b) == s.end());
 // }
@@ -1186,7 +1186,7 @@ TEST(FixedUnorderedMap, Contains)
 
 // TEST(FixedUnorderedMap, Contains_TransparentComparator)
 // {
-//     constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
+//     constexpr FixedUnorderedMap<MockAComparableToB, int, 5, std::less<>> s{
 //         {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
 //     constexpr MockBComparableToA b{5};
 //     static_assert(s.contains(b));
@@ -1208,7 +1208,7 @@ TEST(FixedUnorderedMap, Count)
 
 // TEST(FixedUnorderedMap, Count_TransparentComparator)
 // {
-//     constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
+//     constexpr FixedUnorderedMap<MockAComparableToB, int, 5, std::less<>> s{
 //         {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
 //     constexpr MockBComparableToA b{5};
 //     static_assert(s.count(b) == 1);
@@ -1252,6 +1252,59 @@ TEST(FixedUnorderedMap, Ranges)
     int first_entry = (*f.begin()).second;  // Can't use arrow with range-v3 because it requires
                                             // l-value. Note that std::ranges works
     EXPECT_EQ(10, first_entry);
+}
+
+TEST(FixedUnorderedMap, OverloadedAddressOfOperator)
+{
+    {
+        FixedUnorderedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15> v{};
+        v[1] = {};
+        v.at(1) = {};
+        v.insert({2, {}});
+        v.emplace(3, MockFailingAddressOfOperator{});
+        v.erase(3);
+        v.try_emplace(4, MockFailingAddressOfOperator{});
+        v.clear();
+        v.insert_or_assign(2, MockFailingAddressOfOperator{});
+        v.insert_or_assign(2, MockFailingAddressOfOperator{});
+        v.clear();
+        ASSERT_TRUE(v.empty());
+    }
+
+    {
+        constexpr FixedUnorderedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15>
+            v{{2, {}}};
+        static_assert(!v.empty());
+    }
+
+    {
+        FixedUnorderedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15> v{
+            {2, {}},
+            {3, {}},
+            {4, {}},
+        };
+        ASSERT_FALSE(v.empty());
+        auto it = v.begin();
+        it->second.do_nothing();
+        (void)it++;
+        ++it;
+        it->second.do_nothing();
+    }
+
+    {
+        constexpr FixedUnorderedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15>
+            v{
+                {2, {}},
+                {3, {}},
+                {4, {}},
+            };
+        static_assert(!v.empty());
+        auto it = v.cbegin();
+        it->second.do_nothing();
+        (void)it++;
+        ++it;
+        it->second.do_nothing();
+    }
 }
 
 TEST(FixedUnorderedMap, ClassTemplateArgumentDeduction)

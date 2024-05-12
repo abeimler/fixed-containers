@@ -9,6 +9,7 @@
 #include "fixed_containers/filtered_integer_range_iterator.hpp"
 #include "fixed_containers/fixed_vector.hpp"
 #include "fixed_containers/max_size.hpp"
+#include "fixed_containers/memory.hpp"
 #include "fixed_containers/optional_storage.hpp"
 #include "fixed_containers/pair.hpp"
 #include "fixed_containers/preconditions.hpp"
@@ -313,7 +314,7 @@ public:
             {
                 if (!OUTPUT.contains(key))
                 {
-                    out.push_back(&key);
+                    out.push_back(std::addressof(key));
                 }
             }
             return out;
@@ -487,13 +488,13 @@ public:
             return {create_iterator(ordinal), false};
         }
 
-        increment_size();
 #ifdef USE_BIT_SET_IN_ENUM_MAP
         IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.insert(ordinal);
 #else
+        increment_size();
         array_set_unchecked_at(ordinal) = true;
+        memory::construct_at_address_of(values_unchecked_at(ordinal), value.second);
 #endif
-        std::construct_at(&values_unchecked_at(ordinal), value.second);
         return {create_iterator(ordinal), true};
     }
     constexpr std::pair<iterator, bool> insert(value_type&& value) noexcept
@@ -509,13 +510,13 @@ public:
             return {create_iterator(ordinal), false};
         }
 
-        increment_size();
 #ifdef USE_BIT_SET_IN_ENUM_MAP
         IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.insert(ordinal);
 #else
+        increment_size();
         array_set_unchecked_at(ordinal) = true;
+        memory::construct_at_address_of(values_unchecked_at(ordinal), std::move(value.second));
 #endif
-        std::construct_at(&values_unchecked_at(ordinal), std::move(value.second));
         return {create_iterator(ordinal), true};
     }
 
@@ -574,14 +575,14 @@ public:
             return {create_iterator(ordinal), false};
         }
 
-        increment_size();
 #ifdef USE_BIT_SET_IN_ENUM_MAP
         IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.insert(ordinal);
 #else
+        increment_size();
         array_set_unchecked_at(ordinal) = true;
+        memory::construct_at_address_of(
+            values_unchecked_at(ordinal), std::in_place, std::forward<Args>(args)...);
 #endif
-        std::construct_at(
-            &values_unchecked_at(ordinal), std::in_place, std::forward<Args>(args)...);
         return {create_iterator(ordinal), true};
     }
     template <class... Args>
@@ -770,34 +771,38 @@ private:
             return;
         }
 
-        increment_size();
 #ifdef USE_BIT_SET_IN_ENUM_MAP
         IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.insert(ordinal);
 #else
+        increment_size();
         array_set_unchecked_at(ordinal) = true;
+        memory::construct_at_address_of(values_unchecked_at(ordinal), std::in_place);
 #endif
-        std::construct_at(&values_unchecked_at(ordinal), std::in_place);
     }
 
     constexpr iterator create_iterator(const std::size_t start_index) noexcept
     {
-        return iterator{PairProvider<false>{&array_set(), &values(), start_index}};
+        return iterator{PairProvider<false>{
+            std::addressof(array_set()), std::addressof(values()), start_index}};
     }
 
     constexpr const_iterator create_const_iterator(const std::size_t start_index) const noexcept
     {
-        return const_iterator{PairProvider<true>{&array_set(), &values(), start_index}};
+        return const_iterator{
+            PairProvider<true>{std::addressof(array_set()), std::addressof(values()), start_index}};
     }
 
     constexpr reverse_iterator create_reverse_iterator(const std::size_t start_index) noexcept
     {
-        return reverse_iterator{PairProvider<false>{&array_set(), &values(), start_index}};
+        return reverse_iterator{PairProvider<false>{
+            std::addressof(array_set()), std::addressof(values()), start_index}};
     }
 
     constexpr const_reverse_iterator create_const_reverse_iterator(
         const std::size_t start_index) const noexcept
     {
-        return const_reverse_iterator{PairProvider<true>{&array_set(), &values(), start_index}};
+        return const_reverse_iterator{
+            PairProvider<true>{std::addressof(array_set()), std::addressof(values()), start_index}};
     }
 
     constexpr void reset_at(const std::size_t i) noexcept
@@ -805,15 +810,15 @@ private:
         assert_or_abort(contains_at(i));
         if constexpr (NotTriviallyDestructible<V>)  // if-check needed by clang
         {
-            std::destroy_at(&unchecked_at(i));
+            memory::destroy_at_address_of(unchecked_at(i));
         }
 
 #ifdef USE_BIT_SET_IN_ENUM_MAP
         IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
 #else
         array_set_unchecked_at(i) = false;
-#endif
         decrement_size();
+#endif
     }
 
 protected:  // [WORKAROUND-1]
@@ -976,7 +981,8 @@ public:
         {
             if (this->contains_at(i))
             {
-                std::construct_at(&this->values_unchecked_at(i), other.values_unchecked_at(i));
+                memory::construct_at_address_of(this->values_unchecked_at(i),
+                                                other.values_unchecked_at(i));
             }
         }
     }
@@ -989,8 +995,8 @@ public:
         {
             if (this->contains_at(i))
             {
-                std::construct_at(&this->values_unchecked_at(i),
-                                  std::move(other.values_unchecked_at(i)));
+                memory::construct_at_address_of(this->values_unchecked_at(i),
+                                                std::move(other.values_unchecked_at(i)));
             }
         }
         // Clear the moved-out-of-map. This is consistent with both std::map
@@ -1011,7 +1017,8 @@ public:
         {
             if (this->contains_at(i))
             {
-                std::construct_at(&this->values_unchecked_at(i), other.values_unchecked_at(i));
+                memory::construct_at_address_of(this->values_unchecked_at(i),
+                                                other.values_unchecked_at(i));
             }
         }
         return *this;
@@ -1030,8 +1037,8 @@ public:
         {
             if (this->contains_at(i))
             {
-                std::construct_at(&this->values_unchecked_at(i),
-                                  std::move(other.values_unchecked_at(i)));
+                memory::construct_at_address_of(this->values_unchecked_at(i),
+                                                std::move(other.values_unchecked_at(i)));
             }
         }
         // The trivial assignment operator does not `other.clear()`, so don't do it here either for
@@ -1217,9 +1224,9 @@ template <typename K, typename V, fixed_containers::customize::EnumMapChecking<K
 }
 
 template <InputIterator InputIt>
-EnumMap(InputIt first,
-        InputIt last) -> EnumMap<typename std::iterator_traits<InputIt>::value_type::first_type,
-                                 typename std::iterator_traits<InputIt>::value_type::second_type>;
+EnumMap(InputIt first, InputIt last)
+    -> EnumMap<typename std::iterator_traits<InputIt>::value_type::first_type,
+               typename std::iterator_traits<InputIt>::value_type::second_type>;
 
 template <class K, class V, customize::EnumMapChecking<K> CheckingType, class Predicate>
 constexpr typename EnumMap<K, V, CheckingType>::size_type erase_if(EnumMap<K, V, CheckingType>& c,

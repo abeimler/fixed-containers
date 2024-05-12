@@ -2039,12 +2039,22 @@ TEST(FixedCircularDeque, EraseRange)
         static_assert(v1.size() == 4);
         static_assert(v1.max_size() == 8);
 
-        auto v2 = Factory::template create<int, 8>({2, 1, 4, 5, 0, 3});
+        {
+            auto v2 = Factory::template create<int, 8>({2, 1, 4, 5, 0, 3});
 
-        auto it = v2.erase(std::next(v2.begin(), 1), std::next(v2.cbegin(), 3));
-        EXPECT_EQ(it, std::next(v2.begin(), 1));
-        EXPECT_EQ(*it, 5);
-        EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{2, 5, 0, 3}}));
+            auto it = v2.erase(std::next(v2.begin(), 1), std::next(v2.cbegin(), 3));
+            EXPECT_EQ(it, std::next(v2.begin(), 1));
+            EXPECT_EQ(*it, 5);
+            EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{2, 5, 0, 3}}));
+        }
+        {
+            auto v =
+                Factory::template create<std::vector<int>, 8>({{1, 2, 3}, {4, 5}, {}, {6, 7, 8}});
+            auto it = v.erase(v.begin(), std::next(v.begin(), 2));
+            EXPECT_EQ(it, v.begin());
+            EXPECT_EQ(v.size(), 2u);
+            EXPECT_TRUE(std::ranges::equal(v, std::vector<std::vector<int>>{{}, {6, 7, 8}}));
+        }
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -2067,22 +2077,41 @@ TEST(FixedCircularDeque, EraseOne)
         static_assert(v1.size() == 4);
         static_assert(v1.max_size() == 8);
 
-        auto v2 = Factory::template create<int, 8>({2, 1, 4, 5, 0, 3});
+        {
+            auto v2 = Factory::template create<int, 8>({2, 1, 4, 5, 0, 3});
 
-        auto it = v2.erase(v2.begin());
-        EXPECT_EQ(it, v2.begin());
-        EXPECT_EQ(*it, 1);
-        EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 5>{{1, 4, 5, 0, 3}}));
-        std::advance(it, 2);
-        it = v2.erase(it);
-        EXPECT_EQ(it, std::next(v2.begin(), 2));
-        EXPECT_EQ(*it, 0);
-        EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{1, 4, 0, 3}}));
-        ++it;
-        it = v2.erase(it);
-        EXPECT_EQ(it, v2.cend());
-        // EXPECT_EQ(*it, 3);  // Not dereferenceable
-        EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 3>{{1, 4, 0}}));
+            auto it = v2.erase(v2.begin());
+            EXPECT_EQ(it, v2.begin());
+            EXPECT_EQ(*it, 1);
+            EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 5>{{1, 4, 5, 0, 3}}));
+            std::advance(it, 2);
+            it = v2.erase(it);
+            EXPECT_EQ(it, std::next(v2.begin(), 2));
+            EXPECT_EQ(*it, 0);
+            EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{1, 4, 0, 3}}));
+            ++it;
+            it = v2.erase(it);
+            EXPECT_EQ(it, v2.cend());
+            // EXPECT_EQ(*it, 3);  // Not dereferenceable
+            EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 3>{{1, 4, 0}}));
+        }
+        {
+            auto v =
+                Factory::template create<std::vector<int>, 8>({{1, 2, 3}, {4, 5}, {}, {6, 7, 8}});
+            auto it = v.erase(v.begin());
+            EXPECT_EQ(it, v.begin());
+            EXPECT_EQ(v.size(), 3u);
+            EXPECT_TRUE(
+                std::ranges::equal(v, std::vector<std::vector<int>>{{4, 5}, {}, {6, 7, 8}}));
+            it = v.erase(std::next(v.begin(), 1));
+            EXPECT_EQ(it, std::next(v.begin(), 1));
+            EXPECT_EQ(v.size(), 2u);
+            EXPECT_TRUE(std::ranges::equal(v, std::vector<std::vector<int>>{{4, 5}, {6, 7, 8}}));
+            it = v.erase(std::next(v.begin(), 1));
+            EXPECT_EQ(it, v.end());
+            EXPECT_EQ(v.size(), 1u);
+            EXPECT_TRUE(std::ranges::equal(v, std::vector<std::vector<int>>{{4, 5}}));
+        }
     };
 
     run_test(FixedCircularDequeInitialStateFirstIndex{});
@@ -2259,6 +2288,64 @@ TEST(FixedCircularDeque, Back_EmptyContainer)
     run_test(FixedCircularDequeInitialStateLastIndex{});
 }
 
+TEST(FixedCircularDeque, OverloadedAddressOfOperator)
+{
+    {
+        FixedCircularDeque<MockFailingAddressOfOperator, 15> v{};
+        v.push_back({});
+        v.push_front({});
+        v.assign(10, {});
+        v.insert(v.begin(), {});
+        v.emplace(v.begin());
+        v.emplace_back();
+        v.emplace_front();
+        v.erase(v.begin());
+        v.pop_back();
+        v.pop_front();
+        v.clear();
+        ASSERT_TRUE(v.empty());
+    }
+
+    {
+        constexpr FixedCircularDeque<MockFailingAddressOfOperator, 15> v{5};
+        static_assert(!v.empty());
+    }
+
+    {
+        FixedCircularDeque<MockFailingAddressOfOperator, 15> v{5};
+        ASSERT_FALSE(v.empty());
+        auto it = v.begin();
+        auto it_ref = *it;
+        it_ref.do_nothing();
+        it->do_nothing();
+        (void)it++;
+        (void)it--;
+        ++it;
+        --it;
+        auto it_ref2 = *it;
+        it_ref2.do_nothing();
+        it->do_nothing();
+        it[0].do_nothing();
+    }
+
+    {
+        constexpr FixedCircularDeque<MockFailingAddressOfOperator, 15> v{5};
+        static_assert(!v.empty());
+        auto it = v.cbegin();
+        auto it_ref = *it;
+        it_ref.do_nothing();
+        it->do_nothing();
+        (void)it++;
+        (void)it--;
+        ++it;
+        --it;
+        auto it_ref2 = *it;
+        it_ref2.do_nothing();
+        it->do_nothing();
+        it[0].do_nothing();
+    }
+}
+
 TEST(FixedCircularDeque, ClassTemplateArgumentDeduction)
 {
     // Compile-only test
@@ -2296,7 +2383,8 @@ struct FixedCircularDequeInstanceCounterUniquenessToken
 using InstanceCounterNonTrivialAssignment = instance_counter::InstanceCounterNonTrivialAssignment<
     FixedCircularDequeInstanceCounterUniquenessToken>;
 
-using FixedDequeOfInstanceCounterNonTrivial = FixedDeque<InstanceCounterNonTrivialAssignment, 5>;
+using FixedDequeOfInstanceCounterNonTrivial =
+    FixedCircularDeque<InstanceCounterNonTrivialAssignment, 5>;
 static_assert(!TriviallyCopyAssignable<FixedDequeOfInstanceCounterNonTrivial>);
 static_assert(!TriviallyMoveAssignable<FixedDequeOfInstanceCounterNonTrivial>);
 static_assert(!TriviallyDestructible<FixedDequeOfInstanceCounterNonTrivial>);
@@ -2304,7 +2392,7 @@ static_assert(!TriviallyDestructible<FixedDequeOfInstanceCounterNonTrivial>);
 using InstanceCounterTrivialAssignment = instance_counter::InstanceCounterTrivialAssignment<
     FixedCircularDequeInstanceCounterUniquenessToken>;
 
-using FixedDequeOfInstanceCounterTrivial = FixedDeque<InstanceCounterTrivialAssignment, 5>;
+using FixedDequeOfInstanceCounterTrivial = FixedCircularDeque<InstanceCounterTrivialAssignment, 5>;
 static_assert(TriviallyCopyAssignable<FixedDequeOfInstanceCounterTrivial>);
 static_assert(TriviallyMoveAssignable<FixedDequeOfInstanceCounterTrivial>);
 static_assert(!TriviallyDestructible<FixedDequeOfInstanceCounterTrivial>);
@@ -2495,8 +2583,8 @@ REGISTER_TYPED_TEST_SUITE_P(FixedCircularDequeInstanceCheckFixture,
 using FixedCircularDequeInstanceCheckTypes =
     testing::Types<std::deque<InstanceCounterNonTrivialAssignment>,
                    std::deque<InstanceCounterTrivialAssignment>,
-                   FixedDeque<InstanceCounterNonTrivialAssignment, 17>,
-                   FixedDeque<InstanceCounterTrivialAssignment, 17>>;
+                   FixedCircularDeque<InstanceCounterNonTrivialAssignment, 17>,
+                   FixedCircularDeque<InstanceCounterTrivialAssignment, 17>>;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(FixedCircularDeque,
                                FixedCircularDequeInstanceCheckFixture,

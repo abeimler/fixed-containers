@@ -1608,13 +1608,20 @@ TEST(FixedVector, EraseRange)
     static_assert(std::ranges::equal(v1, std::array<int, 4>{0, 1, 4, 5}));
     static_assert(v1.size() == 4);
     static_assert(v1.max_size() == 8);
-
-    FixedVector<int, 8> v2{2, 1, 4, 5, 0, 3};
-
-    auto it = v2.erase(std::next(v2.begin(), 1), std::next(v2.cbegin(), 3));
-    EXPECT_EQ(it, std::next(v2.begin(), 1));
-    EXPECT_EQ(*it, 5);
-    EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{2, 5, 0, 3}}));
+    {
+        FixedVector<int, 8> v2{2, 1, 4, 5, 0, 3};
+        auto it = v2.erase(std::next(v2.begin(), 1), std::next(v2.cbegin(), 3));
+        EXPECT_EQ(it, std::next(v2.begin(), 1));
+        EXPECT_EQ(*it, 5);
+        EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{2, 5, 0, 3}}));
+    }
+    {
+        FixedVector<std::vector<int>, 8> v = {{1, 2, 3}, {4, 5}, {}, {6, 7, 8}};
+        auto it = v.erase(v.begin(), std::next(v.begin(), 2));
+        EXPECT_EQ(it, v.begin());
+        EXPECT_EQ(v.size(), 2u);
+        EXPECT_TRUE(std::ranges::equal(v, std::vector<std::vector<int>>{{}, {6, 7, 8}}));
+    }
 }
 
 TEST(FixedVector, EraseOne)
@@ -1631,22 +1638,37 @@ TEST(FixedVector, EraseOne)
     static_assert(v1.size() == 4);
     static_assert(v1.max_size() == 8);
 
-    FixedVector<int, 8> v2{2, 1, 4, 5, 0, 3};
-
-    auto it = v2.erase(v2.begin());
-    EXPECT_EQ(it, v2.begin());
-    EXPECT_EQ(*it, 1);
-    EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 5>{{1, 4, 5, 0, 3}}));
-    std::advance(it, 2);
-    it = v2.erase(it);
-    EXPECT_EQ(it, std::next(v2.begin(), 2));
-    EXPECT_EQ(*it, 0);
-    EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{1, 4, 0, 3}}));
-    ++it;
-    it = v2.erase(it);
-    EXPECT_EQ(it, v2.cend());
-    // EXPECT_EQ(*it, 3); // Not dereferenceable
-    EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 3>{{1, 4, 0}}));
+    {
+        FixedVector<int, 8> v2{2, 1, 4, 5, 0, 3};
+        auto it = v2.erase(v2.begin());
+        EXPECT_EQ(it, v2.begin());
+        EXPECT_EQ(*it, 1);
+        EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 5>{{1, 4, 5, 0, 3}}));
+        std::advance(it, 2);
+        it = v2.erase(it);
+        EXPECT_EQ(it, std::next(v2.begin(), 2));
+        EXPECT_EQ(*it, 0);
+        EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 4>{{1, 4, 0, 3}}));
+        ++it;
+        it = v2.erase(it);
+        EXPECT_EQ(it, v2.cend());
+        EXPECT_TRUE(std::ranges::equal(v2, std::array<int, 3>{{1, 4, 0}}));
+    }
+    {
+        FixedVector<std::vector<int>, 8> v = {{1, 2, 3}, {4, 5}, {}, {6, 7, 8}};
+        auto it = v.erase(v.begin());
+        EXPECT_EQ(it, v.begin());
+        EXPECT_EQ(v.size(), 3u);
+        EXPECT_TRUE(std::ranges::equal(v, std::vector<std::vector<int>>{{4, 5}, {}, {6, 7, 8}}));
+        it = v.erase(std::next(v.begin(), 1));
+        EXPECT_EQ(it, std::next(v.begin(), 1));
+        EXPECT_EQ(v.size(), 2u);
+        EXPECT_TRUE(std::ranges::equal(v, std::vector<std::vector<int>>{{4, 5}, {6, 7, 8}}));
+        it = v.erase(std::next(v.begin(), 1));
+        EXPECT_EQ(it, v.end());
+        EXPECT_EQ(v.size(), 1u);
+        EXPECT_TRUE(std::ranges::equal(v, std::vector<std::vector<int>>{{4, 5}}));
+    }
 }
 
 TEST(FixedVector, Erase_Empty)
@@ -1894,6 +1916,61 @@ TEST(FixedVector, NonTriviallyCopyableMoveAssignment)
     auto& v3 = v2;
     v2 = std::move(v3);
     EXPECT_TRUE(std::ranges::equal(v2, std::array<MockNonTrivialInt, 2>{1, 2}));
+}
+
+TEST(FixedVector, OverloadedAddressOfOperator)
+{
+    {
+        FixedVector<MockFailingAddressOfOperator, 15> v{};
+        v.push_back({});
+        v.assign(10, {});
+        v.insert(v.begin(), {});
+        v.emplace(v.begin());
+        v.emplace_back();
+        v.erase(v.begin());
+        v.pop_back();
+        v.clear();
+        ASSERT_TRUE(v.empty());
+    }
+
+    {
+        constexpr FixedVector<MockFailingAddressOfOperator, 15> v{5};
+        static_assert(!v.empty());
+    }
+
+    {
+        FixedVector<MockFailingAddressOfOperator, 15> v{5};
+        ASSERT_FALSE(v.empty());
+        auto it = v.begin();
+        auto it_ref = *it;
+        it_ref.do_nothing();
+        it->do_nothing();
+        (void)it++;
+        (void)it--;
+        ++it;
+        --it;
+        auto it_ref2 = *it;
+        it_ref2.do_nothing();
+        it->do_nothing();
+        it[0].do_nothing();
+    }
+
+    {
+        constexpr FixedVector<MockFailingAddressOfOperator, 15> v{5};
+        static_assert(!v.empty());
+        auto it = v.cbegin();
+        auto it_ref = *it;
+        it_ref.do_nothing();
+        it->do_nothing();
+        (void)it++;
+        (void)it--;
+        ++it;
+        --it;
+        auto it_ref2 = *it;
+        it_ref2.do_nothing();
+        it->do_nothing();
+        it[0].do_nothing();
+    }
 }
 
 TEST(FixedVector, ClassTemplateArgumentDeduction)

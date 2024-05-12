@@ -84,6 +84,7 @@ target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:Clang>:
 
     # due to gtest
     -Wno-covered-switch-default # v1.11.0 fails (needs new release). bazel points to a newer commit with the fix.
+    -Wno-switch-default
     -Wno-exit-time-destructors
     -Wno-used-but-marked-unused
 

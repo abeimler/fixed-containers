@@ -5,6 +5,7 @@
 #include "fixed_containers/consteval_compare.hpp"
 #include "fixed_containers/iterator_utils.hpp"
 #include "fixed_containers/max_size.hpp"
+#include "fixed_containers/memory.hpp"
 #include "fixed_containers/optional_storage.hpp"
 #include "fixed_containers/preconditions.hpp"
 #include "fixed_containers/random_access_iterator_transformer.hpp"
@@ -167,7 +168,7 @@ public:
         {
             if (std::is_constant_evaluated())
             {
-                std::construct_at(&array());
+                memory::construct_at_address_of(array());
             }
         }
     }
@@ -297,7 +298,7 @@ public:
     {
         check_not_full(loc);
         auto entry_it = advance_all_after_iterator_by_n(it, 1);
-        std::construct_at(&*entry_it, v);
+        memory::construct_at_address_of(*entry_it, v);
         return entry_it;
     }
     constexpr iterator insert(
@@ -307,7 +308,7 @@ public:
     {
         check_not_full(loc);
         auto entry_it = advance_all_after_iterator_by_n(it, 1);
-        std::construct_at(&*entry_it, std::move(v));
+        memory::construct_at_address_of(*entry_it, std::move(v));
         return entry_it;
     }
     template <InputIterator InputIt>
@@ -338,7 +339,7 @@ public:
     {
         check_not_full(std_transition::source_location::current());
         auto entry_it = advance_all_after_iterator_by_n(it, 1);
-        std::construct_at(&*entry_it, std::forward<Args>(args)...);
+        memory::construct_at_address_of(*entry_it, std::forward<Args>(args)...);
         return entry_it;
     }
 
@@ -400,11 +401,25 @@ public:
         iterator read_end_it = std::next(read_start_it, entry_count_to_move);
         iterator write_start_it = const_to_mutable_it(first);
 
-        // Clean out the gap
-        destroy_range(write_start_it, std::next(write_start_it, entry_count_to_remove));
+        if (!std::is_constant_evaluated())
+        {
+            // We can only use this when `!is_constant_evaluated`, since otherwise Clang
+            // complains about objects being accessed outside their lifetimes.
 
-        // Do the move
-        std::move(read_start_it, read_end_it, write_start_it);
+            // Clean out the gap
+            destroy_range(write_start_it, std::next(write_start_it, entry_count_to_remove));
+
+            // Do the relocation
+            algorithm::uninitialized_relocate(read_start_it, read_end_it, write_start_it);
+        }
+        else
+        {
+            // Do the move
+            iterator write_end_it = std::move(read_start_it, read_end_it, write_start_it);
+
+            // Clean out the tail
+            destroy_range(write_end_it, read_end_it);
+        }
 
         decrement_size(static_cast<std::size_t>(entry_count_to_remove));
         return write_start_it;
@@ -491,10 +506,13 @@ public:
         return unchecked_at(back_index());
     }
 
-    constexpr value_type* data() noexcept { return &optional_storage_detail::get(*array().data()); }
+    constexpr value_type* data() noexcept
+    {
+        return std::addressof(optional_storage_detail::get(*array().data()));
+    }
     constexpr const value_type* data() const noexcept
     {
-        return &optional_storage_detail::get(*array().data());
+        return std::addressof(optional_storage_detail::get(*array().data()));
     }
 
     /**
@@ -578,7 +596,7 @@ private:
         auto read_end_it = std::next(read_start_it, value_count_to_move);
         auto write_end_it =
             std::next(read_start_it, static_cast<std::ptrdiff_t>(n) + value_count_to_move);
-        algorithm::emplace_move_backward(read_start_it, read_end_it, write_end_it);
+        algorithm::uninitialized_relocate_backward(read_start_it, read_end_it, write_end_it);
 
         return read_start_it;
     }
@@ -596,7 +614,7 @@ private:
         auto write_it = advance_all_after_iterator_by_n(it, entry_count_to_add);
         for (auto w_it = write_it; first != last; std::advance(first, 1), std::advance(w_it, 1))
         {
-            std::construct_at(&*w_it, *first);
+            memory::construct_at_address_of(*w_it, *first);
         }
         return write_it;
     }
@@ -689,15 +707,14 @@ private:
     {
         IMPLEMENTATION_DETAIL_DO_NOT_USE_size_ = size;
     }
-    constexpr const OptionalT& array_unchecked_at(const std::size_t i) const { return array()[i]; }
-    constexpr OptionalT& array_unchecked_at(const std::size_t i) { return array()[i]; }
+
     constexpr const T& unchecked_at(const std::size_t i) const
     {
-        return optional_storage_detail::get(array_unchecked_at(i));
+        return optional_storage_detail::get(array()[i]);
     }
     constexpr T& unchecked_at(const std::size_t i)
     {
-        return optional_storage_detail::get(array_unchecked_at(i));
+        return optional_storage_detail::get(array()[i]);
     }
 
     constexpr void destroy_at(std::size_t)
@@ -707,7 +724,7 @@ private:
     constexpr void destroy_at(std::size_t i)
         requires NotTriviallyDestructible<T>
     {
-        std::destroy_at(&array_unchecked_at(i).value);
+        memory::destroy_at_address_of(unchecked_at(i));
     }
 
     constexpr void destroy_range(iterator /*first*/, iterator /*last*/)
@@ -719,23 +736,23 @@ private:
     {
         for (; first != last; ++first)
         {
-            std::destroy_at(&*first);
+            memory::destroy_at_address_of(*first);
         }
     }
 
     constexpr void place_at(const std::size_t i, const value_type& v)
     {
-        std::construct_at(&array_unchecked_at(i), v);
+        memory::construct_at_address_of(unchecked_at(i), v);
     }
     constexpr void place_at(const std::size_t i, value_type&& v)
     {
-        std::construct_at(&array_unchecked_at(i), std::move(v));
+        memory::construct_at_address_of(unchecked_at(i), std::move(v));
     }
 
     template <class... Args>
     constexpr void emplace_at(const std::size_t i, Args&&... args)
     {
-        optional_storage_detail::construct_at(&array_unchecked_at(i), std::forward<Args>(args)...);
+        memory::construct_at_address_of(unchecked_at(i), std::forward<Args>(args)...);
     }
 
     // [WORKAROUND-1] - Needed by the non-trivially-copyable flavor of FixedVector

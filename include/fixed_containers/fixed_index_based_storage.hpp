@@ -4,6 +4,7 @@
 #include "fixed_containers/consteval_compare.hpp"
 #include "fixed_containers/fixed_vector.hpp"
 #include "fixed_containers/index_or_value_storage.hpp"
+#include "fixed_containers/memory.hpp"
 
 #include <array>
 #include <cstddef>
@@ -97,10 +98,14 @@ private:
     template <class... Args>
     constexpr void emplace_at(const std::size_t& i, Args&&... args)
     {
-        std::construct_at(&array_unchecked_at(i), std::in_place, std::forward<Args>(args)...);
+        memory::construct_at_address_of(
+            array_unchecked_at(i), std::in_place, std::forward<Args>(args)...);
     }
 
-    constexpr void destroy_at(std::size_t i) { std::destroy_at(&array_unchecked_at(i).value); }
+    constexpr void destroy_at(std::size_t i)
+    {
+        memory::destroy_at_address_of(array_unchecked_at(i).value);
+    }
 };
 
 // This allocator keeps entries contiguous in memory - no gaps.
@@ -138,8 +143,8 @@ public:
 
     constexpr std::size_t delete_at_and_return_repositioned_index(const std::size_t i) noexcept
     {
-        std::destroy_at(&nodes().at(i));
-        std::construct_at(&nodes().at(i), std::move(nodes().back()));
+        memory::destroy_at_address_of(nodes().at(i));
+        memory::construct_at_address_of(nodes().at(i), std::move(nodes().back()));
         nodes().pop_back();
         return nodes().size();
     }

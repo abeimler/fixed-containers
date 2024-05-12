@@ -127,6 +127,8 @@ private:
         {
             return tree_ == other.tree_ && current_index_ == other.current_index_;
         }
+
+        [[nodiscard]] constexpr NodeIndex current_index() const { return current_index_; }
     };
 
     template <IteratorConstness CONSTNESS, IteratorDirection DIRECTION>
@@ -440,27 +442,18 @@ public:
     constexpr iterator erase(const_iterator pos) noexcept
     {
         assert_or_abort(pos != cend());
-        const NodeIndex i = tree().index_of_node_or_null(pos->first);
+        const NodeIndex i = get_node_index_from_iterator(pos);
         assert_or_abort(tree().contains_at(i));
         const NodeIndex successor_index = tree().delete_at_and_return_successor(i);
         return create_iterator(successor_index);
     }
-    constexpr iterator erase(iterator pos) noexcept
-    {
-        assert_or_abort(pos != end());
-        const NodeIndex i = tree().index_of_node_or_null(pos->first);
-        assert_or_abort(tree().contains_at(i));
-        const NodeIndex successor_index = tree().delete_at_and_return_successor(i);
-        return create_iterator(successor_index);
-    }
+    constexpr iterator erase(iterator pos) noexcept { return erase(const_iterator{pos}); }
 
     constexpr iterator erase(const_iterator first, const_iterator last) noexcept
     {
         // iterators might be invalidated after every deletion, so we can't just loop through
-        const NodeIndex from =
-            first == cend() ? NULL_INDEX : tree().index_of_node_or_null(first->first);
-        const NodeIndex to =
-            last == cend() ? NULL_INDEX : tree().index_of_node_or_null(last->first);
+        const NodeIndex from = first == cend() ? NULL_INDEX : get_node_index_from_iterator(first);
+        const NodeIndex to = last == cend() ? NULL_INDEX : get_node_index_from_iterator(last);
 
         const NodeIndex successor_index = tree().delete_range_and_return_successor(from, to);
         return create_iterator(successor_index);
@@ -648,24 +641,24 @@ private:
     constexpr iterator create_iterator(const NodeIndex& start_index) noexcept
     {
         const NodeIndex i = replace_null_index_with_max_size_for_end_iterator(start_index);
-        return iterator{PairProvider<false>{&tree(), i}};
+        return iterator{PairProvider<false>{std::addressof(tree()), i}};
     }
 
     constexpr const_iterator create_const_iterator(const NodeIndex& start_index) const noexcept
     {
         const NodeIndex i = replace_null_index_with_max_size_for_end_iterator(start_index);
-        return const_iterator{PairProvider<true>{&tree(), i}};
+        return const_iterator{PairProvider<true>{std::addressof(tree()), i}};
     }
 
     constexpr reverse_iterator create_reverse_iterator(const NodeIndex& start_index) noexcept
     {
-        return reverse_iterator{PairProvider<false>{&tree(), start_index}};
+        return reverse_iterator{PairProvider<false>{std::addressof(tree()), start_index}};
     }
 
     constexpr const_reverse_iterator create_const_reverse_iterator(
         const NodeIndex& start_index) const noexcept
     {
-        return const_reverse_iterator{PairProvider<true>{&tree(), start_index}};
+        return const_reverse_iterator{PairProvider<true>{std::addressof(tree()), start_index}};
     }
 
     constexpr void check_not_full(const std_transition::source_location& loc) const
@@ -689,6 +682,11 @@ private:
         const NodeIndex l = tree().index_of_node_ceiling(np);
         const NodeIndex r = tree().contains_at(np.i) ? tree().index_of_successor_at(l) : l;
         return {create_const_iterator(l), create_const_iterator(r)};
+    }
+
+    [[nodiscard]] constexpr NodeIndex get_node_index_from_iterator(const_iterator it)
+    {
+        return it.template private_reference_provider<PairProvider<true>>().current_index();
     }
 };
 

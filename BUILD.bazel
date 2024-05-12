@@ -8,6 +8,9 @@ cc_library(
     name = "algorithm",
     hdrs = ["include/fixed_containers/algorithm.hpp"],
     includes = ["include"],
+    deps = [
+        ":memory",
+    ],
     copts = ["-std=c++20"],
 )
 
@@ -122,6 +125,7 @@ cc_library(
         ":filtered_integer_range_iterator",
         ":fixed_vector",
         ":max_size",
+        ":memory",
         ":optional_storage",
         ":pair",
         ":preconditions",
@@ -220,6 +224,7 @@ cc_library(
         ":integer_range",
         ":iterator_utils",
         ":max_size",
+        ":memory",
         ":optional_storage",
         ":preconditions",
         ":random_access_iterator",
@@ -460,6 +465,7 @@ cc_library(
         ":consteval_compare",
         ":iterator_utils",
         ":max_size",
+        ":memory",
         ":optional_storage",
         ":preconditions",
         ":random_access_iterator_transformer",
@@ -564,6 +570,13 @@ cc_library(
 cc_library(
     name = "max_size",
     hdrs = ["include/fixed_containers/max_size.hpp"],
+    includes = ["include"],
+    copts = ["-std=c++20"],
+)
+
+cc_library(
+    name = "memory",
+    hdrs = ["include/fixed_containers/memory.hpp"],
     includes = ["include"],
     copts = ["-std=c++20"],
 )
@@ -1176,6 +1189,7 @@ cc_test(
     srcs = ["test/in_out_test.cpp"],
     deps = [
         ":in_out",
+        ":mock_testing_types",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -1232,7 +1246,20 @@ cc_test(
         ":fixed_set",
         ":fixed_stack",
         ":fixed_string",
+        ":fixed_unordered_map",
+        ":fixed_unordered_set",
         ":fixed_vector",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = ["-std=c++20"],
+)
+
+cc_test(
+    name = "memory_test",
+    srcs = ["test/memory_test.cpp"],
+    deps = [
+        ":memory",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -1243,6 +1270,7 @@ cc_test(
     name = "out_test",
     srcs = ["test/out_test.cpp"],
     deps = [
+        ":mock_testing_types",
         ":out",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
@@ -1267,6 +1295,7 @@ cc_test(
     srcs = ["test/pair_view_test.cpp"],
     deps = [
         ":concepts",
+        ":mock_testing_types",
         ":pair_view",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
