@@ -57,6 +57,7 @@ static void BM_std_map_lookup(benchmark::State& state) {
             benchmark::DoNotOptimize(entry);
         }
     }
+    state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
 }
 BENCHMARK(BM_std_map_lookup)->RangeMultiplier(2)->Range(8U, MaxSize);
 
@@ -70,6 +71,7 @@ static void BM_std_unordered_map_access_single_miss(benchmark::State& state) {
         benchmark::DoNotOptimize(v[miss_key]);
         benchmark::ClobberMemory();
     }
+    state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
 }
 BENCHMARK(BM_std_unordered_map_access_single_miss);
 static void BM_std_unordered_map_access_single(benchmark::State& state) {
@@ -80,6 +82,7 @@ static void BM_std_unordered_map_access_single(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(v[key]);
     }
+    state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
 }
 BENCHMARK(BM_std_unordered_map_access_single);
 static void BM_std_unordered_map_random_access(benchmark::State& state) {
@@ -96,6 +99,7 @@ static void BM_std_unordered_map_random_access(benchmark::State& state) {
             benchmark::DoNotOptimize(v[key]);
         }
     }
+    state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
 }
 BENCHMARK(BM_std_unordered_map_random_access)->RangeMultiplier(2)->Range(8U, MaxSize);
 
@@ -111,6 +115,7 @@ static void BM_std_unordered_map_lookup(benchmark::State& state) {
             benchmark::DoNotOptimize(entry);
         }
     }
+    state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
 }
 BENCHMARK(BM_std_unordered_map_lookup)->RangeMultiplier(2)->Range(8U, MaxSize);
 
@@ -125,6 +130,7 @@ static void BM_fixed_map_access_single_miss(benchmark::State& state) {
         benchmark::DoNotOptimize(v[miss_key]);
         benchmark::ClobberMemory();
     }
+    state.counters["sizeof"] = sizeof(v);
 }
 BENCHMARK(BM_fixed_map_access_single_miss);
 static void BM_fixed_map_access_single(benchmark::State& state) {
@@ -135,6 +141,7 @@ static void BM_fixed_map_access_single(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(v[key]);
     }
+    state.counters["sizeof"] = sizeof(v);
 }
 BENCHMARK(BM_fixed_map_access_single);
 static void BM_fixed_map_random_access(benchmark::State& state) {
@@ -151,6 +158,7 @@ static void BM_fixed_map_random_access(benchmark::State& state) {
             benchmark::DoNotOptimize(v[key]);
         }
     }
+    state.counters["sizeof"] = sizeof(v);
 }
 BENCHMARK(BM_fixed_map_random_access)->RangeMultiplier(2)->Range(8U, MaxSize);
 
@@ -166,5 +174,6 @@ static void BM_fixed_map_lookup(benchmark::State& state) {
             benchmark::DoNotOptimize(entry);
         }
     }
+    state.counters["sizeof"] = sizeof(v);
 }
 BENCHMARK(BM_fixed_map_lookup)->RangeMultiplier(2)->Range(8U, MaxSize);

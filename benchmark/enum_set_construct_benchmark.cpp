@@ -50,6 +50,13 @@ static void BM_std_unordered_map_bool_construct(benchmark::State& state) {
             benchmark::ClobberMemory();
         }
     }
+    std::unordered_map<Keys, bool> v = {
+        {Keys::None, false},
+        {Keys::Foo, true},
+        {Keys::Bar, true},
+        {Keys::Baz, true},
+    };
+    state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
 }
 BENCHMARK(BM_std_unordered_map_bool_construct)->RangeMultiplier(2)->Range(8U, 8U<<12U);
 

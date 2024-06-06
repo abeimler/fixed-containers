@@ -47,6 +47,12 @@ static void BM_std_unordered_map_construct(benchmark::State& state) {
             benchmark::ClobberMemory();
         }
     }
+    std::unordered_map<Keys, int> v = {
+        {Keys::Foo, state.range(0)},
+        {Keys::Bar, state.range(0) * 2},
+        {Keys::Baz, 3 * state.range(0) / 4},
+    };
+    state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
 }
 BENCHMARK(BM_std_unordered_map_construct)->RangeMultiplier(2)->Range(8U, 8U<<12U);
 

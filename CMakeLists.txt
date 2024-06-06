@@ -104,13 +104,13 @@ target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/W4 /
 # see https://github.com/TheLartians/CPM.cmake for more info
 include(cmake/CPM.cmake)
 # PackageProject.cmake will be used to make our target installable https://github.com/TheLartians/PackageProject.cmake
-cpmaddpackage("gh:TheLartians/PackageProject.cmake@1.11.0")
+cpmaddpackage("gh:TheLartians/PackageProject.cmake@1.11.2")
 # https://github.com/TheLartians/Format.cmake
 cpmaddpackage(
         NAME
         Format.cmake
         VERSION
-        1.7.3
+        1.8.1
         GITHUB_REPOSITORY
         TheLartians/Format.cmake
         OPTIONS
