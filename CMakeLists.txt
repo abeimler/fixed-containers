@@ -56,6 +56,7 @@ include(cmake/ProjectOptions.cmake)
 target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/WX /EHs->)
 target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/wd4804 /wd4018>)  # due to magic-enum, mixed arithmetic
 target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/wd4530>)  # due to ostream, exception handler
+target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/wd4324>)  # a test intentionally creates this type
 
 target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:Clang,GNU>:-fno-exceptions -ftemplate-backtrace-limit=0>)
 target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:Clang,GNU>:-ftrivial-auto-var-init=pattern>)

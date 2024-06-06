@@ -11,6 +11,7 @@
 #include <ranges>
 #include <span>
 #include <string>
+#include <sstream>
 
 namespace fixed_containers
 {
@@ -1147,6 +1148,8 @@ TEST(FixedString, Erase_Empty)
         // valid, but is not dereferenceable) cannot be used as a value for pos.
         // The behavior is undefined if iterator is not dereferenceable.
         // https://en.cppreference.com/w/cpp/string/basic_string/erase
+
+        // Whether the following dies or not is implementation-dependent
         // EXPECT_DEATH(v1.erase(v1.begin()), "");
     }
 }
@@ -1751,6 +1754,15 @@ TEST(FixedString, ClassTemplateArgumentDeduction)
     // Compile-only test
     FixedString a = FixedString<5>{};
     (void)a;
+}
+
+TEST(FixedStringTest, OStreamOperator) {
+    FixedString<5> str {"hello"};
+
+    std::stringstream ss;
+    ss << str;
+
+    EXPECT_EQ(ss.str(), "hello");
 }
 
 TEST(FixedString, RemoveSuffix)
