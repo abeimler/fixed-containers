@@ -43,8 +43,22 @@ static void BM_std_map_random_access(benchmark::State& state) {
         }
     }
 }
-BENCHMARK(BM_std_map_random_access)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_map_random_access)->RangeMultiplier(2)->Range(8U, MaxSize);
 
+static void BM_std_map_lookup(benchmark::State& state) {
+    LookUpBenchmarkSuit suit (state.range(0));
+    std::map<size_t, int> v;
+    for (int i = 0; i < state.range(0); ++i) {
+        v[i] = suit.values[i];
+    }
+    for (auto _ : state) {
+        for (int i = 0; i < state.range(0); ++i) {
+            auto& entry = v.at(7);
+            benchmark::DoNotOptimize(entry);
+        }
+    }
+}
+BENCHMARK(BM_std_map_lookup)->RangeMultiplier(2)->Range(8U, MaxSize);
 
 static void BM_std_unordered_map_access_single_miss(benchmark::State& state) {
     LookUpBenchmarkSuit suit (10);
@@ -83,8 +97,22 @@ static void BM_std_unordered_map_random_access(benchmark::State& state) {
         }
     }
 }
-BENCHMARK(BM_std_unordered_map_random_access)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_unordered_map_random_access)->RangeMultiplier(2)->Range(8U, MaxSize);
 
+static void BM_std_unordered_map_lookup(benchmark::State& state) {
+    LookUpBenchmarkSuit suit (state.range(0));
+    std::unordered_map<size_t, int> v;
+    for (int i = 0; i < suit.size(); ++i) {
+        v[i] = suit.values[i];
+    }
+    for (auto _ : state) {
+        for (int i = 0; i < state.range(0); ++i) {
+            auto& entry = v.at(7);
+            benchmark::DoNotOptimize(entry);
+        }
+    }
+}
+BENCHMARK(BM_std_unordered_map_lookup)->RangeMultiplier(2)->Range(8U, MaxSize);
 
 
 static void BM_fixed_map_access_single_miss(benchmark::State& state) {
@@ -125,3 +153,18 @@ static void BM_fixed_map_random_access(benchmark::State& state) {
     }
 }
 BENCHMARK(BM_fixed_map_random_access)->RangeMultiplier(2)->Range(8U, MaxSize);
+
+static void BM_fixed_map_lookup(benchmark::State& state) {
+    LookUpBenchmarkSuit suit (state.range(0));
+    fixed_containers::FixedMap<size_t, int, MaxSize> v;
+    for (int i = 0; i < suit.size(); ++i) {
+        v[i] = suit.values[i];
+    }
+    for (auto _ : state) {
+        for (int i = 0; i < state.range(0); ++i) {
+            auto& entry = v.at(7);
+            benchmark::DoNotOptimize(entry);
+        }
+    }
+}
+BENCHMARK(BM_fixed_map_lookup)->RangeMultiplier(2)->Range(8U, MaxSize);

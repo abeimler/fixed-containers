@@ -62,7 +62,6 @@ target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:Clang,GNU>:
 #target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:Clang,GNU>:--gcc-install-dir=/usr/bin/../lib/gcc/x86_64-linux-gnu/11>)
 
 
-
 target_compile_options(project_options INTERFACE $<$<CXX_COMPILER_ID:Clang>:
     # Only available in clang
     -Weverything

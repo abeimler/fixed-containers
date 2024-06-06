@@ -79,6 +79,30 @@ TEST(EnumSet, All)
     static_assert(s1.contains(TestEnum1::FOUR));
 }
 
+TEST(EnumSet, Default)
+{
+    {
+        constexpr EnumSet<TestEnum1> s1;
+
+        static_assert(s1.size() == 0);
+        static_assert(!s1.contains(TestEnum1::ONE));
+        static_assert(!s1.contains(TestEnum1::TWO));
+        static_assert(!s1.contains(TestEnum1::THREE));
+        static_assert(!s1.contains(TestEnum1::FOUR));
+    }
+
+    // runtime
+    {
+        EnumSet<TestEnum1> s1;
+
+        ASSERT_EQ(s1.size(), 0);
+        ASSERT_FALSE(s1.contains(TestEnum1::ONE));
+        ASSERT_FALSE(s1.contains(TestEnum1::TWO));
+        ASSERT_FALSE(s1.contains(TestEnum1::THREE));
+        ASSERT_FALSE(s1.contains(TestEnum1::FOUR));
+    }
+}
+
 TEST(EnumSet, None)
 {
     constexpr auto s1 = EnumSet<TestEnum1>::none();
