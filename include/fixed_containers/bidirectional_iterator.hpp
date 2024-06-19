@@ -5,7 +5,6 @@
 #include "fixed_containers/iterator_utils.hpp"
 
 #include <cstddef>
-#include <cstdint>
 #include <iterator>
 #include <memory>
 
@@ -25,7 +24,8 @@ template <BidirectionalEntryProvider ConstEntryProvider,
           IteratorDirection DIRECTION>
 class BidirectionalIterator
 {
-    static constexpr IteratorConstness NEGATED_CONSTNESS = IteratorConstness(!bool(CONSTNESS));
+    static constexpr IteratorConstness NEGATED_CONSTNESS =
+        IteratorConstness(!static_cast<bool>(CONSTNESS));
 
     using Self =
         BidirectionalIterator<ConstEntryProvider, MutableEntryProvider, CONSTNESS, DIRECTION>;
@@ -45,7 +45,7 @@ class BidirectionalIterator
     using ReverseBase = BidirectionalIterator<ConstEntryProvider,
                                               MutableEntryProvider,
                                               CONSTNESS,
-                                              IteratorDirection(!bool(DIRECTION))>;
+                                              IteratorDirection(!static_cast<bool>(DIRECTION))>;
 
     using EntryProvider = std::conditional_t<CONSTNESS == IteratorConstness::CONSTANT_ITERATOR,
                                              ConstEntryProvider,

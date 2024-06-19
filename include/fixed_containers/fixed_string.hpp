@@ -9,7 +9,7 @@
 #include "fixed_containers/source_location.hpp"
 
 #include <array>
-#include <cstdint>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <string_view>
@@ -607,7 +607,7 @@ private:
 };
 
 #ifdef FIXED_CONTAINERS_IOSTREAM_SUPPORT
-template<std::size_t MAXIMUM_LENGTH, typename CheckingType>
+template <std::size_t MAXIMUM_LENGTH, typename CheckingType>
 std::ostream& operator<<(std::ostream& os, const FixedString<MAXIMUM_LENGTH, CheckingType>& str)
 {
     return os << std::string_view{str};
@@ -615,8 +615,7 @@ std::ostream& operator<<(std::ostream& os, const FixedString<MAXIMUM_LENGTH, Che
 #endif
 
 template <std::size_t MAXIMUM_LENGTH, typename CheckingType>
-[[nodiscard]] constexpr typename FixedString<MAXIMUM_LENGTH, CheckingType>::size_type is_full(
-    const FixedString<MAXIMUM_LENGTH, CheckingType>& c)
+[[nodiscard]] constexpr bool is_full(const FixedString<MAXIMUM_LENGTH, CheckingType>& c)
 {
     return c.size() >= c.max_size();
 }

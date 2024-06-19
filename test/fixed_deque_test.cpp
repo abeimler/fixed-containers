@@ -129,9 +129,15 @@ TEST(FixedDeque, CountConstructor_ExceedsCapacity)
 
 TEST(FixedDeque, MaxSizeDeduction)
 {
-    constexpr auto v1 = make_fixed_deque({10, 11, 12, 13, 14});
-    static_assert(v1.max_size() == 5);
-    static_assert(std::ranges::equal(v1, std::array{10, 11, 12, 13, 14}));
+    {
+        constexpr auto v1 = make_fixed_deque({10, 11, 12, 13, 14});
+        static_assert(v1.max_size() == 5);
+        static_assert(std::ranges::equal(v1, std::array{10, 11, 12, 13, 14}));
+    }
+    {
+        constexpr auto v1 = make_fixed_deque<int>({});
+        static_assert(v1.max_size() == 0);
+    }
 }
 
 TEST(FixedDeque, IteratorConstructor)
@@ -661,7 +667,6 @@ TEST(FixedDeque, Equality)
         constexpr auto v4 = Factory::template create<int, 12>({0, 1});
         constexpr auto v5 = Factory::template create<int, 12>({0, 1, 2, 3, 4, 5});
 
-        static_assert(v1 == v1);
         static_assert(v1 == v2);
         static_assert(v1 != v3);
         static_assert(v1 != v4);

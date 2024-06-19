@@ -261,7 +261,6 @@ cc_library(
     includes = ["include"],
     deps = [
         ":assert_or_abort",
-        ":consteval_compare",
         ":fixed_vector",
         ":index_or_value_storage",
     ],
@@ -345,7 +344,6 @@ cc_library(
         ":source_location",
         ":preconditions",
         ":assert_or_abort",
-        ":emplace",
     ],
 )
 
@@ -600,6 +598,27 @@ cc_library(
 )
 
 cc_library(
+    name = "optional_reference",
+    hdrs = ["include/fixed_containers/optional_reference.hpp"],
+    includes = ["include"],
+    deps = [
+        ":concepts",
+        ":optional_reference_checking",
+    ],
+    copts = ["-std=c++20"],
+)
+
+cc_library(
+    name = "optional_reference_checking",
+    hdrs = ["include/fixed_containers/optional_reference_checking.hpp"],
+    includes = ["include"],
+    deps = [
+        ":source_location",
+    ],
+    copts = ["-std=c++20"],
+)
+
+cc_library(
     name = "max_size",
     hdrs = ["include/fixed_containers/max_size.hpp"],
     includes = ["include"],
@@ -813,13 +832,21 @@ cc_library(
 cc_library(
     name = "instance_counter",
     hdrs = ["test/instance_counter.hpp"],
-    deps = [
-        ":concepts",
-        ":wyhash",
-    ],
     strip_include_prefix = "/test",
     copts = ["-std=c++20"],
     visibility = ["//visibility:private"],
+)
+
+cc_test(
+    name = "instance_counter_test",
+    srcs = ["test/instance_counter_test.cpp"],
+    deps = [
+		":concepts",
+        ":instance_counter",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = ["-std=c++20"],
 )
 
 cc_library(
@@ -929,7 +956,6 @@ cc_test(
         ":consteval_compare",
         ":enum_set",
         ":enums_test_common",
-        ":test_utilities_common",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
         "@com_github_ericniebler_range-v3//:range-v3",
@@ -1025,7 +1051,6 @@ cc_test(
         ":fixed_doubly_linked_list",
         ":fixed_doubly_linked_list_raw_view",
         ":mock_testing_types",
-        ":test_utilities_common",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -1038,7 +1063,7 @@ cc_test(
     deps = [
         ":consteval_compare",
         ":fixed_map",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_benchmark//:benchmark_main",
     ],
     copts = ["-std=c++20"],
 )
@@ -1099,8 +1124,7 @@ cc_test(
     name = "fixed_unordered_map_raw_view_test",
     srcs = ["test/fixed_unordered_map_raw_view_test.cpp"],
     deps = [
-        ":concepts",
-        ":map_entry",
+		":map_entry",
         ":fixed_unordered_map",
         ":fixed_unordered_map_raw_view",
         ":mock_testing_types",
@@ -1120,7 +1144,6 @@ cc_test(
         ":fixed_unordered_set",
         ":instance_counter",
         ":mock_testing_types",
-        ":test_utilities_common",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
         "@com_github_ericniebler_range-v3//:range-v3",
@@ -1137,7 +1160,6 @@ cc_test(
         ":fixed_unordered_set",
         ":fixed_unordered_set_raw_view",
         ":mock_testing_types",
-        ":test_utilities_common",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -1162,13 +1184,8 @@ cc_test(
     name = "fixed_red_black_tree_view_test",
     srcs = ["test/fixed_red_black_tree_view_test.cpp"],
     deps = [
-        ":concepts",
-        ":consteval_compare",
-        ":fixed_red_black_tree",
         ":fixed_red_black_tree_view",
         ":fixed_set",
-        ":mock_testing_types",
-        ":test_utilities_common",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -1184,7 +1201,6 @@ cc_test(
         ":consteval_compare",
         ":fixed_set",
         ":mock_testing_types",
-        ":test_utilities_common",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
         "@com_github_ericniebler_range-v3//:range-v3",
@@ -1241,7 +1257,6 @@ cc_test(
         ":consteval_compare",
         ":fixed_string",
         ":mock_testing_types",
-        ":test_utilities_common",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -1394,6 +1409,19 @@ cc_test(
     ],
     copts = ["-std=c++20"],
 )
+
+cc_test(
+    name = "optional_reference_test",
+    srcs = ["test/optional_reference_test.cpp"],
+    deps = [
+        ":optional_reference",
+        ":mock_testing_types",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = ["-std=c++20"],
+)
+
 
 cc_test(
     name = "reflection_test",

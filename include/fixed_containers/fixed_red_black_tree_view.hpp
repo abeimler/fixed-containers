@@ -1,14 +1,13 @@
 #pragma once
 
 #include "fixed_containers/assert_or_abort.hpp"
-#include "fixed_containers/fixed_red_black_tree.hpp"
+#include "fixed_containers/fixed_red_black_tree_nodes.hpp"
+#include "fixed_containers/fixed_red_black_tree_types.hpp"
 
 #include <cstdint>
-#include <functional>
 #include <iterator>
-#include <numeric>
-#include <unordered_set>
-#include <utility>
+#include <memory>
+#include <type_traits>
 
 namespace fixed_containers
 {
@@ -184,7 +183,7 @@ public:
          */
         [[nodiscard]] NodeIndex parent_index(NodeIndex i) const
         {
-            using namespace fixed_red_black_tree_detail;
+            using fixed_red_black_tree_detail::NodeIndexWithColorEmbeddedInTheMostSignificantBit;
 
             const auto node = node_pointer(i);
             const auto parent_index_offset =
@@ -343,7 +342,8 @@ public:
          */
         [[nodiscard]] std::size_t tree_node_size_bytes() const
         {
-            using namespace fixed_red_black_tree_detail;
+            using fixed_red_black_tree_detail::CompactRedBlackTreeNode;
+            using fixed_red_black_tree_detail::DefaultRedBlackTreeNode;
 
             /*
              * Calculate the size of the tree node by calculating the compile-time size with a

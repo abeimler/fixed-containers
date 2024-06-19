@@ -382,10 +382,10 @@ public:
         TableIndex idx = table().opaque_index_of(key);
         if (!table().exists(idx))
         {
-            return false;
+            return 0;
         }
         table().erase(idx);
-        return true;
+        return 1;
     }
 
     [[nodiscard]] constexpr iterator find(const K& key) noexcept
@@ -473,8 +473,7 @@ private:
 };
 
 template <typename K, typename V, typename TableImpl, typename CheckingType>
-[[nodiscard]] constexpr typename FixedMapAdapter<K, V, TableImpl, CheckingType>::size_type is_full(
-    const FixedMapAdapter<K, V, TableImpl, CheckingType>& c)
+[[nodiscard]] constexpr bool is_full(const FixedMapAdapter<K, V, TableImpl, CheckingType>& c)
 {
     return c.size() >= c.max_size();
 }

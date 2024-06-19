@@ -1,7 +1,6 @@
 #include "fixed_containers/fixed_unordered_set.hpp"
 
 #include "mock_testing_types.hpp"
-#include "test_utilities_common.hpp"
 
 #include "fixed_containers/assert_or_abort.hpp"
 #include "fixed_containers/concepts.hpp"
@@ -142,12 +141,19 @@ TEST(FixedUnorderedSet, EmptySizeFull)
 
 TEST(FixedUnorderedSet, MaxSizeDeduction)
 {
-    constexpr auto s1 = make_fixed_unordered_set({30, 31});
-    static_assert(s1.size() == 2);
-    static_assert(s1.max_size() == 2);
-    static_assert(s1.contains(30));
-    static_assert(s1.contains(31));
-    static_assert(!s1.contains(32));
+    {
+        constexpr auto s1 = make_fixed_unordered_set({30, 31});
+        static_assert(s1.size() == 2);
+        static_assert(s1.max_size() == 2);
+        static_assert(s1.contains(30));
+        static_assert(s1.contains(31));
+        static_assert(!s1.contains(32));
+    }
+    {
+        constexpr auto s1 = make_fixed_unordered_set<int>({});
+        static_assert(s1.size() == 0);
+        static_assert(s1.max_size() == 0);
+    }
 }
 
 TEST(FixedUnorderedSet, Insert)

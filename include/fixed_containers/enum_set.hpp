@@ -509,14 +509,14 @@ private:
 };
 
 template <typename K>
-[[nodiscard]] constexpr typename EnumSet<K>::size_type is_full(const EnumSet<K>& c)
+[[nodiscard]] constexpr bool is_full(const EnumSet<K>& c)
 {
     return c.size() >= c.max_size();
 }
 
 template <InputIterator InputIt>
-EnumSet(InputIt first, InputIt last) noexcept
-    -> EnumSet<typename std::iterator_traits<InputIt>::value_type>;
+EnumSet(InputIt first,
+        InputIt last) noexcept -> EnumSet<typename std::iterator_traits<InputIt>::value_type>;
 
 template <class K, class Predicate>
 constexpr typename EnumSet<K>::size_type erase_if(EnumSet<K>& c, Predicate predicate)

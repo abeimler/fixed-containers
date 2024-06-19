@@ -1,17 +1,16 @@
 #include "fixed_containers/fixed_string.hpp"
 
 #include "mock_testing_types.hpp"
-#include "test_utilities_common.hpp"
 
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/consteval_compare.hpp"
 
 #include <gtest/gtest.h>
 
-#include <ranges>
+#include <algorithm>
 #include <span>
-#include <string>
 #include <sstream>
+#include <string>
 
 namespace fixed_containers
 {
@@ -1389,7 +1388,6 @@ TEST(FixedString, Equality)
     constexpr auto v4 = FixedString<12>{"01"};
     constexpr auto v5 = FixedString<12>{"012345"};
 
-    static_assert(v1 == v1);
     static_assert(v1 == v2);
     static_assert(v1 != v3);
     static_assert(v1 != v4);
@@ -1756,8 +1754,9 @@ TEST(FixedString, ClassTemplateArgumentDeduction)
     (void)a;
 }
 
-TEST(FixedStringTest, OStreamOperator) {
-    FixedString<5> str {"hello"};
+TEST(FixedStringTest, OStreamOperator)
+{
+    FixedString<5> str{"hello"};
 
     std::stringstream ss;
     ss << str;

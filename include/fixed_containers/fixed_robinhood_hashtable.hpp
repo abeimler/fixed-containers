@@ -4,13 +4,8 @@
 #include "fixed_containers/map_entry.hpp"
 
 #include <array>
-#include <cstring>
-#include <functional>
-#ifdef FIXED_CONTAINERS_IOSTREAM_SUPPORT
-#include <iostream>
-#endif
-#include <memory>
 #include <cstdint>
+#include <utility>
 
 // This is a modified version of the dense hashmap from https://github.com/martinus/unordered_dense,
 // reimplemented to exist nicely in the fixed-containers universe.
@@ -182,10 +177,7 @@ public:
         {
             return bucket_index + 1;
         }
-        else
-        {
-            return 0;
-        }
+        return 0;
     }
 
     constexpr void place_and_shift_up(Bucket bucket, SizeType table_loc)
@@ -294,7 +286,7 @@ public:
             // matched, then it is impossible that the key will show up. This check also triggers
             // when we find an empty bucket. Note that this is also the location that we will insert
             // the key if it ends up getting inserted.
-            else if (dist_and_fingerprint > bucket.dist_and_fingerprint_)
+            if (dist_and_fingerprint > bucket.dist_and_fingerprint_)
             {
                 return {table_loc, dist_and_fingerprint};
             }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "fixed_containers/assert_or_abort.hpp"
-#include "fixed_containers/emplace.hpp"
 #include "fixed_containers/erase_if.hpp"
 #include "fixed_containers/forward_iterator.hpp"
 #include "fixed_containers/preconditions.hpp"
@@ -254,10 +253,10 @@ public:
         TableIndex idx = table().opaque_index_of(key);
         if (!table().exists(idx))
         {
-            return false;
+            return 0;
         }
         table().erase(idx);
-        return true;
+        return 1;
     }
 
     [[nodiscard]] constexpr iterator find(const K& key) noexcept
@@ -335,8 +334,7 @@ private:
 };
 
 template <typename K, typename TableImpl, typename CheckingType>
-[[nodiscard]] constexpr typename FixedSetAdapter<K, TableImpl, CheckingType>::size_type is_full(
-    const FixedSetAdapter<K, TableImpl, CheckingType>& c)
+[[nodiscard]] constexpr bool is_full(const FixedSetAdapter<K, TableImpl, CheckingType>& c)
 {
     return c.size() >= c.max_size();
 }

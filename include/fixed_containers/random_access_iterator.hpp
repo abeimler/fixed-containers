@@ -3,8 +3,8 @@
 #include "fixed_containers/arrow_proxy.hpp"
 #include "fixed_containers/iterator_utils.hpp"
 
+#include <concepts>
 #include <cstddef>
-#include <cstdint>
 #include <iterator>
 #include <memory>
 
@@ -26,7 +26,8 @@ template <RandomAccessEntryProvider ConstEntryProvider,
           IteratorDirection DIRECTION>
 class RandomAccessIterator
 {
-    static constexpr IteratorConstness NEGATED_CONSTNESS = IteratorConstness(!bool(CONSTNESS));
+    static constexpr IteratorConstness NEGATED_CONSTNESS =
+        IteratorConstness(!static_cast<bool>(CONSTNESS));
 
     using Self =
         RandomAccessIterator<ConstEntryProvider, MutableEntryProvider, CONSTNESS, DIRECTION>;
@@ -46,7 +47,7 @@ class RandomAccessIterator
     using ReverseBase = RandomAccessIterator<ConstEntryProvider,
                                              MutableEntryProvider,
                                              CONSTNESS,
-                                             IteratorDirection(!bool(DIRECTION))>;
+                                             IteratorDirection(!static_cast<bool>(DIRECTION))>;
 
     using EntryProvider = std::conditional_t<CONSTNESS == IteratorConstness::CONSTANT_ITERATOR,
                                              ConstEntryProvider,

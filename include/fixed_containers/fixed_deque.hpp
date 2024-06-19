@@ -638,32 +638,27 @@ private:
 
     constexpr iterator create_iterator(const std::size_t offset_from_start) noexcept
     {
-        return iterator{ReferenceProvider<false>{std::addressof(array()),
-                                                 std::addressof(starting_index_and_size()),
-                                                 offset_from_start}};
+        return iterator{ReferenceProvider<false>{
+            std::addressof(array()), std::addressof(starting_index_and_size()), offset_from_start}};
     }
     constexpr const_iterator create_const_iterator(
         const std::size_t offset_from_start) const noexcept
     {
-        return const_iterator{ReferenceProvider<true>{std::addressof(array()),
-                                                      std::addressof(starting_index_and_size()),
-                                                      offset_from_start}};
+        return const_iterator{ReferenceProvider<true>{
+            std::addressof(array()), std::addressof(starting_index_and_size()), offset_from_start}};
     }
 
     constexpr reverse_iterator create_reverse_iterator(const std::size_t offset_from_start) noexcept
     {
-        return reverse_iterator{ReferenceProvider<false>{std::addressof(array()),
-                                                         std::addressof(starting_index_and_size()),
-                                                         offset_from_start}};
+        return reverse_iterator{ReferenceProvider<false>{
+            std::addressof(array()), std::addressof(starting_index_and_size()), offset_from_start}};
     }
 
     constexpr const_reverse_iterator create_const_reverse_iterator(
         const std::size_t offset_from_start) const noexcept
     {
-        return const_reverse_iterator{
-            ReferenceProvider<true>{std::addressof(array()),
-                                    std::addressof(starting_index_and_size()),
-                                    offset_from_start}};
+        return const_reverse_iterator{ReferenceProvider<true>{
+            std::addressof(array()), std::addressof(starting_index_and_size()), offset_from_start}};
     }
 
 private:
@@ -992,8 +987,7 @@ public:
 };
 
 template <typename T, std::size_t MAXIMUM_SIZE, typename CheckingType>
-[[nodiscard]] constexpr typename FixedDeque<T, MAXIMUM_SIZE, CheckingType>::size_type is_full(
-    const FixedDeque<T, MAXIMUM_SIZE, CheckingType>& c)
+[[nodiscard]] constexpr bool is_full(const FixedDeque<T, MAXIMUM_SIZE, CheckingType>& c)
 {
     return c.size() >= c.max_size();
 }
@@ -1032,6 +1026,16 @@ template <typename T,
 {
     return {std::begin(list), std::end(list), loc};
 }
+template <typename T,
+          customize::SequenceContainerChecking CheckingType,
+          typename FixedDequeType = FixedDeque<T, 0, CheckingType>>
+[[nodiscard]] constexpr FixedDequeType make_fixed_deque(
+    const std::array<T, 0> /*list*/,
+    const std_transition::source_location& /*loc*/
+    = std_transition::source_location::current()) noexcept
+{
+    return {};
+}
 
 template <typename T, std::size_t MAXIMUM_SIZE>
 [[nodiscard]] constexpr auto make_fixed_deque(
@@ -1042,6 +1046,16 @@ template <typename T, std::size_t MAXIMUM_SIZE>
     using CheckingType = customize::SequenceContainerAbortChecking<T, MAXIMUM_SIZE>;
     using FixedDequeType = FixedDeque<T, MAXIMUM_SIZE, CheckingType>;
     return make_fixed_deque<T, CheckingType, MAXIMUM_SIZE, FixedDequeType>(list, loc);
+}
+template <typename T>
+[[nodiscard]] constexpr auto make_fixed_deque(
+    const std::array<T, 0> list,
+    const std_transition::source_location& loc =
+        std_transition::source_location::current()) noexcept
+{
+    using CheckingType = customize::SequenceContainerAbortChecking<T, 0>;
+    using FixedDequeType = FixedDeque<T, 0, CheckingType>;
+    return make_fixed_deque<T, CheckingType, FixedDequeType>(list, loc);
 }
 
 }  // namespace fixed_containers

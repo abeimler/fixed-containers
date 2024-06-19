@@ -980,8 +980,7 @@ public:
 };
 
 template <typename T, std::size_t MAXIMUM_SIZE, typename CheckingType>
-[[nodiscard]] constexpr typename FixedVector<T, MAXIMUM_SIZE, CheckingType>::size_type is_full(
-    const FixedVector<T, MAXIMUM_SIZE, CheckingType>& c)
+[[nodiscard]] constexpr bool is_full(const FixedVector<T, MAXIMUM_SIZE, CheckingType>& c)
 {
     return c.size() >= c.max_size();
 }
@@ -1020,6 +1019,16 @@ template <typename T,
 {
     return {std::begin(list), std::end(list), loc};
 }
+template <typename T,
+          customize::SequenceContainerChecking CheckingType,
+          typename FixedVectorType = FixedVector<T, 0, CheckingType>>
+[[nodiscard]] constexpr FixedVectorType make_fixed_vector(
+    const std::array<T, 0> /*list*/,
+    const std_transition::source_location& /*loc*/
+    = std_transition::source_location::current()) noexcept
+{
+    return {};
+}
 
 template <typename T, std::size_t MAXIMUM_SIZE>
 [[nodiscard]] constexpr auto make_fixed_vector(
@@ -1030,6 +1039,16 @@ template <typename T, std::size_t MAXIMUM_SIZE>
     using CheckingType = customize::SequenceContainerAbortChecking<T, MAXIMUM_SIZE>;
     using FixedVectorType = FixedVector<T, MAXIMUM_SIZE, CheckingType>;
     return make_fixed_vector<T, CheckingType, MAXIMUM_SIZE, FixedVectorType>(list, loc);
+}
+template <typename T>
+[[nodiscard]] constexpr auto make_fixed_vector(
+    const std::array<T, 0> list,
+    const std_transition::source_location& loc =
+        std_transition::source_location::current()) noexcept
+{
+    using CheckingType = customize::SequenceContainerAbortChecking<T, 0>;
+    using FixedVectorType = FixedVector<T, 0, CheckingType>;
+    return make_fixed_vector<T, CheckingType, FixedVectorType>(list, loc);
 }
 
 }  // namespace fixed_containers
