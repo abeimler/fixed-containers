@@ -1,3 +1,6 @@
+#define MAGIC_ENUM_RANGE_MIN (-1)
+#define MAGIC_ENUM_RANGE_MAX 254
+
 #include "fixed_containers/enum_map.hpp"
 #include "LookUpBenchmark.h"
 #include <benchmark/benchmark.h>
@@ -37,6 +40,11 @@ using SmallIntEnumMap = fixed_containers::EnumMap<Keys, int32_t>;
 using IntEnumMap = fixed_containers::EnumMap<MoreKeys, int32_t>;
 using RangeEnumMap = fixed_containers::EnumMap<MoreKeys, Range>;
 
+struct MyComponent {
+    SmallIntEnumMap stats{};
+    IntEnumMap values{};
+    RangeEnumMap ranges{};
+};
 
 static void BM_std_map_construct(benchmark::State& state) {
     for (auto _ : state) {
@@ -146,3 +154,18 @@ static void BM_fixed_enum_map_construct_RangeEnumMap(benchmark::State& state) {
     state.counters["sizeof"] = sizeof(v);
 }
 BENCHMARK(BM_fixed_enum_map_construct_RangeEnumMap)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+
+
+static void BM_fixed_enum_map_construct_MyComponent(benchmark::State& state) {
+    for (auto _ : state) {
+        for (int i = 0; i < state.range(0); ++i)
+        {
+            MyComponent v;
+            benchmark::DoNotOptimize(v);
+            benchmark::ClobberMemory();
+        }
+    }
+    MyComponent v;
+    state.counters["sizeof"] = sizeof(v);
+}
+BENCHMARK(BM_fixed_enum_map_construct_MyComponent)->RangeMultiplier(2)->Range(8U, 8U<<12U);

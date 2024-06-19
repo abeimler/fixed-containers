@@ -6,7 +6,9 @@
 #include <array>
 #include <cstring>
 #include <functional>
+#ifdef FIXED_CONTAINERS_IOSTREAM_SUPPORT
 #include <iostream>
+#endif
 #include <memory>
 #include <cstdint>
 

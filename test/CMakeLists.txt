@@ -8,6 +8,7 @@ macro(add_test_dependencies TEST_TARGET)
     if(ENABLE_SANITIZER_ADDRESS OR ENABLE_SANITIZER_UNDEFINED_BEHAVIOR)
         target_compile_options(${TEST_TARGET} PRIVATE $<$<CXX_COMPILER_ID:Clang>:-fno-sanitize-recover=all>)
     endif()
+    target_compile_definitions(${TEST_TARGET} PRIVATE FIXED_CONTAINERS_IOSTREAM_SUPPORT)
     add_test(NAME ${TEST_TARGET} COMMAND ${TEST_TARGET})
 endmacro()
 
