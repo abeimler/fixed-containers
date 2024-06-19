@@ -78,5 +78,3 @@ BENCHMARK(benchmark_map_lookup<std::map<int, int>>);
 BENCHMARK(benchmark_map_lookup<FixedMap<int, int, 200>>);
 
 }  // namespace fixed_containers
-
-BENCHMARK_MAIN();

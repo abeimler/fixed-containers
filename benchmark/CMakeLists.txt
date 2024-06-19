@@ -7,6 +7,9 @@ macro(add_benchmark_dependencies BENCHMARK_TARGET)
     target_link_libraries(${BENCHMARK_TARGET} PRIVATE fixed_containers project_options)
 endmacro()
 
+add_executable(fixed_map_perf_test fixed_map_perf_test.cpp)
+add_benchmark_dependencies(fixed_map_perf_test)
+
 add_executable(vector_benchmark vector_benchmark.cpp)
 add_benchmark_dependencies(vector_benchmark)
 add_executable(vector_push_back_benchmark vector_push_back_benchmark.cpp)
