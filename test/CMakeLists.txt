@@ -10,6 +10,19 @@ macro(add_test_dependencies TEST_TARGET)
     endif()
     target_compile_definitions(${TEST_TARGET} PRIVATE FIXED_CONTAINERS_IOSTREAM_SUPPORT)
     add_test(NAME ${TEST_TARGET} COMMAND ${TEST_TARGET})
+
+    if (EMSCRIPTEN)
+        set(web_link_flags)
+        set(web_link_flags "${web_link_flags} -s USE_GLFW=3")
+        set(web_link_flags "${web_link_flags} -s WASM=1")
+        set(web_link_flags "${web_link_flags} -s ASYNCIFY")
+
+        if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
+            set(web_link_flags "${web_link_flags} -s ASSERTIONS=1")
+        endif()
+
+        set_target_properties(${TEST_TARGET} PROPERTIES LINK_FLAGS "${web_link_flags}")
+    endif()
 endmacro()
 
 
@@ -111,3 +124,13 @@ add_test_dependencies(enum_map_bit_set_test)
 add_executable(enum_set_bit_set_test enum_set_test.cpp)
 target_compile_definitions(enum_set_bit_set_test PRIVATE USE_BIT_SET_FOR_ENUM_SET)
 add_test_dependencies(enum_set_bit_set_test)
+
+if (EMSCRIPTEN)
+    # Remove the -rdynamic flag because otherwise emscripten
+    # does not generate HTML+JS+WASM files, only a non-working
+    # and fat HTML
+    string(REPLACE "-rdynamic" "" CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "${CMAKE_SHARED_LIBRARY_LINK_C_FLAGS}")
+
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s WASM=1")
+    set(CMAKE_EXECUTABLE_SUFFIX ".html") # This line is used to set your executable to build with the emscripten html template so that you can directly open it.
+endif ()
