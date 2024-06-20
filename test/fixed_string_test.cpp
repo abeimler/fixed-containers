@@ -4,13 +4,18 @@
 
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/consteval_compare.hpp"
+#include "fixed_containers/max_size.hpp"
 
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
 #include <span>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 namespace fixed_containers
 {
@@ -22,6 +27,9 @@ static_assert(TriviallyCopyable<FixedStringType>);
 static_assert(NotTrivial<FixedStringType>);
 static_assert(StandardLayout<FixedStringType>);
 static_assert(IsStructuralType<FixedStringType>);
+
+static_assert(std::contiguous_iterator<FixedStringType::iterator>);
+static_assert(std::contiguous_iterator<FixedStringType::const_iterator>);
 
 void const_span_ref(const std::span<char>&) {}
 void const_span_of_const_ref(const std::span<const char>&) {}
@@ -623,6 +631,9 @@ TEST(FixedString, TrivialIterators)
         static_assert(*std::prev(v1.end(), 1) == '9');
         static_assert(*std::prev(v1.end(), 2) == '8');
         static_assert(*std::prev(v1.end(), 3) == '7');
+
+        static_assert(*(1 + v1.begin()) == '8');
+        static_assert(*(2 + v1.begin()) == '9');
     }
 
     {
@@ -691,6 +702,9 @@ TEST(FixedString, ReverseIterators)
         static_assert(*std::prev(v1.rend(), 1) == '7');
         static_assert(*std::prev(v1.rend(), 2) == '8');
         static_assert(*std::prev(v1.rend(), 3) == '9');
+
+        static_assert(*(1 + v1.begin()) == '8');
+        static_assert(*(2 + v1.begin()) == '9');
     }
 
     {
@@ -1673,7 +1687,7 @@ TEST(FixedString, Resize_ExceedsCapacity)
     FixedString<3> v1{};
     EXPECT_DEATH(v1.resize(6), "");
     EXPECT_DEATH(v1.resize(6, 5), "");
-    const size_t to_size = 7;
+    const std::size_t to_size = 7;
     EXPECT_DEATH(v1.resize(to_size), "");
     EXPECT_DEATH(v1.resize(to_size, 5), "");
 }
