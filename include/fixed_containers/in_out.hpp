@@ -39,11 +39,11 @@ namespace fixed_containers
  * @tparam T type of the reference
  */
 template <typename T>
-class in_out
+class in_out  // NOLINT(readability-identifier-naming)
 {
 public:
-    constexpr explicit in_out(T& t) noexcept
-      : t_{t}
+    constexpr explicit in_out(T& ref) noexcept
+      : ref_{ref}
     {
     }
 
@@ -53,12 +53,15 @@ public:
     constexpr in_out& operator=(in_out&& original) = delete;
 
     // non-cost overloads only, to prevent passing by `const`/`const&`
-    constexpr T* operator->() noexcept { return std::addressof(t_); }
-    constexpr T* operator&() noexcept { return std::addressof(t_); }
-    constexpr T& operator*() noexcept { return t_; }
+    constexpr T* operator->() noexcept { return std::addressof(ref_); }
+    constexpr T& operator*() noexcept { return ref_; }
+    constexpr T* operator&() noexcept  // NOLINT(google-runtime-operator)
+    {
+        return std::addressof(ref_);
+    }
 
 private:
-    T& t_;
+    T& ref_;
 };
 
 }  // namespace fixed_containers

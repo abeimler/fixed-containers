@@ -19,17 +19,16 @@ namespace
 // readable.
 struct ConvenientIntHash
 {
-    constexpr uint64_t operator()(const int& t) const
+    constexpr uint64_t operator()(const int& value) const
     {
-        uint64_t fingerprint = static_cast<uint64_t>(t) & 0xFFul;
-        uint64_t upper = static_cast<uint64_t>(t) << 8;
+        const uint64_t fingerprint = static_cast<uint64_t>(value) & 0xFFUL;
+        const uint64_t upper = static_cast<uint64_t>(value) << 8;
         return fingerprint | upper;
     }
 };
 
 // map ints to ints, with our convenient hash, with exactly 10 slots available for different hashes
-using IntIntMap10 =
-    FixedRobinhoodHashtable<int, int, 10, 10, ConvenientIntHash, std::equal_to<int>>;
+using IntIntMap10 = FixedRobinhoodHashtable<int, int, 10, 10, ConvenientIntHash, std::equal_to<>>;
 using OIT = typename IntIntMap10::OpaqueIndexType;
 using IT = typename IntIntMap10::OpaqueIteratedType;
 
@@ -50,18 +49,18 @@ template <typename T>
     std::cout << "--- map with " << map.size() << " elems ---" << std::endl;
     for (typename T::SizeType i = 0; i < T::INTERNAL_TABLE_SIZE; i++)
     {
-        const Bucket& b = map.bucket_at(i);
+        const Bucket& bucket = map.bucket_at(i);
 
         // don't print anything for empty slots
-        if (b.dist_and_fingerprint_ == 0)
+        if (bucket.dist_and_fingerprint_ == 0)
         {
             std::cout << i << std::endl;
         }
         else
         {
-            std::cout << i << " (" << b.dist() << ", " << b.fingerprint() << ") -" << b.value_index_
-                      << "-> ";
-            const auto& pair = map.value_at(b.value_index_);
+            std::cout << i << " (" << bucket.dist() << ", " << bucket.fingerprint() << ") -"
+                      << bucket.value_index_ << "-> ";
+            const auto& pair = map.value_at(bucket.value_index_);
             std::cout << "(" << pair.first << ", " << pair.second << ")" << std::endl;
         }
     }
@@ -76,21 +75,21 @@ TEST(BucketOperations, DistAndFingerprint)
     static_assert(TriviallyCopyAssignable<Bucket>);
     static_assert(TriviallyMoveAssignable<Bucket>);
 
-    constexpr uint32_t dist_and_fingerprint = Bucket::dist_and_fingerprint_from_hash(0x1234UL);
-    static_assert((dist_and_fingerprint & Bucket::FINGERPRINT_MASK) == 0x34);
-    static_assert((dist_and_fingerprint >> Bucket::FINGERPRINT_BITS) == 1);
+    constexpr uint32_t DIST_AND_FINGERPRINT = Bucket::dist_and_fingerprint_from_hash(0x1234UL);
+    static_assert((DIST_AND_FINGERPRINT & Bucket::FINGERPRINT_MASK) == 0x34);
+    static_assert((DIST_AND_FINGERPRINT >> Bucket::FINGERPRINT_BITS) == 1);
 
-    constexpr uint32_t up_one = Bucket::increment_dist(dist_and_fingerprint);
-    static_assert(up_one > dist_and_fingerprint);
-    constexpr uint32_t up_two = Bucket::increment_dist(up_one);
-    static_assert(up_two > dist_and_fingerprint);
+    constexpr uint32_t UP_ONE = Bucket::increment_dist(DIST_AND_FINGERPRINT);
+    static_assert(UP_ONE > DIST_AND_FINGERPRINT);
+    constexpr uint32_t UP_TWO = Bucket::increment_dist(UP_ONE);
+    static_assert(UP_TWO > DIST_AND_FINGERPRINT);
 
-    constexpr uint32_t down_one = Bucket::decrement_dist(up_one);
-    static_assert(down_one == dist_and_fingerprint);
-    constexpr uint32_t down_two = Bucket::decrement_dist(dist_and_fingerprint);
-    static_assert(down_two < dist_and_fingerprint);
-    static_assert(down_two < up_one);
-    static_assert(down_two < up_two);
+    constexpr uint32_t DOWN_ONE = Bucket::decrement_dist(UP_ONE);
+    static_assert(DOWN_ONE == DIST_AND_FINGERPRINT);
+    constexpr uint32_t DOWN_TWO = Bucket::decrement_dist(DIST_AND_FINGERPRINT);
+    static_assert(DOWN_TWO < DIST_AND_FINGERPRINT);
+    static_assert(DOWN_TWO < UP_ONE);
+    static_assert(DOWN_TWO < UP_TWO);
 }
 
 TEST(BucketOperations, BucketArray)
@@ -110,11 +109,11 @@ TEST(MapOperations, Emplace)
 {
     IntIntMap10 map{};
 
-    auto test_emplace = [&](int k, int v)
+    auto test_emplace = [&](int key, int value)
     {
-        OIT idx = map.opaque_index_of(k);
+        const OIT idx = map.opaque_index_of(key);
         EXPECT_FALSE(map.exists(idx));
-        return map.emplace(idx, k, v);
+        return map.emplace(idx, key, value);
     };
 
     // empty map, so it will place in the correct spot trivially
@@ -309,11 +308,11 @@ TEST(MapOperations, Search)
 
     IntIntMap10 map{};
 
-    auto test_emplace = [&](int k, int v)
+    auto test_emplace = [&](int key, int value)
     {
-        OIT idx = map.opaque_index_of(k);
+        const OIT idx = map.opaque_index_of(key);
         EXPECT_FALSE(map.exists(idx));
-        return map.emplace(idx, k, v);
+        return map.emplace(idx, key, value);
     };
 
     test_emplace(13, 1);
@@ -410,11 +409,11 @@ TEST(MapOperations, Erase)
 
     IntIntMap10 map{};
 
-    auto test_emplace = [&](int k, int v)
+    auto test_emplace = [&](int key, int value)
     {
-        OIT idx = map.opaque_index_of(k);
+        const OIT idx = map.opaque_index_of(key);
         EXPECT_FALSE(map.exists(idx));
-        return map.emplace(idx, k, v);
+        return map.emplace(idx, key, value);
     };
 
     test_emplace(13, 1);
@@ -571,11 +570,11 @@ TEST(MapOperations, LinkedListIteration)
     EXPECT_EQ(map.size(), 0);
     EXPECT_EQ(map.begin_index(), map.end_index());
 
-    auto test_emplace = [&](int k, int v)
+    auto test_emplace = [&](int key, int value)
     {
-        OIT idx = map.opaque_index_of(k);
+        const OIT idx = map.opaque_index_of(key);
         EXPECT_FALSE(map.exists(idx));
-        return map.emplace(idx, k, v);
+        return map.emplace(idx, key, value);
     };
 
     OIT idx = test_emplace(13, 1);
@@ -684,11 +683,11 @@ TEST(MapOperations, EraseRange)
 
     IntIntMap10 map{};
 
-    auto test_emplace = [&](int k, int v)
+    auto test_emplace = [&](int key, int value)
     {
-        OIT idx = map.opaque_index_of(k);
+        const OIT idx = map.opaque_index_of(key);
         EXPECT_FALSE(map.exists(idx));
-        return map.emplace(idx, k, v);
+        return map.emplace(idx, key, value);
     };
 
     test_emplace(13, 1);

@@ -81,10 +81,10 @@ public:
     }
 
 public:
-    constexpr const K& first() const { return *first_; }
+    [[nodiscard]] constexpr const K& first() const { return *first_; }
     constexpr K& first() { return *first_; }
 
-    constexpr const V& second() const { return *second_; }
+    [[nodiscard]] constexpr const V& second() const { return *second_; }
     constexpr V& second() { return *second_; }
 
     constexpr operator std::pair<K, V>() const { return {first(), second()}; }
@@ -109,17 +109,25 @@ public:
     [[nodiscard]] constexpr const auto& get() const
     {
         if constexpr (N == 0)
+        {
             return first();
+        }
         else if constexpr (N == 1)
+        {
             return second();
+        }
     }
     template <std::size_t N>
     [[nodiscard]] constexpr auto& get()
     {
         if constexpr (N == 0)
+        {
             return first();
+        }
         else if constexpr (N == 1)
+        {
             return second();
+        }
     }
 };
 }  // namespace fixed_containers
@@ -145,31 +153,31 @@ struct tuple_element<N, const fixed_containers::PairView<K, V>>
 };
 
 template <std::size_t N, class Tp1, class Tp2>
-[[nodiscard]] constexpr auto get(fixed_containers::PairView<Tp1, Tp2>& in) noexcept ->
+[[nodiscard]] constexpr auto get(fixed_containers::PairView<Tp1, Tp2>& instance) noexcept ->
     typename tuple_element<N, fixed_containers::PairView<Tp1, Tp2>>::type&
 {
-    return in.template get<N>();
+    return instance.template get<N>();
 }
 
 template <std::size_t N, class Tp1, class Tp2>
-[[nodiscard]] constexpr auto get(fixed_containers::PairView<Tp1, Tp2>&& in) noexcept ->
+[[nodiscard]] constexpr auto get(fixed_containers::PairView<Tp1, Tp2>&& instance) noexcept ->
     typename tuple_element<N, fixed_containers::PairView<Tp1, Tp2>>::type&&
 {
-    return std::move(in).template get<N>();
+    return std::move(instance).template get<N>();
 }
 
 template <std::size_t N, class Tp1, class Tp2>
-[[nodiscard]] constexpr auto get(const fixed_containers::PairView<Tp1, Tp2>& in) noexcept -> const
-    typename tuple_element<N, const fixed_containers::PairView<Tp1, Tp2>>::type&
+[[nodiscard]] constexpr auto get(const fixed_containers::PairView<Tp1, Tp2>& instance) noexcept
+    -> const typename tuple_element<N, const fixed_containers::PairView<Tp1, Tp2>>::type&
 {
-    return in.template get<N>();
+    return instance.template get<N>();
 }
 
 template <std::size_t N, class Tp1, class Tp2>
-[[nodiscard]] constexpr auto get(const fixed_containers::PairView<Tp1, Tp2>&& in) noexcept -> const
-    typename tuple_element<N, const fixed_containers::PairView<Tp1, Tp2>>::type&&
+[[nodiscard]] constexpr auto get(const fixed_containers::PairView<Tp1, Tp2>&& instance) noexcept
+    -> const typename tuple_element<N, const fixed_containers::PairView<Tp1, Tp2>>::type&&
 {
-    return std::move(in).template get<N>();
+    return std::move(instance).template get<N>();
 }
 
 }  // namespace std

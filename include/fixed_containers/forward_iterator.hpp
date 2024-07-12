@@ -5,17 +5,16 @@
 #include "fixed_containers/iterator_utils.hpp"
 
 #include <cstddef>
-#include <cstdint>
 #include <iterator>
 #include <memory>
 
 namespace fixed_containers
 {
 template <class P>
-concept ForwardEntryProvider = DefaultConstructible<P> && requires(P p, P other) {
-    p.advance();
-    p.get();
-    { p == other } -> std::same_as<bool>;
+concept ForwardEntryProvider = DefaultConstructible<P> && requires(P instance, P other) {
+    instance.advance();
+    instance.get();
+    { instance == other } -> std::same_as<bool>;
 };
 
 template <ForwardEntryProvider ConstEntryProvider,
@@ -115,7 +114,7 @@ public:
     // The ReferenceProvider type is typically private to the iterator-owning class or in some
     // detail namespace.
     template <typename ReturnType>
-    constexpr const ReturnType& private_reference_provider() const
+    [[nodiscard]] constexpr const ReturnType& private_reference_provider() const
     {
         return reference_provider_;
     }

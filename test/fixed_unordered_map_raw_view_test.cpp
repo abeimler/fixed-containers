@@ -59,10 +59,19 @@ FixedUnorderedMapRawView get_view_of_map(const Map& map)
                                     map.max_size());
 }
 
-template <auto value>
+template <typename Key, typename Value>
+void test_and_increment(auto& map_it, auto& view_it)
+{
+    EXPECT_EQ(map_it->first, get_from_ptr<Key>(view_it->key()));
+    EXPECT_EQ(map_it->second, get_from_ptr<Value>(view_it->value()));
+    ++map_it;
+    ++view_it;
+}
+
+template <auto VALUE_TEMPLATE>
 struct TestSetArgument
 {
-    static constexpr auto VALUE = value;
+    static constexpr auto VALUE = VALUE_TEMPLATE;
 };
 
 template <typename T>
@@ -98,7 +107,7 @@ TEST(FixedUnorderedMapRawView, PairSizeComputations)
     test_size_computations<int, char[5]>();
 }
 
-TYPED_TEST_P(FixedUnorderedMapRawViewEntryViewFixture, MapEntryRawView_Test)
+TYPED_TEST_P(FixedUnorderedMapRawViewEntryViewFixture, MapEntryRawViewTest)
 {
     auto map_entry = TypeParam::VALUE;
     using Entry = decltype(map_entry);
@@ -108,7 +117,7 @@ TYPED_TEST_P(FixedUnorderedMapRawViewEntryViewFixture, MapEntryRawView_Test)
     EXPECT_EQ(map_entry.value(), get_from_ptr<typename Entry::ValueType>(view.value()));
 }
 
-TYPED_TEST_P(FixedUnorderedMapRawViewEntryViewFixture, MapEntrySizeComputations_Test)
+TYPED_TEST_P(FixedUnorderedMapRawViewEntryViewFixture, MapEntrySizeComputationsTest)
 {
     using Pair = decltype(TypeParam::VALUE);
     using Key = typename Pair::KeyType;
@@ -121,8 +130,8 @@ TYPED_TEST_P(FixedUnorderedMapRawViewEntryViewFixture, MapEntrySizeComputations_
 }
 
 REGISTER_TYPED_TEST_SUITE_P(FixedUnorderedMapRawViewEntryViewFixture,
-                            MapEntryRawView_Test,
-                            MapEntrySizeComputations_Test);
+                            MapEntryRawViewTest,
+                            MapEntrySizeComputationsTest);
 
 using MapEntryRawViewTypes = ::testing::Types<
     TestSetArgument<MapEntry<int, int>{31, 13}>,
@@ -142,20 +151,11 @@ INSTANTIATE_TYPED_TEST_SUITE_P(FixedUnorderedMapRawView,
                                MapEntryRawViewTypes,
                                NameProviderForTypeParameterizedTest);
 
-template <typename Key, typename Value>
-static inline void test_and_increment(auto& map_it, auto& view_it)
-{
-    EXPECT_EQ(map_it->first, get_from_ptr<Key>(view_it->key()));
-    EXPECT_EQ(map_it->second, get_from_ptr<Value>(view_it->value()));
-    ++map_it;
-    ++view_it;
-}
-
 TEST(FixedUnorderedMapRawView, IntIntMap)
 {
-    auto map = make_fixed_unordered_map<int, int>({{1, 2}, {3, 4}, {5, 6}, {7, 8}, {9, 0}});
+    const auto map = make_fixed_unordered_map<int, int>({{1, 2}, {3, 4}, {5, 6}, {7, 8}, {9, 0}});
 
-    FixedUnorderedMapRawView view = get_view_of_map(map);
+    const FixedUnorderedMapRawView view = get_view_of_map(map);
 
     EXPECT_EQ(map.size(), view.size());
     auto map_it = map.begin();
@@ -176,7 +176,7 @@ TEST(FixedUnorderedMapRawView, CharCharMap)
     map['c'] = 'C';
     map['z'] = 'Z';
 
-    FixedUnorderedMapRawView view = get_view_of_map(map);
+    const FixedUnorderedMapRawView view = get_view_of_map(map);
 
     EXPECT_EQ(map.size(), view.size());
     auto map_it = map.begin();

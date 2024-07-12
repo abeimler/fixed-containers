@@ -20,32 +20,32 @@ static_assert(ConstexprDefaultConstructible<CircualrBufferType>);
 
 TEST(FixedCircularQueue, DefaultConstructor)
 {
-    constexpr FixedCircularQueue<int, 8> v1{};
-    (void)v1;
+    constexpr FixedCircularQueue<int, 8> VAL1{};
+    (void)VAL1;
 }
 
 TEST(FixedCircularQueue, IteratorConstructor)
 {
-    constexpr FixedCircularQueue<int, 3> s1 = []()
+    constexpr FixedCircularQueue<int, 3> VAL1 = []()
     {
-        FixedVector<int, 3> v1{77, 99};
-        return FixedCircularQueue<int, 3>{v1.begin(), v1.end()};
+        FixedVector<int, 3> var1{77, 99};
+        return FixedCircularQueue<int, 3>{var1.begin(), var1.end()};
     }();
 
-    static_assert(s1.front() == 77);
-    static_assert(s1.size() == 2);
+    static_assert(VAL1.front() == 77);
+    static_assert(VAL1.size() == 2);
 }
 
 TEST(FixedCircularQueue, MaxSize)
 {
     {
-        constexpr FixedCircularQueue<int, 3> v1{};
-        static_assert(v1.max_size() == 3);
+        constexpr FixedCircularQueue<int, 3> VAL1{};
+        static_assert(VAL1.max_size() == 3);
     }
 
     {
-        FixedCircularQueue<int, 3> v1{};
-        EXPECT_EQ(3, v1.max_size());
+        const FixedCircularQueue<int, 3> var1{};
+        EXPECT_EQ(3, var1.max_size());
     }
 
     {
@@ -58,200 +58,200 @@ TEST(FixedCircularQueue, MaxSize)
 
 TEST(FixedCircularQueue, Empty)
 {
-    constexpr auto v1 = []() { return FixedCircularQueue<int, 7>{}; }();
+    constexpr auto VAL1 = []() { return FixedCircularQueue<int, 7>{}; }();
 
-    static_assert(v1.empty());
-    static_assert(v1.max_size() == 7);
+    static_assert(VAL1.empty());
+    static_assert(VAL1.max_size() == 7);
 }
 
 TEST(FixedCircularQueue, Front)
 {
     {
-        constexpr FixedCircularQueue<int, 3> s1 = []()
+        constexpr FixedCircularQueue<int, 3> VAL1 = []()
         {
-            FixedVector<int, 3> v1{77, 99};
-            return FixedCircularQueue<int, 3>{v1.begin(), v1.end()};
+            FixedVector<int, 3> var{77, 99};
+            return FixedCircularQueue<int, 3>{var.begin(), var.end()};
         }();
 
-        static_assert(s1.front() == 77);
-        static_assert(s1.size() == 2);
+        static_assert(VAL1.front() == 77);
+        static_assert(VAL1.size() == 2);
     }
 
     {
-        FixedCircularQueue<int, 3> s1 = []()
+        FixedCircularQueue<int, 3> var1 = []()
         {
-            FixedVector<int, 3> v1{77, 99};
-            return FixedCircularQueue<int, 3>{v1.begin(), v1.end()};
+            FixedVector<int, 3> var{77, 99};
+            return FixedCircularQueue<int, 3>{var.begin(), var.end()};
         }();
 
-        ASSERT_EQ(77, s1.front());
-        ASSERT_EQ(2, s1.size());
+        ASSERT_EQ(77, var1.front());
+        ASSERT_EQ(2, var1.size());
     }
 }
 
 TEST(FixedCircularQueue, Back)
 {
     {
-        constexpr FixedCircularQueue<int, 3> s1 = []()
+        constexpr FixedCircularQueue<int, 3> VAL1 = []()
         {
-            FixedVector<int, 3> v1{77, 99};
-            return FixedCircularQueue<int, 3>{v1.begin(), v1.end()};
+            FixedVector<int, 3> var{77, 99};
+            return FixedCircularQueue<int, 3>{var.begin(), var.end()};
         }();
 
-        static_assert(s1.back() == 99);
-        static_assert(s1.size() == 2);
+        static_assert(VAL1.back() == 99);
+        static_assert(VAL1.size() == 2);
     }
 
     {
-        FixedCircularQueue<int, 3> s1 = []()
+        FixedCircularQueue<int, 3> var1 = []()
         {
-            FixedVector<int, 3> v1{77, 99};
-            return FixedCircularQueue<int, 3>{v1.begin(), v1.end()};
+            FixedVector<int, 3> var{77, 99};
+            return FixedCircularQueue<int, 3>{var.begin(), var.end()};
         }();
 
-        ASSERT_EQ(99, s1.back());
-        ASSERT_EQ(2, s1.size());
+        ASSERT_EQ(99, var1.back());
+        ASSERT_EQ(2, var1.size());
     }
 }
 
 TEST(FixedCircularQueue, Push)
 {
-    constexpr FixedCircularQueue<int, 3> s1 = []()
+    constexpr FixedCircularQueue<int, 3> VAL1 = []()
     {
-        FixedCircularQueue<int, 3> v1{};
-        int my_int = 77;
-        v1.push(my_int);
-        v1.push(99);
-        return v1;
+        FixedCircularQueue<int, 3> var1{};
+        const int my_int = 77;
+        var1.push(my_int);
+        var1.push(99);
+        return var1;
     }();
 
-    static_assert(s1.front() == 77);
-    static_assert(s1.size() == 2);
+    static_assert(VAL1.front() == 77);
+    static_assert(VAL1.size() == 2);
 }
 
-TEST(FixedCircularQueue, Push_ExceedsCapacity)
+TEST(FixedCircularQueue, PushExceedsCapacity)
 {
-    constexpr auto v1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedCircularQueue<int, 4> v{};
-        v.push(100);
-        v.push(101);
-        v.push(102);
-        v.push(103);
-        v.push(99);
-        v.push(77);
-        return v;
+        FixedCircularQueue<int, 4> var{};
+        var.push(100);
+        var.push(101);
+        var.push(102);
+        var.push(103);
+        var.push(99);
+        var.push(77);
+        return var;
     }();
 
-    static_assert(is_full(v1));
-    static_assert(v1.size() == 4);
-    static_assert(v1.max_size() == 4);
-    static_assert(v1.front() == 102);
-    static_assert(v1.back() == 77);
+    static_assert(is_full(VAL1));
+    static_assert(VAL1.size() == 4);
+    static_assert(VAL1.max_size() == 4);
+    static_assert(VAL1.front() == 102);
+    static_assert(VAL1.back() == 77);
 }
 
 TEST(FixedCircularQueue, Emplace)
 {
-    constexpr FixedCircularQueue<int, 3> s1 = []()
+    constexpr FixedCircularQueue<int, 3> VAL1 = []()
     {
-        FixedCircularQueue<int, 3> v1{};
-        int my_int = 77;
-        v1.emplace(my_int);
-        v1.emplace(99);
-        return v1;
+        FixedCircularQueue<int, 3> var1{};
+        const int my_int = 77;
+        var1.emplace(my_int);
+        var1.emplace(99);
+        return var1;
     }();
 
-    static_assert(s1.front() == 77);
-    static_assert(s1.size() == 2);
+    static_assert(VAL1.front() == 77);
+    static_assert(VAL1.size() == 2);
 }
 
-TEST(FixedCircularQueue, Emplace_ExceedsCapacity)
+TEST(FixedCircularQueue, EmplaceExceedsCapacity)
 {
-    constexpr FixedCircularQueue<int, 4> s1 = []()
+    constexpr FixedCircularQueue<int, 4> VAL1 = []()
     {
-        FixedCircularQueue<int, 4> v{};
-        v.push(101);
-        v.push(102);
-        v.push(103);
-        v.push(104);
-        int my_int = 77;
-        v.emplace(my_int);
-        v.emplace(99);
-        return v;
+        FixedCircularQueue<int, 4> var{};
+        var.push(101);
+        var.push(102);
+        var.push(103);
+        var.push(104);
+        const int my_int = 77;
+        var.emplace(my_int);
+        var.emplace(99);
+        return var;
     }();
 
-    static_assert(is_full(s1));
-    static_assert(s1.size() == 4);
-    static_assert(s1.max_size() == 4);
-    static_assert(s1.front() == 103);
-    static_assert(s1.back() == 99);
+    static_assert(is_full(VAL1));
+    static_assert(VAL1.size() == 4);
+    static_assert(VAL1.max_size() == 4);
+    static_assert(VAL1.front() == 103);
+    static_assert(VAL1.back() == 99);
 }
 
 TEST(FixedCircularQueue, Pop)
 {
-    constexpr FixedCircularQueue<int, 3> s1 = []()
+    constexpr FixedCircularQueue<int, 3> VAL1 = []()
     {
-        FixedVector<int, 3> v1{77, 99};
-        FixedCircularQueue<int, 3> out{v1.begin(), v1.end()};
+        FixedVector<int, 3> var1{77, 99};
+        FixedCircularQueue<int, 3> out{var1.begin(), var1.end()};
         out.pop();
         return out;
     }();
 
-    static_assert(s1.front() == 99);
-    static_assert(s1.size() == 1);
+    static_assert(VAL1.front() == 99);
+    static_assert(VAL1.size() == 1);
 }
 
 TEST(FixedCircularQueue, Equality)
 {
-    static constexpr std::array<int, 2> a1{1, 2};
-    static constexpr std::array<int, 3> a2{1, 2, 3};
+    static constexpr std::array<int, 2> ENTRY_A1{1, 2};
+    static constexpr std::array<int, 3> ENTRY_A2{1, 2, 3};
 
-    constexpr FixedCircularQueue<int, 4> s1{a1.begin(), a1.end()};
-    constexpr FixedCircularQueue<int, 4> s2{a1.begin(), a1.end()};
-    constexpr FixedCircularQueue<int, 4> s3{a2.begin(), a2.end()};
+    constexpr FixedCircularQueue<int, 4> VAL1{ENTRY_A1.begin(), ENTRY_A1.end()};
+    constexpr FixedCircularQueue<int, 4> VAL2{ENTRY_A1.begin(), ENTRY_A1.end()};
+    constexpr FixedCircularQueue<int, 4> VAL3{ENTRY_A2.begin(), ENTRY_A2.end()};
 
-    static_assert(s1 == s2);
-    static_assert(s1 != s3);
+    static_assert(VAL1 == VAL2);
+    static_assert(VAL1 != VAL3);
 }
 
 TEST(FixedCircularQueue, Comparison)
 {
-    static constexpr std::array<int, 2> a1{1, 2};
-    static constexpr std::array<int, 3> a2{1, 3};
+    static constexpr std::array<int, 2> ENTRY_A1{1, 2};
+    static constexpr std::array<int, 3> ENTRY_A2{1, 3};
 
-    constexpr FixedCircularQueue<int, 4> s1{a1.begin(), a1.end()};
-    constexpr FixedCircularQueue<int, 4> s2{a2.begin(), a2.end()};
+    constexpr FixedCircularQueue<int, 4> VAL1{ENTRY_A1.begin(), ENTRY_A1.end()};
+    constexpr FixedCircularQueue<int, 4> VAL2{ENTRY_A2.begin(), ENTRY_A2.end()};
 
-    static_assert(s1 < s2);
-    static_assert(s1 <= s2);
-    static_assert(s2 > s1);
-    static_assert(s2 >= s1);
+    static_assert(VAL1 < VAL2);
+    static_assert(VAL1 <= VAL2);
+    static_assert(VAL2 > VAL1);
+    static_assert(VAL2 >= VAL1);
 }
 
 TEST(FixedCircularQueue, Full)
 {
-    constexpr auto v1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedCircularQueue<int, 4> v{};
-        v.push(100);
-        v.push(100);
-        v.push(100);
-        v.push(100);
-        return v;
+        FixedCircularQueue<int, 4> var{};
+        var.push(100);
+        var.push(100);
+        var.push(100);
+        var.push(100);
+        return var;
     }();
 
-    static_assert(is_full(v1));
-    static_assert(v1.size() == 4);
-    static_assert(v1.max_size() == 4);
+    static_assert(is_full(VAL1));
+    static_assert(VAL1.size() == 4);
+    static_assert(VAL1.max_size() == 4);
 
-    EXPECT_TRUE(is_full(v1));
+    EXPECT_TRUE(is_full(VAL1));
 }
 
 TEST(FixedCircularQueue, ClassTemplateArgumentDeduction)
 {
     // Compile-only test
-    FixedCircularQueue a = FixedCircularQueue<int, 5>{};
-    (void)a;
+    const FixedCircularQueue var1 = FixedCircularQueue<int, 5>{};
+    (void)var1;
 }
 
 namespace
@@ -271,7 +271,7 @@ TEST(FixedCircularQueue, UsageAsTemplateParameter)
 {
     static constexpr FixedCircularQueue<int, 5> QUEUE1{};
     fixed_circular_buffer_instance_can_be_used_as_a_template_parameter<QUEUE1>();
-    FixedCircularQueueInstanceCanBeUsedAsATemplateParameter<QUEUE1> my_struct{};
+    const FixedCircularQueueInstanceCanBeUsedAsATemplateParameter<QUEUE1> my_struct{};
     static_cast<void>(my_struct);
 }
 
@@ -282,7 +282,7 @@ namespace another_namespace_unrelated_to_the_fixed_containers_namespace
 TEST(FixedCircularQueue, ArgumentDependentLookup)
 {
     // Compile-only test
-    fixed_containers::FixedCircularQueue<int, 5> a{};
-    (void)is_full(a);
+    const fixed_containers::FixedCircularQueue<int, 5> var1{};
+    (void)is_full(var1);
 }
 }  // namespace another_namespace_unrelated_to_the_fixed_containers_namespace

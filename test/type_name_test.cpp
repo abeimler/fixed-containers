@@ -24,7 +24,7 @@ namespace
 using fixed_containers::type_name;
 using test_namespace::Fruit;
 
-TEST(type_name, with_enum)
+TEST(TypeName, WithEnum)
 {
 #if defined(__clang__) || defined(__GNUC__)
     static_assert(type_name<Fruit>() == "test_namespace::Fruit");
@@ -74,7 +74,7 @@ TEST(type_name, with_enum)
 
 using MyVariant = std::variant<Fruit, float>;
 
-TEST(type_name, with_variant)
+TEST(TypeName, WithVariant)
 {
 #if defined(__clang__) || defined(__GNUC__)
     static_assert(type_name<MyVariant>() == "std::variant<test_namespace::Fruit, float>");
@@ -82,14 +82,14 @@ TEST(type_name, with_variant)
     static_assert(type_name<MyVariant>() == "class std::variant<enum test_namespace::Fruit,float>");
 #endif
 
-    MyVariant my_variant = 1.0f;
+    MyVariant my_variant = 1.0F;
     std::visit(
-        [&](auto v)
+        [&](auto entry)
         {
-            if constexpr (std::is_same_v<decltype(v), float>)
+            if constexpr (std::is_same_v<decltype(entry), float>)
             {
-                EXPECT_EQ(v, 1.0);
-                EXPECT_EQ(type_name<decltype(v)>(), "float");
+                EXPECT_EQ(entry, 1.0);
+                EXPECT_EQ(type_name<decltype(entry)>(), "float");
             }
             else
             {

@@ -167,9 +167,9 @@ struct NonConstexprDefaultConstructibleWithFields
     double b;
 
     // Needs to be constexpr constructible, just not with a default constructor
-    constexpr NonConstexprDefaultConstructibleWithFields(int a0, double b0)
-      : a{a0}
-      , b{b0}
+    constexpr NonConstexprDefaultConstructibleWithFields(int a_ctor, double b_ctor)
+      : a{a_ctor}
+      , b{b_ctor}
     {
     }
 };
@@ -182,12 +182,13 @@ struct StructWithFieldsWithLimitedConstructibility
 };
 
 constexpr std::string_view pick_compiler_specific_string(
-    [[maybe_unused]] const std::string_view& s1, [[maybe_unused]] const std::string_view& s2)
+    [[maybe_unused]] const std::string_view& string1,
+    [[maybe_unused]] const std::string_view& string2)
 {
 #if defined(__clang__) && __clang_major__ == 15
-    return s1;
+    return string1;
 #else
-    return s2;
+    return string2;
 #endif
 }
 
@@ -238,7 +239,7 @@ TEST(Reflection, DebuggingHelper)
     // std::cout << foo.size() << std::endl;
     (void)foo;
 
-    StructWithNonAggregates instance{};
+    const StructWithNonAggregates instance{};
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat-pedantic"
     // __builtin_dump_struct(&instance, printf);
@@ -246,7 +247,7 @@ TEST(Reflection, DebuggingHelper)
     (void)instance;
 }
 
-TEST(Reflection, FieldInfo_StructWithNestedStructs)
+TEST(Reflection, FieldInfoStructWithNestedStructs)
 {
     static_assert(
         consteval_compare::equal<4, reflection::field_count_of<StructWithNestedStructs>()>);
@@ -257,14 +258,14 @@ TEST(Reflection, FieldInfo_StructWithNestedStructs)
     static_assert(FIELD_INFO.at(0).field_name() == "yellow");
     static_assert(FIELD_INFO.at(0).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
-    static_assert(FIELD_INFO.at(0).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(0).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(0).providing_base_class_name().has_value());
 
     static_assert(FIELD_INFO.at(1).field_type_name() == "double[17]");
     static_assert(FIELD_INFO.at(1).field_name() == "red");
     static_assert(FIELD_INFO.at(1).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
-    static_assert(FIELD_INFO.at(1).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(1).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(1).providing_base_class_name().has_value());
 
     static_assert(FIELD_INFO.at(2).field_type_name() ==
@@ -273,7 +274,7 @@ TEST(Reflection, FieldInfo_StructWithNestedStructs)
     static_assert(FIELD_INFO.at(2).field_name() == "green");
     static_assert(FIELD_INFO.at(2).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
-    static_assert(FIELD_INFO.at(2).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(2).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(2).providing_base_class_name().has_value());
 
     static_assert(FIELD_INFO.at(3).field_type_name() ==
@@ -282,11 +283,11 @@ TEST(Reflection, FieldInfo_StructWithNestedStructs)
     static_assert(FIELD_INFO.at(3).field_name() == "purple");
     static_assert(FIELD_INFO.at(3).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
-    static_assert(FIELD_INFO.at(3).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(3).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(3).providing_base_class_name().has_value());
 }
 
-TEST(Reflection, FieldInfo_StructWithNonAggregates)
+TEST(Reflection, FieldInfoStructWithNonAggregates)
 {
     static_assert(
         consteval_compare::equal<2, reflection::field_count_of<StructWithNonAggregates>()>);
@@ -297,18 +298,18 @@ TEST(Reflection, FieldInfo_StructWithNonAggregates)
     static_assert(FIELD_INFO.at(0).field_name() == "a1");
     static_assert(FIELD_INFO.at(0).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNonAggregates");
-    static_assert(FIELD_INFO.at(0).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(0).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(0).providing_base_class_name().has_value());
 
     static_assert(FIELD_INFO.at(1).field_type_name() == "MockNonAggregate");
     static_assert(FIELD_INFO.at(1).field_name() == "non_aggregate");
     static_assert(FIELD_INFO.at(1).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNonAggregates");
-    static_assert(FIELD_INFO.at(1).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(1).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(1).providing_base_class_name().has_value());
 }
 
-TEST(Reflection, FieldInfo_StructWithNestedStructs_ExhaustiveUntilNonAggregates)
+TEST(Reflection, FieldInfoStructWithNestedStructsExhaustiveUntilNonAggregates)
 {
     // This is fully exhaustive, because the struct is composed from aggregates only.
     static_assert(consteval_compare::equal<10,
@@ -322,14 +323,14 @@ TEST(Reflection, FieldInfo_StructWithNestedStructs_ExhaustiveUntilNonAggregates)
     static_assert(FIELD_INFO.at(0).field_name() == "yellow");
     static_assert(FIELD_INFO.at(0).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
-    static_assert(FIELD_INFO.at(0).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(0).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(0).providing_base_class_name().has_value());
 
     static_assert(FIELD_INFO.at(1).field_type_name() == "double[17]");
     static_assert(FIELD_INFO.at(1).field_name() == "red");
     static_assert(FIELD_INFO.at(1).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
-    static_assert(FIELD_INFO.at(1).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(1).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(1).providing_base_class_name().has_value());
 
     static_assert(FIELD_INFO.at(2).field_type_name() ==
@@ -338,7 +339,7 @@ TEST(Reflection, FieldInfo_StructWithNestedStructs_ExhaustiveUntilNonAggregates)
     static_assert(FIELD_INFO.at(2).field_name() == "green");
     static_assert(FIELD_INFO.at(2).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
-    static_assert(FIELD_INFO.at(2).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(2).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(2).providing_base_class_name().has_value());
 
     {
@@ -365,7 +366,7 @@ TEST(Reflection, FieldInfo_StructWithNestedStructs_ExhaustiveUntilNonAggregates)
     static_assert(FIELD_INFO.at(5).field_name() == "purple");
     static_assert(FIELD_INFO.at(5).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNestedStructs");
-    static_assert(FIELD_INFO.at(5).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(5).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(5).providing_base_class_name().has_value());
 
     {
@@ -405,7 +406,7 @@ TEST(Reflection, FieldInfo_StructWithNestedStructs_ExhaustiveUntilNonAggregates)
     }
 }
 
-TEST(Reflection, FieldInfo_StructWithNonAggregates_ExhaustiveUntilNonAggregates)
+TEST(Reflection, FieldInfoStructWithNonAggregatesExhaustiveUntilNonAggregates)
 {
     static_assert(consteval_compare::equal<2,
                                            field_count_of_exhaustive_until_non_aggregates_impl(
@@ -418,14 +419,14 @@ TEST(Reflection, FieldInfo_StructWithNonAggregates_ExhaustiveUntilNonAggregates)
     static_assert(FIELD_INFO.at(0).field_name() == "a1");
     static_assert(FIELD_INFO.at(0).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNonAggregates");
-    static_assert(FIELD_INFO.at(0).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(0).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(0).providing_base_class_name().has_value());
 
     static_assert(FIELD_INFO.at(1).field_type_name() == "MockNonAggregate");
     static_assert(FIELD_INFO.at(1).field_name() == "non_aggregate");
     static_assert(FIELD_INFO.at(1).enclosing_field_type_name() ==
                   "fixed_containers::(anonymous namespace)::StructWithNonAggregates");
-    static_assert(FIELD_INFO.at(1).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(1).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(1).providing_base_class_name().has_value());
 }
 
@@ -443,7 +444,7 @@ TEST(Reflection, NonConstexprDefaultConstructible)
     static_assert(
         FIELD_INFO.at(0).enclosing_field_type_name() ==
         "fixed_containers::(anonymous namespace)::NonConstexprDefaultConstructibleWithFields");
-    static_assert(FIELD_INFO.at(0).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(0).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(0).providing_base_class_name().has_value());
 
     static_assert(FIELD_INFO.at(1).field_type_name() == "double");
@@ -451,7 +452,7 @@ TEST(Reflection, NonConstexprDefaultConstructible)
     static_assert(
         FIELD_INFO.at(1).enclosing_field_type_name() ==
         "fixed_containers::(anonymous namespace)::NonConstexprDefaultConstructibleWithFields");
-    static_assert(FIELD_INFO.at(1).enclosing_field_name() == "");
+    static_assert(FIELD_INFO.at(1).enclosing_field_name().empty());
     static_assert(!FIELD_INFO.at(1).providing_base_class_name().has_value());
 }
 
@@ -516,10 +517,10 @@ TEST(Reflection, ForEachField)
 {
     constexpr std::pair<StructWithNestedStructs, FixedVector<std::string_view, 10>> OUTPUT = []()
     {
-        StructWithNestedStructs a{};
+        StructWithNestedStructs instance{};
         FixedVector<std::string_view, 10> field_list{};
 
-        reflection::for_each_field(a,
+        reflection::for_each_field(instance,
                                    [&field_list]<class T>(const std::string_view& name, T& field)
                                    {
                                        if constexpr (std::is_same_v<int, T>)
@@ -530,7 +531,7 @@ TEST(Reflection, ForEachField)
                                        field_list.push_back(name);
                                    });
 
-        return std::pair{a, field_list};
+        return std::pair{instance, field_list};
     }();
 
     constexpr StructWithNestedStructs STRUCT = OUTPUT.first;
@@ -545,12 +546,12 @@ TEST(Reflection, ForEachField)
     static_assert(FIELD_LIST.at(3) == "purple");
 }
 
-TEST(Reflection, ForEachField_LimitedConstructibility)
+TEST(Reflection, ForEachFieldLimitedConstructibility)
 {
-    StructWithFieldsWithLimitedConstructibility a{};
+    StructWithFieldsWithLimitedConstructibility instance{};
     FixedVector<std::string_view, 10> field_list{};
 
-    reflection::for_each_field(a,
+    reflection::for_each_field(instance,
                                [&field_list]<class T>(const std::string_view& name, T& field)
                                {
                                    if constexpr (std::is_same_v<MockNonTrivialInt, T>)
@@ -561,14 +562,14 @@ TEST(Reflection, ForEachField_LimitedConstructibility)
                                    field_list.push_back(name);
                                });
 
-    EXPECT_EQ(a.non_trivial.value, 5);
+    EXPECT_EQ(instance.non_trivial.value, 5);
     EXPECT_EQ(field_list.size(), 3);
     EXPECT_EQ(field_list.at(0), "non_copyable_non_moveable");
     EXPECT_EQ(field_list.at(1), "non_trivial");
     EXPECT_EQ(field_list.at(2), "non_copyable");
 }
 
-TEST(Reflection, ForEachField_EmptyStruct)
+TEST(Reflection, ForEachFieldEmptyStruct)
 {
     constexpr std::size_t COUNTER = []()
     {
@@ -589,8 +590,9 @@ TEST(Reflection, ForEachField_EmptyStruct)
 
 TEST(Reflection, MockFailingAddressOfOperator)
 {
-    MockFailingAddressOfOperator a{};
-    reflection::for_each_field(a, [&]<typename T>(const std::string_view& /*name*/, const T&) {});
+    MockFailingAddressOfOperator instance{};
+    reflection::for_each_field(instance,
+                               [&]<typename T>(const std::string_view& /*name*/, const T&) {});
 }
 
 }  // namespace fixed_containers

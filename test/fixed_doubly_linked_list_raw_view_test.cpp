@@ -30,7 +30,7 @@ TEST(FixedDoublyLinkedListRawView, ViewOfIntegerList)
 {
     FixedDoublyLinkedList<int, 10> list;
 
-    std::size_t ten = list.emplace_back_and_return_index(10);
+    const std::size_t ten = list.emplace_back_and_return_index(10);
     list.emplace_back_and_return_index(20);
     list.emplace_back_and_return_index(30);
 
@@ -44,14 +44,14 @@ TEST(FixedDoublyLinkedListRawView, ViewOfIntegerList)
 
     EXPECT_EQ(view.size(), 3);
 
-    auto it = view.begin();
-    EXPECT_EQ(get_from_ptr<int>(*it), 10);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), 20);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), 30);
-    it = std::next(it);
-    EXPECT_EQ(it, view.end());
+    auto iter = view.begin();
+    EXPECT_EQ(get_from_ptr<int>(*iter), 10);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), 20);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), 30);
+    iter = std::next(iter);
+    EXPECT_EQ(iter, view.end());
 
     list.emplace_front_and_return_index(-10);
     list.emplace_front_and_return_index(-20);
@@ -61,18 +61,18 @@ TEST(FixedDoublyLinkedListRawView, ViewOfIntegerList)
     // list is now -20, -10, 20, 30, 40 but with physical storage mixed around a bit
     EXPECT_EQ(view.size(), 5);
 
-    it = view.begin();
-    EXPECT_EQ(get_from_ptr<int>(*it), -20);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), -10);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), 20);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), 30);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), 40);
-    it = std::next(it);
-    EXPECT_EQ(it, view.end());
+    iter = view.begin();
+    EXPECT_EQ(get_from_ptr<int>(*iter), -20);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), -10);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), 20);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), 30);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), 40);
+    iter = std::next(iter);
+    EXPECT_EQ(iter, view.end());
 }
 
 struct StructThatContainsPadding
@@ -87,7 +87,8 @@ TEST(FixedDoublyLinkedListRawView, ViewOfStructList)
 {
     FixedDoublyLinkedList<StructThatContainsPadding, 5> list;
 
-    std::size_t first = list.emplace_back_and_return_index(StructThatContainsPadding{'a', 123});
+    const std::size_t first =
+        list.emplace_back_and_return_index(StructThatContainsPadding{'a', 123});
     list.emplace_back_and_return_index(StructThatContainsPadding{'b', 234});
     list.emplace_back_and_return_index(StructThatContainsPadding{'c', 345});
     list.emplace_front_and_return_index(StructThatContainsPadding{'Z', 321});
@@ -109,25 +110,30 @@ TEST(FixedDoublyLinkedListRawView, ViewOfStructList)
 
     EXPECT_EQ(view.size(), 5);
 
-    auto it = view.begin();
-    EXPECT_EQ(get_from_ptr<StructThatContainsPadding>(*it), (StructThatContainsPadding{'Y', 432}));
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<StructThatContainsPadding>(*it), (StructThatContainsPadding{'Z', 321}));
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<StructThatContainsPadding>(*it), (StructThatContainsPadding{'b', 234}));
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<StructThatContainsPadding>(*it), (StructThatContainsPadding{'c', 345}));
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<StructThatContainsPadding>(*it), (StructThatContainsPadding{'d', 456}));
-    it = std::next(it);
-    EXPECT_EQ(it, view.end());
+    auto iter = view.begin();
+    EXPECT_EQ(get_from_ptr<StructThatContainsPadding>(*iter),
+              (StructThatContainsPadding{'Y', 432}));
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<StructThatContainsPadding>(*iter),
+              (StructThatContainsPadding{'Z', 321}));
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<StructThatContainsPadding>(*iter),
+              (StructThatContainsPadding{'b', 234}));
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<StructThatContainsPadding>(*iter),
+              (StructThatContainsPadding{'c', 345}));
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<StructThatContainsPadding>(*iter),
+              (StructThatContainsPadding{'d', 456}));
+    iter = std::next(iter);
+    EXPECT_EQ(iter, view.end());
 }
 
 TEST(FixedDoubleLinkedListRawView, ViewOfDifferentSizeType)
 {
     FixedDoublyLinkedList<int, 10, uint8_t> list;
 
-    uint8_t ten = list.emplace_back_and_return_index(10);
+    const uint8_t ten = list.emplace_back_and_return_index(10);
     list.emplace_back_and_return_index(20);
     list.emplace_back_and_return_index(30);
 
@@ -142,14 +148,14 @@ TEST(FixedDoubleLinkedListRawView, ViewOfDifferentSizeType)
 
     EXPECT_EQ(view.size(), 3);
 
-    auto it = view.begin();
-    EXPECT_EQ(get_from_ptr<int>(*it), 10);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), 20);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), 30);
-    it = std::next(it);
-    EXPECT_EQ(it, view.end());
+    auto iter = view.begin();
+    EXPECT_EQ(get_from_ptr<int>(*iter), 10);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), 20);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), 30);
+    iter = std::next(iter);
+    EXPECT_EQ(iter, view.end());
 
     list.emplace_front_and_return_index(-10);
     list.emplace_front_and_return_index(-20);
@@ -159,25 +165,25 @@ TEST(FixedDoubleLinkedListRawView, ViewOfDifferentSizeType)
     // list is now -20, -10, 20, 30, 40 but with physical storage mixed around a bit
     EXPECT_EQ(view.size(), 5);
 
-    it = view.begin();
-    EXPECT_EQ(get_from_ptr<int>(*it), -20);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), -10);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), 20);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), 30);
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<int>(*it), 40);
-    it = std::next(it);
-    EXPECT_EQ(it, view.end());
+    iter = view.begin();
+    EXPECT_EQ(get_from_ptr<int>(*iter), -20);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), -10);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), 20);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), 30);
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<int>(*iter), 40);
+    iter = std::next(iter);
+    EXPECT_EQ(iter, view.end());
 }
 
 TEST(FixedDoubleLinkedListRawView, ViewOfLargeAlignmentObject)
 {
     FixedDoublyLinkedList<MockAligned64, 10, uint32_t> list;
 
-    uint32_t ten = list.emplace_back_and_return_index(MockAligned64{10});
+    const uint32_t ten = list.emplace_back_and_return_index(MockAligned64{10});
     list.emplace_back_and_return_index(MockAligned64{20});
     list.emplace_back_and_return_index(MockAligned64{30});
 
@@ -192,14 +198,14 @@ TEST(FixedDoubleLinkedListRawView, ViewOfLargeAlignmentObject)
 
     EXPECT_EQ(view.size(), 3);
 
-    auto it = view.begin();
-    EXPECT_EQ(get_from_ptr<MockAligned64>(*it), MockAligned64{10});
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<MockAligned64>(*it), MockAligned64{20});
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<MockAligned64>(*it), MockAligned64{30});
-    it = std::next(it);
-    EXPECT_EQ(it, view.end());
+    auto iter = view.begin();
+    EXPECT_EQ(get_from_ptr<MockAligned64>(*iter), MockAligned64{10});
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<MockAligned64>(*iter), MockAligned64{20});
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<MockAligned64>(*iter), MockAligned64{30});
+    iter = std::next(iter);
+    EXPECT_EQ(iter, view.end());
 
     list.emplace_front_and_return_index(MockAligned64{-10});
     list.emplace_front_and_return_index(MockAligned64{-20});
@@ -209,18 +215,18 @@ TEST(FixedDoubleLinkedListRawView, ViewOfLargeAlignmentObject)
     // list is now -20, -10, 20, 30, 40 but with physical storage mixed around a bit
     EXPECT_EQ(view.size(), 5);
 
-    it = view.begin();
-    EXPECT_EQ(get_from_ptr<MockAligned64>(*it), MockAligned64{-20});
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<MockAligned64>(*it), MockAligned64{-10});
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<MockAligned64>(*it), MockAligned64{20});
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<MockAligned64>(*it), MockAligned64{30});
-    it = std::next(it);
-    EXPECT_EQ(get_from_ptr<MockAligned64>(*it), MockAligned64{40});
-    it = std::next(it);
-    EXPECT_EQ(it, view.end());
+    iter = view.begin();
+    EXPECT_EQ(get_from_ptr<MockAligned64>(*iter), MockAligned64{-20});
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<MockAligned64>(*iter), MockAligned64{-10});
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<MockAligned64>(*iter), MockAligned64{20});
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<MockAligned64>(*iter), MockAligned64{30});
+    iter = std::next(iter);
+    EXPECT_EQ(get_from_ptr<MockAligned64>(*iter), MockAligned64{40});
+    iter = std::next(iter);
+    EXPECT_EQ(iter, view.end());
 }
 
 TEST(FixedDoublyLinkedListRawView, ViewOfFixedList)
@@ -232,16 +238,16 @@ TEST(FixedDoublyLinkedListRawView, ViewOfFixedList)
 
     EXPECT_EQ(view.size(), 4);
 
-    auto it = view.begin();
-    EXPECT_DOUBLE_EQ(get_from_ptr<double>(*it), 1.0);
-    it = std::next(it);
-    EXPECT_DOUBLE_EQ(get_from_ptr<double>(*it), 2.9);
-    it = std::next(it);
-    EXPECT_DOUBLE_EQ(get_from_ptr<double>(*it), 3.8);
-    it = std::next(it);
-    EXPECT_DOUBLE_EQ(get_from_ptr<double>(*it), 4.7);
-    it = std::next(it);
-    EXPECT_EQ(it, view.end());
+    auto iter = view.begin();
+    EXPECT_DOUBLE_EQ(get_from_ptr<double>(*iter), 1.0);
+    iter = std::next(iter);
+    EXPECT_DOUBLE_EQ(get_from_ptr<double>(*iter), 2.9);
+    iter = std::next(iter);
+    EXPECT_DOUBLE_EQ(get_from_ptr<double>(*iter), 3.8);
+    iter = std::next(iter);
+    EXPECT_DOUBLE_EQ(get_from_ptr<double>(*iter), 4.7);
+    iter = std::next(iter);
+    EXPECT_EQ(iter, view.end());
 }
 
 }  // namespace fixed_containers::fixed_doubly_linked_list_detail

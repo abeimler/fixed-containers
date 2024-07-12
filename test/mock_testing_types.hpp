@@ -11,19 +11,24 @@
 #include <memory>
 #include <optional>
 
+namespace fixed_containers::mock_testing_types_detail
+{
+constexpr void noop_constexpr_function_to_induce_non_triviality() {}
+}  // namespace fixed_containers::mock_testing_types_detail
+
 namespace fixed_containers
 {
 struct MockNonDefaultConstructible
 {
     constexpr MockNonDefaultConstructible() = delete;
-    constexpr MockNonDefaultConstructible(int) {}
+    constexpr MockNonDefaultConstructible(int /*unused*/) {}
     constexpr MockNonDefaultConstructible(const MockNonDefaultConstructible& other) noexcept =
         default;
     constexpr MockNonDefaultConstructible(MockNonDefaultConstructible&& other) noexcept = default;
     constexpr MockNonDefaultConstructible& operator=(
         const MockNonDefaultConstructible& other) noexcept = default;
-    constexpr MockNonDefaultConstructible& operator=(MockNonDefaultConstructible&& other) noexcept =
-        default;
+    constexpr MockNonDefaultConstructible& operator=(
+        MockNonDefaultConstructible&& /*other*/) noexcept = default;
 };
 static_assert(NotDefaultConstructible<MockNonDefaultConstructible>);
 
@@ -38,7 +43,10 @@ struct MockNonTrivialDestructible
         default;
     MockNonTrivialDestructible& operator=(MockNonTrivialDestructible&& other) noexcept = default;
 
-    constexpr ~MockNonTrivialDestructible() {}
+    constexpr ~MockNonTrivialDestructible()
+    {
+        mock_testing_types_detail::noop_constexpr_function_to_induce_non_triviality();
+    }
 };
 
 static_assert(NotTriviallyDestructible<MockNonTrivialDestructible>);
@@ -55,8 +63,10 @@ struct MockNonTrivialCopyAssignable
     MockNonTrivialCopyAssignable& operator=(MockNonTrivialCopyAssignable&& other) noexcept =
         default;
 
-    constexpr MockNonTrivialCopyAssignable& operator=(const MockNonTrivialCopyAssignable&) noexcept
+    constexpr MockNonTrivialCopyAssignable& operator=(
+        const MockNonTrivialCopyAssignable& /*other*/) noexcept
     {
+        mock_testing_types_detail::noop_constexpr_function_to_induce_non_triviality();
         return *this;
     }
 };
@@ -65,7 +75,11 @@ struct MockNonTrivialCopyConstructible
 {
     constexpr MockNonTrivialCopyConstructible() = default;
 
-    constexpr MockNonTrivialCopyConstructible(const MockNonTrivialCopyConstructible&) noexcept {}
+    constexpr MockNonTrivialCopyConstructible(
+        const MockNonTrivialCopyConstructible& /*other*/) noexcept
+    {
+        mock_testing_types_detail::noop_constexpr_function_to_induce_non_triviality();
+    }
     constexpr MockNonTrivialCopyConstructible(MockNonTrivialCopyConstructible&& other) noexcept =
         default;
 
@@ -108,11 +122,13 @@ struct MockNonTriviallyCopyAssignable
     MockNonTriviallyCopyAssignable(const MockNonTriviallyCopyAssignable& other) noexcept = default;
     MockNonTriviallyCopyAssignable(MockNonTriviallyCopyAssignable&& other) noexcept = default;
 
-    MockNonTriviallyCopyAssignable& operator=(const MockNonTriviallyCopyAssignable&) noexcept
+    MockNonTriviallyCopyAssignable& operator=(
+        const MockNonTriviallyCopyAssignable& /*other*/) noexcept
     {
+        mock_testing_types_detail::noop_constexpr_function_to_induce_non_triviality();
         return *this;
     }
-    MockNonTriviallyCopyAssignable& operator=(MockNonTriviallyCopyAssignable&&) noexcept
+    MockNonTriviallyCopyAssignable& operator=(MockNonTriviallyCopyAssignable&& /*other*/) noexcept
     {
         return *this;
     }
@@ -131,8 +147,8 @@ struct MockMoveableButNotCopyable
 
     constexpr MockMoveableButNotCopyable& operator=(
         const MockMoveableButNotCopyable& other) noexcept = delete;
-    constexpr MockMoveableButNotCopyable& operator=(MockMoveableButNotCopyable&& other) noexcept =
-        default;
+    constexpr MockMoveableButNotCopyable& operator=(
+        MockMoveableButNotCopyable&& /*other*/) noexcept = default;
 };
 
 // std::atomic<int> and std::mutex are examples of this
@@ -182,6 +198,7 @@ struct MockNonTrivialInt
 
     constexpr MockNonTrivialInt& operator=(const MockNonTrivialInt& other) noexcept
     {
+        mock_testing_types_detail::noop_constexpr_function_to_induce_non_triviality();
         value = other.value;
         return *this;
     }
@@ -191,7 +208,10 @@ struct MockNonTrivialInt
         return *this;
     }
 
-    constexpr ~MockNonTrivialInt() {}
+    constexpr ~MockNonTrivialInt()
+    {
+        mock_testing_types_detail::noop_constexpr_function_to_induce_non_triviality();
+    }
 
     constexpr bool operator==(const MockNonTrivialInt& other) const { return value == other.value; }
 };
@@ -263,10 +283,10 @@ class MockIntegralStream
         constexpr MockInputIterator& operator++() noexcept
         {
             assert_or_abort(remaining_.has_value());
-            auto& r = *remaining_.value();
-            assert_or_abort(r > 0);
-            r--;
-            if (r == 0)
+            auto& rem = *remaining_.value();
+            assert_or_abort(rem > 0);
+            rem--;
+            if (rem == 0)
             {
                 remaining_.reset();
             }
@@ -302,8 +322,8 @@ struct ImplicitlyConvertibleFromInt
 {
     int value;
 
-    explicit(false) constexpr ImplicitlyConvertibleFromInt(int v)
-      : value{v}
+    explicit(false) constexpr ImplicitlyConvertibleFromInt(int value_in_ctor)
+      : value{value_in_ctor}
     {
     }
 };
@@ -312,8 +332,8 @@ struct ExplicitlyConvertibleFromInt
 {
     int value;
 
-    explicit constexpr ExplicitlyConvertibleFromInt(int v)
-      : value{v}
+    explicit constexpr ExplicitlyConvertibleFromInt(int value_in_ctor)
+      : value{value_in_ctor}
     {
     }
 };
@@ -323,10 +343,10 @@ struct TypeWithMultipleConstructorParameters
     ImplicitlyConvertibleFromInt implicit_int;
     ExplicitlyConvertibleFromInt explicit_int;
 
-    constexpr TypeWithMultipleConstructorParameters(ImplicitlyConvertibleFromInt a0,
-                                                    ExplicitlyConvertibleFromInt b0)
-      : implicit_int{a0}
-      , explicit_int{b0}
+    constexpr TypeWithMultipleConstructorParameters(ImplicitlyConvertibleFromInt param_a0,
+                                                    ExplicitlyConvertibleFromInt param_b0)
+      : implicit_int{param_a0}
+      , explicit_int{param_b0}
     {
     }
 };
@@ -367,7 +387,10 @@ public:
     };
 
 public:
-    [[noreturn]] InaccessibleType* operator&() const noexcept { std::abort(); }
+    [[noreturn]] InaccessibleType* operator&() const noexcept  // NOLINT(google-runtime-operator)
+    {
+        std::abort();
+    }
 
     void do_nothing() const {}
 

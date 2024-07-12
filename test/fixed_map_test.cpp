@@ -9,6 +9,7 @@
 #include "fixed_containers/concepts.hpp"
 #include "fixed_containers/consteval_compare.hpp"
 #include "fixed_containers/max_size.hpp"
+#include "fixed_containers/memory.hpp"
 
 #include <gtest/gtest.h>
 #include <range/v3/iterator/concepts.hpp>
@@ -79,36 +80,36 @@ static_assert(ranges::bidirectional_iterator<STD_MAP_INT_INT::const_iterator>);
 
 TEST(FixedMap, DefaultConstructor)
 {
-    constexpr FixedMap<int, int, 10> s1{};
-    static_assert(s1.empty());
+    constexpr FixedMap<int, int, 10> VAL1{};
+    static_assert(VAL1.empty());
 }
 
 TEST(FixedMap, IteratorConstructor)
 {
     constexpr std::array INPUT{std::pair{2, 20}, std::pair{4, 40}};
-    constexpr FixedMap<int, int, 10> s2{INPUT.begin(), INPUT.end()};
-    static_assert(s2.size() == 2);
+    constexpr FixedMap<int, int, 10> VAL2{INPUT.begin(), INPUT.end()};
+    static_assert(VAL2.size() == 2);
 
-    static_assert(s2.at(2) == 20);
-    static_assert(s2.at(4) == 40);
+    static_assert(VAL2.at(2) == 20);
+    static_assert(VAL2.at(4) == 40);
 }
 
 TEST(FixedMap, Initializer)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
+    constexpr FixedMap<int, int, 10> VAL1{{2, 20}, {4, 40}};
+    static_assert(VAL1.size() == 2);
 
-    constexpr FixedMap<int, int, 10> s2{{3, 30}};
-    static_assert(s2.size() == 1);
+    constexpr FixedMap<int, int, 10> VAL2{{3, 30}};
+    static_assert(VAL2.size() == 1);
 }
 
 TEST(FixedMap, MaxSize)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.max_size() == 10);
+    constexpr FixedMap<int, int, 10> VAL1{{2, 20}, {4, 40}};
+    static_assert(VAL1.max_size() == 10);
 
-    constexpr FixedMap<int, int, 4> s2{};
-    static_assert(s2.max_size() == 4);
+    constexpr FixedMap<int, int, 4> VAL2{};
+    static_assert(VAL2.max_size() == 4);
 
     static_assert(FixedMap<int, int, 4>::static_max_size() == 4);
     EXPECT_EQ(4, (FixedMap<int, int, 4>::static_max_size()));
@@ -118,85 +119,85 @@ TEST(FixedMap, MaxSize)
 
 TEST(FixedMap, EmptySizeFull)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
-    static_assert(!s1.empty());
+    constexpr FixedMap<int, int, 10> VAL1{{2, 20}, {4, 40}};
+    static_assert(VAL1.size() == 2);
+    static_assert(!VAL1.empty());
 
-    constexpr FixedMap<int, int, 10> s2{};
-    static_assert(s2.size() == 0);
-    static_assert(s2.empty());
+    constexpr FixedMap<int, int, 10> VAL2{};
+    static_assert(VAL2.size() == 0);  // NOLINT(readability-container-size-empty)
+    static_assert(VAL2.empty());
 
-    constexpr FixedMap<int, int, 2> s3{{2, 20}, {4, 40}};
-    static_assert(is_full(s3));
+    constexpr FixedMap<int, int, 2> VAL3{{2, 20}, {4, 40}};
+    static_assert(is_full(VAL3));
 
-    constexpr FixedMap<int, int, 5> s4{{2, 20}, {4, 40}};
-    static_assert(!is_full(s4));
+    constexpr FixedMap<int, int, 5> VAL4{{2, 20}, {4, 40}};
+    static_assert(!is_full(VAL4));
 }
 
-TEST(FixedMap, OperatorBracket_Constexpr)
+TEST(FixedMap, OperatorBracketConstexpr)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{};
-        s[2] = 20;
-        s[4] = 40;
-        return s;
+        FixedMap<int, int, 10> var{};
+        var[2] = 20;
+        var[4] = 40;
+        return var;
     }();
 
-    static_assert(s1.size() == 2);
-    static_assert(!s1.contains(1));
-    static_assert(s1.contains(2));
-    static_assert(!s1.contains(3));
-    static_assert(s1.contains(4));
+    static_assert(VAL1.size() == 2);
+    static_assert(!VAL1.contains(1));
+    static_assert(VAL1.contains(2));
+    static_assert(!VAL1.contains(3));
+    static_assert(VAL1.contains(4));
 }
 
 TEST(FixedMap, MaxSizeDeduction)
 {
     {
-        constexpr auto s1 = make_fixed_map({std::pair{30, 30}, std::pair{31, 54}});
-        static_assert(s1.size() == 2);
-        static_assert(s1.max_size() == 2);
-        static_assert(s1.contains(30));
-        static_assert(s1.contains(31));
-        static_assert(!s1.contains(32));
+        constexpr auto VAL1 = make_fixed_map({std::pair{30, 30}, std::pair{31, 54}});
+        static_assert(VAL1.size() == 2);
+        static_assert(VAL1.max_size() == 2);
+        static_assert(VAL1.contains(30));
+        static_assert(VAL1.contains(31));
+        static_assert(!VAL1.contains(32));
     }
     {
-        constexpr auto s1 = make_fixed_map<int, int>({});
-        static_assert(s1.size() == 0);
-        static_assert(s1.max_size() == 0);
+        constexpr auto VAL1 = make_fixed_map<int, int>({});
+        static_assert(VAL1.empty());
+        static_assert(VAL1.max_size() == 0);
     }
 }
 
-TEST(FixedMap, OperatorBracket_NonConstexpr)
+TEST(FixedMap, OperatorBracketNonConstexpr)
 {
-    FixedMap<int, int, 10> s1{};
-    s1[2] = 25;
-    s1[4] = 45;
-    ASSERT_EQ(2, s1.size());
-    ASSERT_TRUE(!s1.contains(1));
-    ASSERT_TRUE(s1.contains(2));
-    ASSERT_TRUE(!s1.contains(3));
-    ASSERT_TRUE(s1.contains(4));
+    FixedMap<int, int, 10> var1{};
+    var1[2] = 25;
+    var1[4] = 45;
+    ASSERT_EQ(2, var1.size());
+    ASSERT_TRUE(!var1.contains(1));
+    ASSERT_TRUE(var1.contains(2));
+    ASSERT_TRUE(!var1.contains(3));
+    ASSERT_TRUE(var1.contains(4));
 }
 
-TEST(FixedMap, OperatorBracket_ExceedsCapacity)
+TEST(FixedMap, OperatorBracketExceedsCapacity)
 {
     {
-        FixedMap<int, int, 2> s1{};
-        s1[2];
-        s1[4];
-        s1[4];
-        s1[4];
-        EXPECT_DEATH(s1[6], "");
+        FixedMap<int, int, 2> var1{};
+        var1[2];
+        var1[4];
+        var1[4];
+        var1[4];
+        EXPECT_DEATH(var1[6], "");
     }
     {
-        FixedMap<int, int, 2> s1{};
-        s1[2];
-        s1[4];
-        s1[4];
-        s1[4];
-        int key = 6;
-        EXPECT_DEATH(s1[key], "");
+        FixedMap<int, int, 2> var1{};
+        var1[2];
+        var1[4];
+        var1[4];
+        var1[4];
+        const int key = 6;
+        EXPECT_DEATH(var1[key], "");
     }
 }
 
@@ -204,7 +205,7 @@ namespace
 {
 struct ConstructionCounter
 {
-    static int counter;
+    static int counter_;
     using Self = ConstructionCounter;
 
     int value;
@@ -212,567 +213,568 @@ struct ConstructionCounter
     explicit ConstructionCounter(int value_in_ctor = 0)
       : value{value_in_ctor}
     {
-        counter++;
+        counter_++;
     }
     ConstructionCounter(const Self& other)
       : value{other.value}
     {
-        counter++;
+        counter_++;
     }
     ConstructionCounter& operator=(const Self& other) = default;
 };
-int ConstructionCounter::counter = 0;
+int ConstructionCounter::counter_ = 0;
 }  // namespace
 
-TEST(FixedMap, OperatorBracket_EnsureNoUnnecessaryTemporaries)
+TEST(FixedMap, OperatorBracketEnsureNoUnnecessaryTemporaries)
 {
-    FixedMap<int, ConstructionCounter, 10> s1{};
-    ASSERT_EQ(0, ConstructionCounter::counter);
-    ConstructionCounter instance1{25};
-    ConstructionCounter instance2{35};
-    ASSERT_EQ(2, ConstructionCounter::counter);
-    s1[2] = instance1;
-    ASSERT_EQ(3, ConstructionCounter::counter);
-    s1[4] = s1.at(2);
-    ASSERT_EQ(4, ConstructionCounter::counter);
-    s1[4] = instance2;
-    ASSERT_EQ(4, ConstructionCounter::counter);
+    FixedMap<int, ConstructionCounter, 10> var1{};
+    ASSERT_EQ(0, ConstructionCounter::counter_);
+    const ConstructionCounter instance1{25};
+    const ConstructionCounter instance2{35};
+    ASSERT_EQ(2, ConstructionCounter::counter_);
+    var1[2] = instance1;
+    ASSERT_EQ(3, ConstructionCounter::counter_);
+    var1[4] = var1.at(2);
+    ASSERT_EQ(4, ConstructionCounter::counter_);
+    var1[4] = instance2;
+    ASSERT_EQ(4, ConstructionCounter::counter_);
 }
 
 TEST(FixedMap, Insert)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{};
-        s.insert({2, 20});
-        s.insert({4, 40});
-        return s;
+        FixedMap<int, int, 10> var{};
+        var.insert({2, 20});
+        var.insert({4, 40});
+        return var;
     }();
 
-    static_assert(s1.size() == 2);
-    static_assert(!s1.contains(1));
-    static_assert(s1.contains(2));
-    static_assert(!s1.contains(3));
-    static_assert(s1.contains(4));
+    static_assert(VAL1.size() == 2);
+    static_assert(!VAL1.contains(1));
+    static_assert(VAL1.contains(2));
+    static_assert(!VAL1.contains(3));
+    static_assert(VAL1.contains(4));
 }
 
-TEST(FixedMap, Insert_ExceedsCapacity)
+TEST(FixedMap, InsertExceedsCapacity)
 {
     {
-        FixedMap<int, int, 2> s1{};
-        s1.insert({2, 20});
-        s1.insert({4, 40});
-        s1.insert({4, 41});
-        s1.insert({4, 42});
-        EXPECT_DEATH(s1.insert({6, 60}), "");
+        FixedMap<int, int, 2> var1{};
+        var1.insert({2, 20});
+        var1.insert({4, 40});
+        var1.insert({4, 41});
+        var1.insert({4, 42});
+        EXPECT_DEATH(var1.insert({6, 60}), "");
     }
     {
-        FixedMap<int, int, 2> s1{};
-        s1.insert({2, 20});
-        s1.insert({4, 40});
-        s1.insert({4, 41});
-        s1.insert({4, 42});
-        std::pair<int, int> key_value{6, 60};
-        EXPECT_DEATH(s1.insert(key_value), "");
+        FixedMap<int, int, 2> var1{};
+        var1.insert({2, 20});
+        var1.insert({4, 40});
+        var1.insert({4, 41});
+        var1.insert({4, 42});
+        const std::pair<int, int> key_value{6, 60};
+        EXPECT_DEATH(var1.insert(key_value), "");
     }
 }
 
 TEST(FixedMap, InsertMultipleTimes)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{};
+        FixedMap<int, int, 10> var{};
         {
-            auto [it, was_inserted] = s.insert({2, 20});
+            auto [iter, was_inserted] = var.insert({2, 20});
             assert_or_abort(was_inserted);
-            assert_or_abort(2 == it->first);
-            assert_or_abort(20 == it->second);
+            assert_or_abort(2 == iter->first);
+            assert_or_abort(20 == iter->second);
         }
         {
-            auto [it, was_inserted] = s.insert({4, 40});
+            auto [iter, was_inserted] = var.insert({4, 40});
             assert_or_abort(was_inserted);
-            assert_or_abort(4 == it->first);
-            assert_or_abort(40 == it->second);
+            assert_or_abort(4 == iter->first);
+            assert_or_abort(40 == iter->second);
         }
         {
-            auto [it, was_inserted] = s.insert({2, 99999});
+            auto [iter, was_inserted] = var.insert({2, 99999});
             assert_or_abort(!was_inserted);
-            assert_or_abort(2 == it->first);
-            assert_or_abort(20 == it->second);
+            assert_or_abort(2 == iter->first);
+            assert_or_abort(20 == iter->second);
         }
         {
-            auto [it, was_inserted] = s.insert({4, 88888});
+            auto [iter, was_inserted] = var.insert({4, 88888});
             assert_or_abort(!was_inserted);
-            assert_or_abort(4 == it->first);
-            assert_or_abort(40 == it->second);
+            assert_or_abort(4 == iter->first);
+            assert_or_abort(40 == iter->second);
         }
-        return s;
+        return var;
     }();
 
-    static_assert(s1.size() == 2);
-    static_assert(!s1.contains(1));
-    static_assert(s1.contains(2));
-    static_assert(!s1.contains(3));
-    static_assert(s1.contains(4));
+    static_assert(VAL1.size() == 2);
+    static_assert(!VAL1.contains(1));
+    static_assert(VAL1.contains(2));
+    static_assert(!VAL1.contains(3));
+    static_assert(VAL1.contains(4));
 }
 
 TEST(FixedMap, InsertIterators)
 {
-    constexpr FixedMap<int, int, 10> a{{2, 20}, {4, 40}};
+    constexpr FixedMap<int, int, 10> ENTRY_A{{2, 20}, {4, 40}};
 
-    constexpr auto s1 = [&]()
+    constexpr auto VAL1 = [&]()
     {
-        FixedMap<int, int, 10> s{};
-        s.insert(a.begin(), a.end());
-        return s;
+        FixedMap<int, int, 10> var{};
+        var.insert(ENTRY_A.begin(), ENTRY_A.end());
+        return var;
     }();
 
-    static_assert(s1.size() == 2);
-    static_assert(!s1.contains(1));
-    static_assert(s1.contains(2));
-    static_assert(!s1.contains(3));
-    static_assert(s1.contains(4));
+    static_assert(VAL1.size() == 2);
+    static_assert(!VAL1.contains(1));
+    static_assert(VAL1.contains(2));
+    static_assert(!VAL1.contains(3));
+    static_assert(VAL1.contains(4));
 }
 
 TEST(FixedMap, InsertInitializer)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{};
-        s.insert({{2, 20}, {4, 40}});
-        return s;
+        FixedMap<int, int, 10> var{};
+        var.insert({{2, 20}, {4, 40}});
+        return var;
     }();
 
-    static_assert(s1.size() == 2);
-    static_assert(!s1.contains(1));
-    static_assert(s1.contains(2));
-    static_assert(!s1.contains(3));
-    static_assert(s1.contains(4));
+    static_assert(VAL1.size() == 2);
+    static_assert(!VAL1.contains(1));
+    static_assert(VAL1.contains(2));
+    static_assert(!VAL1.contains(3));
+    static_assert(VAL1.contains(4));
 }
 
 TEST(FixedMap, InsertOrAssign)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{};
+        FixedMap<int, int, 10> var{};
         {
-            auto [it, was_inserted] = s.insert_or_assign(2, 20);
+            auto [iter, was_inserted] = var.insert_or_assign(2, 20);
             assert_or_abort(was_inserted);
-            assert_or_abort(2 == it->first);
-            assert_or_abort(20 == it->second);
+            assert_or_abort(2 == iter->first);
+            assert_or_abort(20 == iter->second);
         }
         {
             const int key = 4;
-            auto [it, was_inserted] = s.insert_or_assign(key, 40);
+            auto [iter, was_inserted] = var.insert_or_assign(key, 40);
             assert_or_abort(was_inserted);
-            assert_or_abort(4 == it->first);
-            assert_or_abort(40 == it->second);
+            assert_or_abort(4 == iter->first);
+            assert_or_abort(40 == iter->second);
         }
         {
-            auto [it, was_inserted] = s.insert_or_assign(2, 99999);
+            auto [iter, was_inserted] = var.insert_or_assign(2, 99999);
             assert_or_abort(!was_inserted);
-            assert_or_abort(2 == it->first);
-            assert_or_abort(99999 == it->second);
+            assert_or_abort(2 == iter->first);
+            assert_or_abort(99999 == iter->second);
         }
         {
             const int key = 4;
-            auto [it, was_inserted] = s.insert_or_assign(key, 88888);
+            auto [iter, was_inserted] = var.insert_or_assign(key, 88888);
             assert_or_abort(!was_inserted);
-            assert_or_abort(4 == it->first);
-            assert_or_abort(88888 == it->second);
+            assert_or_abort(4 == iter->first);
+            assert_or_abort(88888 == iter->second);
         }
-        return s;
+        return var;
     }();
 
-    static_assert(s1.size() == 2);
-    static_assert(!s1.contains(1));
-    static_assert(s1.contains(2));
-    static_assert(!s1.contains(3));
-    static_assert(s1.contains(4));
+    static_assert(VAL1.size() == 2);
+    static_assert(!VAL1.contains(1));
+    static_assert(VAL1.contains(2));
+    static_assert(!VAL1.contains(3));
+    static_assert(VAL1.contains(4));
 }
 
-TEST(FixedMap, InsertOrAssign_ExceedsCapacity)
+TEST(FixedMap, InsertOrAssignExceedsCapacity)
 {
     {
-        FixedMap<int, int, 2> s1{};
-        s1.insert_or_assign(2, 20);
-        s1.insert_or_assign(4, 40);
-        s1.insert_or_assign(4, 41);
-        s1.insert_or_assign(4, 42);
-        EXPECT_DEATH(s1.insert_or_assign(6, 60), "");
+        FixedMap<int, int, 2> var1{};
+        var1.insert_or_assign(2, 20);
+        var1.insert_or_assign(4, 40);
+        var1.insert_or_assign(4, 41);
+        var1.insert_or_assign(4, 42);
+        EXPECT_DEATH(var1.insert_or_assign(6, 60), "");
     }
     {
-        FixedMap<int, int, 2> s1{};
-        s1.insert_or_assign(2, 20);
-        s1.insert_or_assign(4, 40);
-        s1.insert_or_assign(4, 41);
-        s1.insert_or_assign(4, 42);
-        int key = 6;
-        EXPECT_DEATH(s1.insert_or_assign(key, 60), "");
+        FixedMap<int, int, 2> var1{};
+        var1.insert_or_assign(2, 20);
+        var1.insert_or_assign(4, 40);
+        var1.insert_or_assign(4, 41);
+        var1.insert_or_assign(4, 42);
+        const int key = 6;
+        EXPECT_DEATH(var1.insert_or_assign(key, 60), "");
     }
 }
 
 TEST(FixedMap, TryEmplace)
 {
     {
-        constexpr FixedMap<int, int, 10> s = []()
+        constexpr FixedMap<int, int, 10> VAL = []()
         {
-            FixedMap<int, int, 10> s1{};
-            s1.try_emplace(2, 20);
+            FixedMap<int, int, 10> var1{};
+            var1.try_emplace(2, 20);
             const int key = 2;
-            s1.try_emplace(key, 209999999);
-            return s1;
+            var1.try_emplace(key, 209999999);
+            return var1;
         }();
 
-        static_assert(consteval_compare::equal<1, s.size()>);
-        static_assert(s.contains(2));
+        static_assert(consteval_compare::equal<1, VAL.size()>);
+        static_assert(VAL.contains(2));
     }
 
     {
-        FixedMap<int, int, 10> s1{};
+        FixedMap<int, int, 10> var1{};
 
         {
-            auto [it, was_inserted] = s1.try_emplace(2, 20);
+            auto [iter, was_inserted] = var1.try_emplace(2, 20);
 
-            ASSERT_EQ(1, s1.size());
-            ASSERT_TRUE(!s1.contains(1));
-            ASSERT_TRUE(s1.contains(2));
-            ASSERT_TRUE(!s1.contains(3));
-            ASSERT_TRUE(!s1.contains(4));
-            ASSERT_EQ(20, s1.at(2));
+            ASSERT_EQ(1, var1.size());
+            ASSERT_TRUE(!var1.contains(1));
+            ASSERT_TRUE(var1.contains(2));
+            ASSERT_TRUE(!var1.contains(3));
+            ASSERT_TRUE(!var1.contains(4));
+            ASSERT_EQ(20, var1.at(2));
             ASSERT_TRUE(was_inserted);
-            ASSERT_EQ(2, it->first);
-            ASSERT_EQ(20, it->second);
+            ASSERT_EQ(2, iter->first);
+            ASSERT_EQ(20, iter->second);
         }
 
         {
             const int key = 2;
-            auto [it, was_inserted] = s1.try_emplace(key, 209999999);
-            ASSERT_EQ(1, s1.size());
-            ASSERT_TRUE(!s1.contains(1));
-            ASSERT_TRUE(s1.contains(2));
-            ASSERT_TRUE(!s1.contains(3));
-            ASSERT_TRUE(!s1.contains(4));
-            ASSERT_EQ(20, s1.at(2));
+            auto [iter, was_inserted] = var1.try_emplace(key, 209999999);
+            ASSERT_EQ(1, var1.size());
+            ASSERT_TRUE(!var1.contains(1));
+            ASSERT_TRUE(var1.contains(2));
+            ASSERT_TRUE(!var1.contains(3));
+            ASSERT_TRUE(!var1.contains(4));
+            ASSERT_EQ(20, var1.at(2));
             ASSERT_FALSE(was_inserted);
-            ASSERT_EQ(2, it->first);
-            ASSERT_EQ(20, it->second);
+            ASSERT_EQ(2, iter->first);
+            ASSERT_EQ(20, iter->second);
         }
     }
 
     {
-        FixedMap<std::size_t, TypeWithMultipleConstructorParameters, 10> s1{};
-        s1.try_emplace(1ULL, /*ImplicitlyConvertibleFromInt*/ 2, ExplicitlyConvertibleFromInt{3});
+        FixedMap<std::size_t, TypeWithMultipleConstructorParameters, 10> var1{};
+        var1.try_emplace(1ULL, /*ImplicitlyConvertibleFromInt*/ 2, ExplicitlyConvertibleFromInt{3});
 
-        std::map<std::size_t, TypeWithMultipleConstructorParameters> s2{};
-        s2.try_emplace(1ULL, /*ImplicitlyConvertibleFromInt*/ 2, ExplicitlyConvertibleFromInt{3});
+        std::map<std::size_t, TypeWithMultipleConstructorParameters> var2{};
+        var2.try_emplace(1ULL, /*ImplicitlyConvertibleFromInt*/ 2, ExplicitlyConvertibleFromInt{3});
     }
 }
 
-TEST(FixedMap, TryEmplace_ExceedsCapacity)
+TEST(FixedMap, TryEmplaceExceedsCapacity)
 {
     {
-        FixedMap<int, int, 2> s1{};
-        s1.try_emplace(2, 20);
-        s1.try_emplace(4, 40);
-        s1.try_emplace(4, 41);
-        s1.try_emplace(4, 42);
-        EXPECT_DEATH(s1.try_emplace(6, 60), "");
+        FixedMap<int, int, 2> var1{};
+        var1.try_emplace(2, 20);
+        var1.try_emplace(4, 40);
+        var1.try_emplace(4, 41);
+        var1.try_emplace(4, 42);
+        EXPECT_DEATH(var1.try_emplace(6, 60), "");
     }
     {
-        FixedMap<int, int, 2> s1{};
-        s1.try_emplace(2, 20);
-        s1.try_emplace(4, 40);
-        s1.try_emplace(4, 41);
-        s1.try_emplace(4, 42);
-        int key = 6;
-        EXPECT_DEATH(s1.try_emplace(key, 60), "");
+        FixedMap<int, int, 2> var1{};
+        var1.try_emplace(2, 20);
+        var1.try_emplace(4, 40);
+        var1.try_emplace(4, 41);
+        var1.try_emplace(4, 42);
+        const int key = 6;
+        EXPECT_DEATH(var1.try_emplace(key, 60), "");
     }
 }
 
-TEST(FixedMap, TryEmplace_TypeConversion)
+TEST(FixedMap, TryEmplaceTypeConversion)
 {
     {
         int* raw_ptr = new int;
-        FixedMap<int, std::unique_ptr<int>, 10> s{};
-        s.try_emplace(3, raw_ptr);
+        FixedMap<int, std::unique_ptr<int>, 10> var{};
+        var.try_emplace(3, raw_ptr);
     }
     {
         int* raw_ptr = new int;
-        std::map<int, std::unique_ptr<int>> s{};
-        s.try_emplace(3, raw_ptr);
+        std::map<int, std::unique_ptr<int>> var{};
+        var.try_emplace(3, raw_ptr);
     }
 }
 
 TEST(FixedMap, Emplace)
 {
     {
-        constexpr FixedMap<int, int, 10> s = []()
+        constexpr FixedMap<int, int, 10> VAL = []()
         {
-            FixedMap<int, int, 10> s1{};
-            s1.emplace(2, 20);
+            FixedMap<int, int, 10> var1{};
+            var1.emplace(2, 20);
             const int key = 2;
-            s1.emplace(key, 209999999);
-            return s1;
+            var1.emplace(key, 209999999);
+            return var1;
         }();
 
-        static_assert(consteval_compare::equal<1, s.size()>);
-        static_assert(s.contains(2));
+        static_assert(consteval_compare::equal<1, VAL.size()>);
+        static_assert(VAL.contains(2));
     }
 
     {
-        FixedMap<int, int, 10> s1{};
+        FixedMap<int, int, 10> var1{};
 
         {
-            auto [it, was_inserted] = s1.emplace(2, 20);
+            auto [iter, was_inserted] = var1.emplace(2, 20);
 
-            ASSERT_EQ(1, s1.size());
-            ASSERT_TRUE(!s1.contains(1));
-            ASSERT_TRUE(s1.contains(2));
-            ASSERT_TRUE(!s1.contains(3));
-            ASSERT_TRUE(!s1.contains(4));
-            ASSERT_EQ(20, s1.at(2));
+            ASSERT_EQ(1, var1.size());
+            ASSERT_TRUE(!var1.contains(1));
+            ASSERT_TRUE(var1.contains(2));
+            ASSERT_TRUE(!var1.contains(3));
+            ASSERT_TRUE(!var1.contains(4));
+            ASSERT_EQ(20, var1.at(2));
             ASSERT_TRUE(was_inserted);
-            ASSERT_EQ(2, it->first);
-            ASSERT_EQ(20, it->second);
+            ASSERT_EQ(2, iter->first);
+            ASSERT_EQ(20, iter->second);
         }
 
         {
-            auto [it, was_inserted] = s1.emplace(2, 209999999);
-            ASSERT_EQ(1, s1.size());
-            ASSERT_TRUE(!s1.contains(1));
-            ASSERT_TRUE(s1.contains(2));
-            ASSERT_TRUE(!s1.contains(3));
-            ASSERT_TRUE(!s1.contains(4));
-            ASSERT_EQ(20, s1.at(2));
+            auto [iter, was_inserted] = var1.emplace(2, 209999999);
+            ASSERT_EQ(1, var1.size());
+            ASSERT_TRUE(!var1.contains(1));
+            ASSERT_TRUE(var1.contains(2));
+            ASSERT_TRUE(!var1.contains(3));
+            ASSERT_TRUE(!var1.contains(4));
+            ASSERT_EQ(20, var1.at(2));
             ASSERT_FALSE(was_inserted);
-            ASSERT_EQ(2, it->first);
-            ASSERT_EQ(20, it->second);
+            ASSERT_EQ(2, iter->first);
+            ASSERT_EQ(20, iter->second);
         }
 
         {
-            auto [it, was_inserted] = s1.emplace(std::make_pair(2, 209999999));
-            ASSERT_EQ(1, s1.size());
-            ASSERT_TRUE(!s1.contains(1));
-            ASSERT_TRUE(s1.contains(2));
-            ASSERT_TRUE(!s1.contains(3));
-            ASSERT_TRUE(!s1.contains(4));
-            ASSERT_EQ(20, s1.at(2));
+            auto [iter, was_inserted] = var1.emplace(std::make_pair(2, 209999999));
+            ASSERT_EQ(1, var1.size());
+            ASSERT_TRUE(!var1.contains(1));
+            ASSERT_TRUE(var1.contains(2));
+            ASSERT_TRUE(!var1.contains(3));
+            ASSERT_TRUE(!var1.contains(4));
+            ASSERT_EQ(20, var1.at(2));
             ASSERT_FALSE(was_inserted);
-            ASSERT_EQ(2, it->first);
-            ASSERT_EQ(20, it->second);
+            ASSERT_EQ(2, iter->first);
+            ASSERT_EQ(20, iter->second);
         }
     }
 
     {
-        FixedMap<int, MockMoveableButNotCopyable, 5> s2{};
-        s2.emplace(1, MockMoveableButNotCopyable{});
+        FixedMap<int, MockMoveableButNotCopyable, 5> var2{};
+        var2.emplace(1, MockMoveableButNotCopyable{});
     }
 
     {
-        FixedMap<int, MockTriviallyCopyableButNotCopyableOrMoveable, 5> s2{};
-        s2.emplace(1);
+        FixedMap<int, MockTriviallyCopyableButNotCopyableOrMoveable, 5> var2{};
+        var2.emplace(1);
     }
 
     {
-        FixedMap<int, std::pair<int, int>, 5> s3{};
-        s3.emplace(std::piecewise_construct, std::make_tuple(1), std::make_tuple(2, 3));
+        FixedMap<int, std::pair<int, int>, 5> var3{};
+        var3.emplace(std::piecewise_construct, std::make_tuple(1), std::make_tuple(2, 3));
     }
 }
 
-TEST(FixedMap, Emplace_ExceedsCapacity)
+TEST(FixedMap, EmplaceExceedsCapacity)
 {
     {
-        FixedMap<int, int, 2> s1{};
-        s1.emplace(2, 20);
-        s1.emplace(4, 40);
-        s1.emplace(4, 41);
-        s1.emplace(4, 42);
-        EXPECT_DEATH(s1.emplace(6, 60), "");
+        FixedMap<int, int, 2> var1{};
+        var1.emplace(2, 20);
+        var1.emplace(4, 40);
+        var1.emplace(4, 41);
+        var1.emplace(4, 42);
+        EXPECT_DEATH(var1.emplace(6, 60), "");
     }
     {
-        FixedMap<int, int, 2> s1{};
-        s1.emplace(2, 20);
-        s1.emplace(4, 40);
-        s1.emplace(4, 41);
-        s1.emplace(4, 42);
-        int key = 6;
-        EXPECT_DEATH(s1.emplace(key, 60), "");
+        FixedMap<int, int, 2> var1{};
+        var1.emplace(2, 20);
+        var1.emplace(4, 40);
+        var1.emplace(4, 41);
+        var1.emplace(4, 42);
+        const int key = 6;
+        EXPECT_DEATH(var1.emplace(key, 60), "");
     }
 }
 
 TEST(FixedMap, Clear)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
-        s.clear();
-        return s;
+        FixedMap<int, int, 10> var{{2, 20}, {4, 40}};
+        var.clear();
+        return var;
     }();
 
-    static_assert(s1.empty());
+    static_assert(VAL1.empty());
 }
 
 TEST(FixedMap, Erase)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
-        auto removed_count = s.erase(2);
+        FixedMap<int, int, 10> var{{2, 20}, {4, 40}};
+        auto removed_count = var.erase(2);
         assert_or_abort(removed_count == 1);
-        removed_count = s.erase(3);
+        removed_count = var.erase(3);
         assert_or_abort(removed_count == 0);
-        return s;
+        return var;
     }();
 
-    static_assert(s1.size() == 1);
-    static_assert(!s1.contains(1));
-    static_assert(!s1.contains(2));
-    static_assert(!s1.contains(3));
-    static_assert(s1.contains(4));
+    static_assert(VAL1.size() == 1);
+    static_assert(!VAL1.contains(1));
+    static_assert(!VAL1.contains(2));
+    static_assert(!VAL1.contains(3));
+    static_assert(VAL1.contains(4));
 }
 
 TEST(FixedMap, EraseIterator)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {3, 30}, {4, 40}};
+        FixedMap<int, int, 10> var{{2, 20}, {3, 30}, {4, 40}};
         {
-            auto it = s.begin();
-            auto next = s.erase(it);
+            auto iter = var.begin();
+            auto next = var.erase(iter);
             assert_or_abort(next->first == 3);
             assert_or_abort(next->second == 30);
         }
 
         {
-            auto it = s.cbegin();
-            auto next = s.erase(it);
+            auto iter = var.cbegin();
+            auto next = var.erase(iter);
             assert_or_abort(next->first == 4);
             assert_or_abort(next->second == 40);
         }
-        return s;
+        return var;
     }();
 
-    static_assert(s1.size() == 1);
-    static_assert(!s1.contains(1));
-    static_assert(!s1.contains(2));
-    static_assert(!s1.contains(3));
-    static_assert(s1.contains(4));
+    static_assert(VAL1.size() == 1);
+    static_assert(!VAL1.contains(1));
+    static_assert(!VAL1.contains(2));
+    static_assert(!VAL1.contains(3));
+    static_assert(VAL1.contains(4));
 }
 
-TEST(FixedMap, EraseIterator_Ambiguity)
+TEST(FixedMap, EraseIteratorAmbiguity)
 {
-    // If the iterator has extraneous auto-conversions, it might cause ambiguity between the various
-    // overloads
-    FixedMap<std::string, int, 5> s1{};
-    s1.erase("");
+    // If the iterator has extraneous auto-conversions, it might cause ambiguity between the
+    // various overloads
+    FixedMap<std::string, int, 5> var1{};
+    var1.erase("");
 }
 
-TEST(FixedMap, EraseIterator_InvalidIterator)
+TEST(FixedMap, EraseIteratorInvalidIterator)
 {
-    FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+    FixedMap<int, int, 10> var{{2, 20}, {4, 40}};
     {
-        auto it = s.begin();
-        std::advance(it, 2);
-        EXPECT_DEATH(s.erase(it), "");
+        auto iter = var.begin();
+        std::advance(iter, 2);
+        EXPECT_DEATH(var.erase(iter), "");
     }
 }
 
 TEST(FixedMap, EraseRange)
 {
     {
-        constexpr auto s1 = []()
+        constexpr auto VAL1 = []()
         {
-            FixedMap<int, int, 10> s{{2, 20}, {3, 30}, {4, 40}};
-            auto from = s.begin();
-            std::advance(from, 1);
-            auto to = s.begin();
-            std::advance(to, 2);
-            auto next = s.erase(from, to);
+            FixedMap<int, int, 10> var{{2, 20}, {3, 30}, {4, 40}};
+            auto erase_from = var.begin();
+            std::advance(erase_from, 1);
+            auto erase_to = var.begin();
+            std::advance(erase_to, 2);
+            auto next = var.erase(erase_from, erase_to);
             assert_or_abort(next->first == 4);
             assert_or_abort(next->second == 40);
-            return s;
+            return var;
         }();
 
-        static_assert(consteval_compare::equal<2, s1.size()>);
-        static_assert(!s1.contains(1));
-        static_assert(s1.contains(2));
-        static_assert(!s1.contains(3));
-        static_assert(s1.contains(4));
+        static_assert(consteval_compare::equal<2, VAL1.size()>);
+        static_assert(!VAL1.contains(1));
+        static_assert(VAL1.contains(2));
+        static_assert(!VAL1.contains(3));
+        static_assert(VAL1.contains(4));
     }
     {
-        constexpr auto s1 = []()
+        constexpr auto VAL1 = []()
         {
-            FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
-            auto from = s.begin();
-            auto to = s.begin();
-            auto next = s.erase(from, to);
+            FixedMap<int, int, 10> var{{2, 20}, {4, 40}};
+            auto erase_from = var.begin();
+            auto erase_to = var.begin();
+            auto next = var.erase(erase_from, erase_to);
             assert_or_abort(next->first == 2);
             assert_or_abort(next->second == 20);
-            return s;
+            return var;
         }();
 
-        static_assert(consteval_compare::equal<2, s1.size()>);
-        static_assert(!s1.contains(1));
-        static_assert(s1.contains(2));
-        static_assert(!s1.contains(3));
-        static_assert(s1.contains(4));
+        static_assert(consteval_compare::equal<2, VAL1.size()>);
+        static_assert(!VAL1.contains(1));
+        static_assert(VAL1.contains(2));
+        static_assert(!VAL1.contains(3));
+        static_assert(VAL1.contains(4));
     }
     {
-        constexpr auto s1 = []()
+        constexpr auto VAL1 = []()
         {
-            FixedMap<int, int, 10> s{{1, 10}, {4, 40}};
-            auto from = s.begin();
-            auto to = s.end();
-            auto next = s.erase(from, to);
-            assert_or_abort(next == s.end());
-            return s;
+            FixedMap<int, int, 10> var{{1, 10}, {4, 40}};
+            auto erase_from = var.begin();
+            auto erase_to = var.end();
+            auto next = var.erase(erase_from, erase_to);
+            assert_or_abort(next == var.end());
+            return var;
         }();
 
-        static_assert(consteval_compare::equal<0, s1.size()>);
-        static_assert(!s1.contains(1));
-        static_assert(!s1.contains(2));
-        static_assert(!s1.contains(3));
-        static_assert(!s1.contains(4));
+        static_assert(consteval_compare::equal<0, VAL1.size()>);
+        static_assert(!VAL1.contains(1));
+        static_assert(!VAL1.contains(2));
+        static_assert(!VAL1.contains(3));
+        static_assert(!VAL1.contains(4));
     }
 }
 
 TEST(FixedMap, EraseIf)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {3, 30}, {4, 40}};
-        std::size_t removed_count = fixed_containers::erase_if(s,
-                                                               [](const auto& entry)
-                                                               {
-                                                                   const auto& [key, _] = entry;
-                                                                   return key == 2 or key == 4;
-                                                               });
+        FixedMap<int, int, 10> var{{2, 20}, {3, 30}, {4, 40}};
+        const std::size_t removed_count =
+            fixed_containers::erase_if(var,
+                                       [](const auto& entry)
+                                       {
+                                           const auto& [key, _] = entry;
+                                           return key == 2 or key == 4;
+                                       });
         assert_or_abort(2 == removed_count);
-        return s;
+        return var;
     }();
 
-    static_assert(consteval_compare::equal<1, s1.size()>);
-    static_assert(!s1.contains(1));
-    static_assert(!s1.contains(2));
-    static_assert(s1.contains(3));
-    static_assert(!s1.contains(4));
+    static_assert(consteval_compare::equal<1, VAL1.size()>);
+    static_assert(!VAL1.contains(1));
+    static_assert(!VAL1.contains(2));
+    static_assert(VAL1.contains(3));
+    static_assert(!VAL1.contains(4));
 
-    static_assert(s1.at(3) == 30);
+    static_assert(VAL1.at(3) == 30);
 }
 
-TEST(FixedMap, Iterator_StructuredBinding)
+TEST(FixedMap, IteratorStructuredBinding)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{};
-        s.insert({3, 30});
-        s.insert({4, 40});
-        s.insert({1, 10});
-        return s;
+        FixedMap<int, int, 10> var{};
+        var.insert({3, 30});
+        var.insert({4, 40});
+        var.insert({1, 10});
+        return var;
     }();
 
-    for (auto&& [key, value] : s1)
+    for (auto&& [key, value] : VAL1)
     {
         static_assert(std::is_same_v<decltype(key), const int&>);
         static_assert(std::is_same_v<decltype(value), const int&>);
@@ -781,36 +783,36 @@ TEST(FixedMap, Iterator_StructuredBinding)
 
 TEST(FixedMap, IteratorBasic)
 {
-    constexpr FixedMap<int, int, 10> s1{{1, 10}, {2, 20}, {3, 30}, {4, 40}};
+    constexpr FixedMap<int, int, 10> VAL1{{1, 10}, {2, 20}, {3, 30}, {4, 40}};
 
-    static_assert(std::distance(s1.cbegin(), s1.cend()) == 4);
+    static_assert(std::distance(VAL1.cbegin(), VAL1.cend()) == 4);
 
-    static_assert(s1.begin()->first == 1);
-    static_assert(s1.begin()->second == 10);
-    static_assert(std::next(s1.begin(), 1)->first == 2);
-    static_assert(std::next(s1.begin(), 1)->second == 20);
-    static_assert(std::next(s1.begin(), 2)->first == 3);
-    static_assert(std::next(s1.begin(), 2)->second == 30);
-    static_assert(std::next(s1.begin(), 3)->first == 4);
-    static_assert(std::next(s1.begin(), 3)->second == 40);
+    static_assert(VAL1.begin()->first == 1);
+    static_assert(VAL1.begin()->second == 10);
+    static_assert(std::next(VAL1.begin(), 1)->first == 2);
+    static_assert(std::next(VAL1.begin(), 1)->second == 20);
+    static_assert(std::next(VAL1.begin(), 2)->first == 3);
+    static_assert(std::next(VAL1.begin(), 2)->second == 30);
+    static_assert(std::next(VAL1.begin(), 3)->first == 4);
+    static_assert(std::next(VAL1.begin(), 3)->second == 40);
 
-    static_assert(std::prev(s1.end(), 1)->first == 4);
-    static_assert(std::prev(s1.end(), 1)->second == 40);
-    static_assert(std::prev(s1.end(), 2)->first == 3);
-    static_assert(std::prev(s1.end(), 2)->second == 30);
-    static_assert(std::prev(s1.end(), 3)->first == 2);
-    static_assert(std::prev(s1.end(), 3)->second == 20);
-    static_assert(std::prev(s1.end(), 4)->first == 1);
-    static_assert(std::prev(s1.end(), 4)->second == 10);
+    static_assert(std::prev(VAL1.end(), 1)->first == 4);
+    static_assert(std::prev(VAL1.end(), 1)->second == 40);
+    static_assert(std::prev(VAL1.end(), 2)->first == 3);
+    static_assert(std::prev(VAL1.end(), 2)->second == 30);
+    static_assert(std::prev(VAL1.end(), 3)->first == 2);
+    static_assert(std::prev(VAL1.end(), 3)->second == 20);
+    static_assert(std::prev(VAL1.end(), 4)->first == 1);
+    static_assert(std::prev(VAL1.end(), 4)->second == 10);
 }
 
 TEST(FixedMap, IteratorTypes)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+        FixedMap<int, int, 10> var{{2, 20}, {4, 40}};
 
-        for (const auto& key_and_value : s)  // "-Wrange-loop-bind-reference"
+        for (const auto& key_and_value : var)  // "-Wrange-loop-bind-reference"
         {
             static_assert(
                 std::is_same_v<decltype(key_and_value), const std::pair<const int&, int&>&>);
@@ -821,20 +823,20 @@ TEST(FixedMap, IteratorTypes)
         // error: non-const lvalue reference to type 'std::pair<...>' cannot bind to a temporary of
         // type 'std::pair<...>'
         /*
-        for (auto& key_and_value : s)
+        for (auto& key_and_value : var)
         {
             static_assert(std::is_same_v<decltype(key_and_value), std::pair<const int&, int&>&>);
             key_and_value.second = 5;  // Allowed
         }
          */
 
-        for (auto&& key_and_value : s)
+        for (auto&& key_and_value : var)
         {
             static_assert(std::is_same_v<decltype(key_and_value), std::pair<const int&, int&>&&>);
             key_and_value.second = 5;  // Allowed
         }
 
-        for (const auto& [key, value] : s)  // "-Wrange-loop-bind-reference"
+        for (const auto& [key, value] : var)  // "-Wrange-loop-bind-reference"
         {
             static_assert(std::is_same_v<decltype(key), const int&>);
             static_assert(std::is_same_v<decltype(value), int&>);  // Non-ideal, should be const
@@ -844,78 +846,78 @@ TEST(FixedMap, IteratorTypes)
         // error: non-const lvalue reference to type 'std::pair<...>' cannot bind to a temporary of
         // type 'std::pair<...>'
         /*
-        for (auto& [key, value] : s)
+        for (auto& [key, value] : var)
         {
             static_assert(std::is_same_v<decltype(key), const int&>);
             static_assert(std::is_same_v<decltype(value), int&>);
         }
          */
 
-        for (auto&& [key, value] : s)
+        for (auto&& [key, value] : var)
         {
             static_assert(std::is_same_v<decltype(key), const int&>);
             static_assert(std::is_same_v<decltype(value), int&>);
         }
 
-        return s;
+        return var;
     }();
 
-    const auto lvalue_it = s1.begin();
+    const auto lvalue_it = VAL1.begin();
     static_assert(std::is_same_v<decltype(*lvalue_it), std::pair<const int&, const int&>>);
-    static_assert(std::is_same_v<decltype(*s1.begin()), std::pair<const int&, const int&>>);
+    static_assert(std::is_same_v<decltype(*VAL1.begin()), std::pair<const int&, const int&>>);
 
     FixedMap<int, int, 10> s_non_const{};
     auto lvalue_it_of_non_const = s_non_const.begin();
     static_assert(std::is_same_v<decltype(*lvalue_it_of_non_const), std::pair<const int&, int&>>);
     static_assert(std::is_same_v<decltype(*s_non_const.begin()), std::pair<const int&, int&>>);
 
-    for (const auto& key_and_value : s1)
+    for (const auto& key_and_value : VAL1)
     {
         static_assert(
             std::is_same_v<decltype(key_and_value), const std::pair<const int&, const int&>&>);
     }
 
-    for (auto&& [key, value] : s1)
+    for (auto&& [key, value] : VAL1)
     {
         static_assert(std::is_same_v<decltype(key), const int&>);
         static_assert(std::is_same_v<decltype(value), const int&>);
     }
 
     {
-        std::map<int, int> s{};
+        std::map<int, int> var{};
 
-        for (const auto& key_and_value : s)
+        for (const auto& key_and_value : var)
         {
             static_assert(
                 std::is_same_v<decltype(key_and_value), const std::pair<const int, int>&>);
             // key_and_value.second = 5;  // Not allowed
         }
 
-        for (auto& key_and_value : s)
+        for (auto& key_and_value : var)
         {
             static_assert(std::is_same_v<decltype(key_and_value), std::pair<const int, int>&>);
             key_and_value.second = 5;  // Allowed
         }
 
-        for (auto&& key_and_value : s)
+        for (auto&& key_and_value : var)
         {
             static_assert(std::is_same_v<decltype(key_and_value), std::pair<const int, int>&>);
             key_and_value.second = 5;  // Allowed
         }
 
-        for (const auto& [key, value] : s)
+        for (const auto& [key, value] : var)
         {
             static_assert(std::is_same_v<decltype(key), const int>);
             static_assert(std::is_same_v<decltype(value), const int>);
         }
 
-        for (auto& [key, value] : s)
+        for (auto& [key, value] : var)
         {
             static_assert(std::is_same_v<decltype(key), const int>);
             static_assert(std::is_same_v<decltype(value), int>);
         }
 
-        for (auto&& [key, value] : s)
+        for (auto&& [key, value] : var)
         {
             static_assert(std::is_same_v<decltype(key), const int>);
             static_assert(std::is_same_v<decltype(value), int>);
@@ -925,144 +927,146 @@ TEST(FixedMap, IteratorTypes)
 
 TEST(FixedMap, IteratorMutableValue)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+        FixedMap<int, int, 10> var{{2, 20}, {4, 40}};
 
-        for (auto&& [key, value] : s)
+        for (auto&& [key, value] : var)
         {
             value *= 2;
         }
 
-        return s;
+        return var;
     }();
 
-    static_assert(std::distance(s1.cbegin(), s1.cend()) == 2);
+    static_assert(std::distance(VAL1.cbegin(), VAL1.cend()) == 2);
 
-    static_assert(s1.begin()->first == 2);
-    static_assert(s1.begin()->second == 40);
-    static_assert(std::next(s1.begin(), 1)->first == 4);
-    static_assert(std::next(s1.begin(), 1)->second == 80);
+    static_assert(VAL1.begin()->first == 2);
+    static_assert(VAL1.begin()->second == 40);
+    static_assert(std::next(VAL1.begin(), 1)->first == 4);
+    static_assert(std::next(VAL1.begin(), 1)->second == 80);
 
-    static_assert(std::prev(s1.end(), 1)->first == 4);
-    static_assert(std::prev(s1.end(), 1)->second == 80);
-    static_assert(std::prev(s1.end(), 2)->first == 2);
-    static_assert(std::prev(s1.end(), 2)->second == 40);
+    static_assert(std::prev(VAL1.end(), 1)->first == 4);
+    static_assert(std::prev(VAL1.end(), 1)->second == 80);
+    static_assert(std::prev(VAL1.end(), 2)->first == 2);
+    static_assert(std::prev(VAL1.end(), 2)->second == 40);
 }
 
 TEST(FixedMap, IteratorComparisonOperator)
 {
-    constexpr FixedMap<int, int, 10> s1{{{1, 10}, {4, 40}}};
+    constexpr FixedMap<int, int, 10> VAL1{{{1, 10}, {4, 40}}};
 
     // All combinations of [==, !=]x[const, non-const]
-    static_assert(s1.cbegin() == s1.cbegin());
-    static_assert(s1.cbegin() == s1.begin());
-    static_assert(s1.begin() == s1.begin());
-    static_assert(s1.cbegin() != s1.cend());
-    static_assert(s1.cbegin() != s1.end());
-    static_assert(s1.begin() != s1.cend());
+    static_assert(VAL1.cbegin() == VAL1.cbegin());
+    static_assert(VAL1.cbegin() == VAL1.begin());
+    static_assert(VAL1.begin() == VAL1.begin());
+    static_assert(VAL1.cbegin() != VAL1.cend());
+    static_assert(VAL1.cbegin() != VAL1.end());
+    static_assert(VAL1.begin() != VAL1.cend());
 
-    static_assert(std::next(s1.begin(), 2) == s1.end());
-    static_assert(std::prev(s1.end(), 2) == s1.begin());
+    static_assert(std::next(VAL1.begin(), 2) == VAL1.end());
+    static_assert(std::prev(VAL1.end(), 2) == VAL1.begin());
 }
 
 TEST(FixedMap, IteratorAssignment)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
+        FixedMap<int, int, 10> var{{2, 20}, {4, 40}};
 
         {
-            FixedMap<int, int, 10>::const_iterator it;  // Default construction
-            it = s.cbegin();
-            assert_or_abort(it == s.begin());
-            assert_or_abort(it->first == 2);
-            assert_or_abort(it->second == 20);
+            FixedMap<int, int, 10>::const_iterator iter;  // Default construction
+            iter = var.cbegin();
+            assert_or_abort(iter == var.begin());
+            assert_or_abort(iter->first == 2);
+            assert_or_abort(iter->second == 20);
 
-            it = s.cend();
-            assert_or_abort(it == s.cend());
+            iter = var.cend();
+            assert_or_abort(iter == var.cend());
 
             {
                 FixedMap<int, int, 10>::iterator non_const_it;  // Default construction
-                non_const_it = s.end();
-                it = non_const_it;  // Non-const needs to be assignable to const
-                assert_or_abort(it == s.end());
+                non_const_it = var.end();
+                iter = non_const_it;  // Non-const needs to be assignable to const
+                assert_or_abort(iter == var.end());
             }
 
-            for (it = s.cbegin(); it != s.cend(); it++)
+            for (iter = var.cbegin(); iter != var.cend(); iter++)
             {
-                static_assert(std::is_same_v<decltype(it), FixedMap<int, int, 10>::const_iterator>);
+                static_assert(
+                    std::is_same_v<decltype(iter), FixedMap<int, int, 10>::const_iterator>);
             }
 
-            for (it = s.begin(); it != s.end(); it++)
+            for (iter = var.begin(); iter != var.end(); iter++)
             {
-                static_assert(std::is_same_v<decltype(it), FixedMap<int, int, 10>::const_iterator>);
+                static_assert(
+                    std::is_same_v<decltype(iter), FixedMap<int, int, 10>::const_iterator>);
             }
         }
         {
-            FixedMap<int, int, 10>::iterator it = s.begin();
-            assert_or_abort(it == s.begin());  // Asserts are just to make the value used.
+            FixedMap<int, int, 10>::iterator iter = var.begin();
+            assert_or_abort(iter == var.begin());  // Asserts are just to make the value used.
 
             // Const should not be assignable to non-const
-            // it = s.cend();
+            // iter = var.cend();
 
-            it = s.end();
-            assert_or_abort(it == s.end());
+            iter = var.end();
+            assert_or_abort(iter == var.end());
 
-            for (it = s.begin(); it != s.end(); it++)
+            for (iter = var.begin(); iter != var.end(); iter++)
             {
-                static_assert(std::is_same_v<decltype(it), FixedMap<int, int, 10>::iterator>);
+                static_assert(std::is_same_v<decltype(iter), FixedMap<int, int, 10>::iterator>);
             }
         }
-        return s;
+        return var;
     }();
 
-    static_assert(s1.size() == 2);
+    static_assert(VAL1.size() == 2);
 }
 
-TEST(FixedMap, Iterator_OffByOneIssues)
+TEST(FixedMap, IteratorOffByOneIssues)
 {
-    constexpr FixedMap<int, int, 10> s1{{{1, 10}, {4, 40}}};
+    constexpr FixedMap<int, int, 10> VAL1{{{1, 10}, {4, 40}}};
 
-    static_assert(std::distance(s1.cbegin(), s1.cend()) == 2);
+    static_assert(std::distance(VAL1.cbegin(), VAL1.cend()) == 2);
 
-    static_assert(s1.begin()->first == 1);
-    static_assert(s1.begin()->second == 10);
-    static_assert(std::next(s1.begin(), 1)->first == 4);
-    static_assert(std::next(s1.begin(), 1)->second == 40);
+    static_assert(VAL1.begin()->first == 1);
+    static_assert(VAL1.begin()->second == 10);
+    static_assert(std::next(VAL1.begin(), 1)->first == 4);
+    static_assert(std::next(VAL1.begin(), 1)->second == 40);
 
-    static_assert(std::prev(s1.end(), 1)->first == 4);
-    static_assert(std::prev(s1.end(), 1)->second == 40);
-    static_assert(std::prev(s1.end(), 2)->first == 1);
-    static_assert(std::prev(s1.end(), 2)->second == 10);
+    static_assert(std::prev(VAL1.end(), 1)->first == 4);
+    static_assert(std::prev(VAL1.end(), 1)->second == 40);
+    static_assert(std::prev(VAL1.end(), 2)->first == 1);
+    static_assert(std::prev(VAL1.end(), 2)->second == 10);
 }
 
-TEST(FixedMap, Iterator_EnsureOrder)
+TEST(FixedMap, IteratorEnsureOrder)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{};
-        s.insert({3, 30});
-        s.insert({4, 40});
-        s.insert({1, 10});
-        return s;
+        FixedMap<int, int, 10> var{};
+        var.insert({3, 30});
+        var.insert({4, 40});
+        var.insert({1, 10});
+        return var;
     }();
 
-    static_assert(std::distance(s1.cbegin(), s1.cend()) == 3);
+    static_assert(std::distance(VAL1.cbegin(), VAL1.cend()) == 3);
 
-    static_assert(s1.begin()->first == 1);
-    static_assert(s1.begin()->second == 10);
-    static_assert(std::next(s1.begin(), 1)->first == 3);
-    static_assert(std::next(s1.begin(), 1)->second == 30);
-    static_assert(std::next(s1.begin(), 2)->first == 4);
-    static_assert(std::next(s1.begin(), 2)->second == 40);
+    static_assert(VAL1.begin()->first == 1);
+    static_assert(VAL1.begin()->second == 10);
+    static_assert(std::next(VAL1.begin(), 1)->first == 3);
+    static_assert(std::next(VAL1.begin(), 1)->second == 30);
+    static_assert(std::next(VAL1.begin(), 2)->first == 4);
+    static_assert(std::next(VAL1.begin(), 2)->second == 40);
 
-    static_assert(std::prev(s1.end(), 1)->first == 4);
-    static_assert(std::prev(s1.end(), 1)->second == 40);
-    static_assert(std::prev(s1.end(), 2)->first == 3);
-    static_assert(std::prev(s1.end(), 2)->second == 30);
-    static_assert(std::prev(s1.end(), 3)->first == 1);
-    static_assert(std::prev(s1.end(), 3)->second == 10);
+    static_assert(std::prev(VAL1.end(), 1)->first == 4);
+    static_assert(std::prev(VAL1.end(), 1)->second == 40);
+    static_assert(std::prev(VAL1.end(), 2)->first == 3);
+    static_assert(std::prev(VAL1.end(), 2)->second == 30);
+    static_assert(std::prev(VAL1.end(), 3)->first == 1);
+    static_assert(std::prev(VAL1.end(), 3)->second == 10);
 }
 
 TEST(FixedMap, DereferencedIteratorAssignability)
@@ -1080,11 +1084,11 @@ TEST(FixedMap, DereferencedIteratorAssignability)
     }
 }
 
-TEST(FixedMap, Iterator_AccessingDefaultConstructedIteratorFails)
+TEST(FixedMap, IteratorAccessingDefaultConstructedIteratorFails)
 {
-    auto it = FixedMap<int, int, 10>::iterator{};
+    auto iter = FixedMap<int, int, 10>::iterator{};
 
-    EXPECT_DEATH(it->second++, "");
+    EXPECT_DEATH(iter->second++, "");
 }
 
 static constexpr FixedMap<int, int, 7> LIVENESS_TEST_INSTANCE{{1, 100}};
@@ -1092,30 +1096,30 @@ static constexpr FixedMap<int, int, 7> LIVENESS_TEST_INSTANCE{{1, 100}};
 TEST(FixedMap, IteratorDereferenceLiveness)
 {
     {
-        constexpr auto ref = []() { return *LIVENESS_TEST_INSTANCE.begin(); }();
-        static_assert(ref.first == 1);
-        static_assert(ref.second == 100);
+        constexpr auto REF = []() { return *LIVENESS_TEST_INSTANCE.begin(); }();
+        static_assert(REF.first == 1);
+        static_assert(REF.second == 100);
     }
 
     {
         // this test needs ubsan/asan
-        FixedMap<int, int, 7> m = {{1, 100}};
-        decltype(m)::reference ref = *m.begin();  // Fine
+        FixedMap<int, int, 7> var1 = {{1, 100}};
+        const decltype(var1)::reference ref = *var1.begin();  // Fine
         EXPECT_EQ(1, ref.first);
         EXPECT_EQ(100, ref.second);
     }
     {
         // this test needs ubsan/asan
-        FixedMap<int, int, 7> m = {{1, 100}};
-        auto ref = *m.begin();  // Fine
+        FixedMap<int, int, 7> var1 = {{1, 100}};
+        auto ref = *var1.begin();  // Fine
         EXPECT_EQ(1, ref.first);
         EXPECT_EQ(100, ref.second);
     }
     {
         /*
         // this test needs ubsan/asan
-        FixedMap<int, int, 7> m = {{1, 100}};
-        auto& ref = *m.begin();  // Fails to compile, instead of allowing dangling pointers
+        FixedMap<int, int, 7> var1 = {{1, 100}};
+        auto& ref = *var1.begin();  // Fails to compile, instead of allowing dangling pointers
         EXPECT_EQ(1, ref.first);
         EXPECT_EQ(100, ref.second);
          */
@@ -1124,53 +1128,53 @@ TEST(FixedMap, IteratorDereferenceLiveness)
 
 TEST(FixedMap, ReverseIteratorBasic)
 {
-    constexpr FixedMap<int, int, 10> s1{{1, 10}, {2, 20}, {3, 30}, {4, 40}};
+    constexpr FixedMap<int, int, 10> VAL1{{1, 10}, {2, 20}, {3, 30}, {4, 40}};
 
-    static_assert(consteval_compare::equal<4, std::distance(s1.crbegin(), s1.crend())>);
+    static_assert(consteval_compare::equal<4, std::distance(VAL1.crbegin(), VAL1.crend())>);
 
-    static_assert(consteval_compare::equal<4, s1.rbegin()->first>);
-    static_assert(consteval_compare::equal<40, s1.rbegin()->second>);
-    static_assert(consteval_compare::equal<3, std::next(s1.rbegin(), 1)->first>);
-    static_assert(consteval_compare::equal<30, std::next(s1.rbegin(), 1)->second>);
-    static_assert(consteval_compare::equal<2, std::next(s1.rbegin(), 2)->first>);
-    static_assert(consteval_compare::equal<20, std::next(s1.rbegin(), 2)->second>);
-    static_assert(consteval_compare::equal<1, std::next(s1.rbegin(), 3)->first>);
-    static_assert(consteval_compare::equal<10, std::next(s1.rbegin(), 3)->second>);
+    static_assert(consteval_compare::equal<4, VAL1.rbegin()->first>);
+    static_assert(consteval_compare::equal<40, VAL1.rbegin()->second>);
+    static_assert(consteval_compare::equal<3, std::next(VAL1.rbegin(), 1)->first>);
+    static_assert(consteval_compare::equal<30, std::next(VAL1.rbegin(), 1)->second>);
+    static_assert(consteval_compare::equal<2, std::next(VAL1.rbegin(), 2)->first>);
+    static_assert(consteval_compare::equal<20, std::next(VAL1.rbegin(), 2)->second>);
+    static_assert(consteval_compare::equal<1, std::next(VAL1.rbegin(), 3)->first>);
+    static_assert(consteval_compare::equal<10, std::next(VAL1.rbegin(), 3)->second>);
 
-    static_assert(consteval_compare::equal<1, std::prev(s1.rend(), 1)->first>);
-    static_assert(consteval_compare::equal<10, std::prev(s1.rend(), 1)->second>);
-    static_assert(consteval_compare::equal<2, std::prev(s1.rend(), 2)->first>);
-    static_assert(consteval_compare::equal<20, std::prev(s1.rend(), 2)->second>);
-    static_assert(consteval_compare::equal<3, std::prev(s1.rend(), 3)->first>);
-    static_assert(consteval_compare::equal<30, std::prev(s1.rend(), 3)->second>);
-    static_assert(consteval_compare::equal<4, std::prev(s1.rend(), 4)->first>);
-    static_assert(consteval_compare::equal<40, std::prev(s1.rend(), 4)->second>);
+    static_assert(consteval_compare::equal<1, std::prev(VAL1.rend(), 1)->first>);
+    static_assert(consteval_compare::equal<10, std::prev(VAL1.rend(), 1)->second>);
+    static_assert(consteval_compare::equal<2, std::prev(VAL1.rend(), 2)->first>);
+    static_assert(consteval_compare::equal<20, std::prev(VAL1.rend(), 2)->second>);
+    static_assert(consteval_compare::equal<3, std::prev(VAL1.rend(), 3)->first>);
+    static_assert(consteval_compare::equal<30, std::prev(VAL1.rend(), 3)->second>);
+    static_assert(consteval_compare::equal<4, std::prev(VAL1.rend(), 4)->first>);
+    static_assert(consteval_compare::equal<40, std::prev(VAL1.rend(), 4)->second>);
 }
 
 TEST(FixedMap, ReverseIteratorBase)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 7> s{{1, 10}, {2, 20}, {3, 30}};
-        auto it = s.rbegin();  // points to 3
-        std::advance(it, 1);   // points to 2
+        FixedMap<int, int, 7> var{{1, 10}, {2, 20}, {3, 30}};
+        auto iter = var.rbegin();  // points to 3
+        std::advance(iter, 1);     // points to 2
         // https://stackoverflow.com/questions/1830158/how-to-call-erase-with-a-reverse-iterator
-        s.erase(std::next(it).base());
-        return s;
+        var.erase(std::next(iter).base());
+        return var;
     }();
 
-    static_assert(s1.size() == 2);
-    static_assert(s1.at(1) == 10);
-    static_assert(s1.at(3) == 30);
+    static_assert(VAL1.size() == 2);
+    static_assert(VAL1.at(1) == 10);
+    static_assert(VAL1.at(3) == 30);
 }
 
 TEST(FixedMap, IteratorInvalidation)
 {
-    FixedMap<int, int, 10> s1{{10, 100}, {20, 200}, {30, 300}, {40, 400}};
-    auto it1 = s1.begin();
-    auto it2 = std::next(s1.begin(), 1);
-    auto it3 = std::next(s1.begin(), 2);
-    auto it4 = std::next(s1.begin(), 3);
+    FixedMap<int, int, 10> var1{{10, 100}, {20, 200}, {30, 300}, {40, 400}};
+    auto it1 = var1.begin();
+    auto it2 = std::next(var1.begin(), 1);
+    auto it3 = std::next(var1.begin(), 2);
+    auto it4 = std::next(var1.begin(), 3);
 
     EXPECT_EQ(10, it1->first);
     EXPECT_EQ(100, it1->second);
@@ -1181,13 +1185,13 @@ TEST(FixedMap, IteratorInvalidation)
     EXPECT_EQ(40, it4->first);
     EXPECT_EQ(400, it4->second);
 
-    std::pair<const int*, const int*> addresses_1{&it1->first, &it1->second};
-    std::pair<const int*, const int*> addresses_2{&it2->first, &it2->second};
-    std::pair<const int*, const int*> addresses_4{&it4->first, &it4->second};
+    const std::pair<const int*, const int*> addresses_1{&it1->first, &it1->second};
+    const std::pair<const int*, const int*> addresses_2{&it2->first, &it2->second};
+    const std::pair<const int*, const int*> addresses_4{&it4->first, &it4->second};
 
     // Deletion
     {
-        s1.erase(30);
+        var1.erase(30);
         EXPECT_EQ(10, it1->first);
         EXPECT_EQ(100, it1->second);
         EXPECT_EQ(20, it2->first);
@@ -1202,9 +1206,9 @@ TEST(FixedMap, IteratorInvalidation)
 
     // Insertion
     {
-        s1.try_emplace(30, 301);
-        s1.try_emplace(1, 11);
-        s1.try_emplace(50, 501);
+        var1.try_emplace(30, 301);
+        var1.try_emplace(1, 11);
+        var1.try_emplace(50, 501);
 
         EXPECT_EQ(10, it1->first);
         EXPECT_EQ(100, it1->second);
@@ -1221,288 +1225,414 @@ TEST(FixedMap, IteratorInvalidation)
 
 TEST(FixedMap, Find)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
+    constexpr FixedMap<int, int, 10> VAL1{{2, 20}, {4, 40}};
+    static_assert(VAL1.size() == 2);
 
-    static_assert(s1.find(1) == s1.cend());
-    static_assert(s1.find(2) != s1.cend());
-    static_assert(s1.find(3) == s1.cend());
-    static_assert(s1.find(4) != s1.cend());
+    static_assert(VAL1.find(1) == VAL1.cend());
+    static_assert(VAL1.find(2) != VAL1.cend());
+    static_assert(VAL1.find(3) == VAL1.cend());
+    static_assert(VAL1.find(4) != VAL1.cend());
 
-    static_assert(s1.at(2) == 20);
-    static_assert(s1.at(4) == 40);
+    static_assert(VAL1.at(2) == 20);
+    static_assert(VAL1.at(4) == 40);
 }
 
-TEST(FixedMap, Find_TransparentComparator)
+TEST(FixedMap, FindTransparentComparator)
 {
-    constexpr FixedMap<MockAComparableToB, int, 3, std::less<>> s{};
-    constexpr MockBComparableToA b{5};
-    static_assert(s.find(b) == s.end());
+    constexpr FixedMap<MockAComparableToB, int, 3, std::less<>> VAL{};
+    constexpr MockBComparableToA KEY_B{5};
+    static_assert(VAL.find(KEY_B) == VAL.end());
 }
 
 TEST(FixedMap, MutableFind)
 {
-    constexpr auto s1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedMap<int, int, 10> s{{2, 20}, {4, 40}};
-        auto it = s.find(2);
-        it->second = 25;
-        it++;
-        it->second = 45;
-        return s;
+        FixedMap<int, int, 10> var{{2, 20}, {4, 40}};
+        auto iter = var.find(2);
+        iter->second = 25;
+        iter++;
+        iter->second = 45;
+        return var;
     }();
 
-    static_assert(s1.at(2) == 25);
-    static_assert(s1.at(4) == 45);
+    static_assert(VAL1.at(2) == 25);
+    static_assert(VAL1.at(4) == 45);
 }
 
 TEST(FixedMap, Contains)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
+    constexpr FixedMap<int, int, 10> VAL1{{2, 20}, {4, 40}};
+    static_assert(VAL1.size() == 2);
 
-    static_assert(!s1.contains(1));
-    static_assert(s1.contains(2));
-    static_assert(!s1.contains(3));
-    static_assert(s1.contains(4));
+    static_assert(!VAL1.contains(1));
+    static_assert(VAL1.contains(2));
+    static_assert(!VAL1.contains(3));
+    static_assert(VAL1.contains(4));
 
-    static_assert(s1.at(2) == 20);
-    static_assert(s1.at(4) == 40);
+    static_assert(VAL1.at(2) == 20);
+    static_assert(VAL1.at(4) == 40);
 }
 
-TEST(FixedMap, Contains_TransparentComparator)
+TEST(FixedMap, ContainsTransparentComparator)
 {
-    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
+    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> VAL{
         {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
-    constexpr MockBComparableToA b{5};
-    static_assert(s.contains(b));
+    constexpr MockBComparableToA KEY_B{5};
+    static_assert(VAL.contains(KEY_B));
 }
 
 TEST(FixedMap, Count)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
+    constexpr FixedMap<int, int, 10> VAL1{{2, 20}, {4, 40}};
+    static_assert(VAL1.size() == 2);
 
-    static_assert(s1.count(1) == 0);
-    static_assert(s1.count(2) == 1);
-    static_assert(s1.count(3) == 0);
-    static_assert(s1.count(4) == 1);
+    static_assert(VAL1.count(1) == 0);
+    static_assert(VAL1.count(2) == 1);
+    static_assert(VAL1.count(3) == 0);
+    static_assert(VAL1.count(4) == 1);
 
-    static_assert(s1.at(2) == 20);
-    static_assert(s1.at(4) == 40);
+    static_assert(VAL1.at(2) == 20);
+    static_assert(VAL1.at(4) == 40);
 }
 
-TEST(FixedMap, Count_TransparentComparator)
+TEST(FixedMap, CountTransparentComparator)
 {
-    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
+    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> VAL{
         {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
-    constexpr MockBComparableToA b{5};
-    static_assert(s.count(b) == 1);
+    constexpr MockBComparableToA KEY_B{5};
+    static_assert(VAL.count(KEY_B) == 1);
 }
 
 TEST(FixedMap, LowerBound)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
+    constexpr FixedMap<int, int, 10> VAL1{{2, 20}, {4, 40}};
+    static_assert(VAL1.size() == 2);
 
-    static_assert(s1.lower_bound(1)->first == 2);
-    static_assert(s1.lower_bound(2)->first == 2);
-    static_assert(s1.lower_bound(3)->first == 4);
-    static_assert(s1.lower_bound(4)->first == 4);
-    static_assert(s1.lower_bound(5) == s1.cend());
+    static_assert(VAL1.lower_bound(1)->first == 2);
+    static_assert(VAL1.lower_bound(2)->first == 2);
+    static_assert(VAL1.lower_bound(3)->first == 4);
+    static_assert(VAL1.lower_bound(4)->first == 4);
+    static_assert(VAL1.lower_bound(5) == VAL1.cend());
 }
 
-TEST(FixedMap, LowerBound_TransparentComparator)
+TEST(FixedMap, LowerBoundTransparentComparator)
 {
-    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
+    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> VAL{
         {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
-    constexpr MockBComparableToA b{3};
-    static_assert(s.lower_bound(b)->first == MockAComparableToB{3});
+    constexpr MockBComparableToA KEY_B{3};
+    static_assert(VAL.lower_bound(KEY_B)->first == MockAComparableToB{3});
 }
 
 TEST(FixedMap, UpperBound)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
+    constexpr FixedMap<int, int, 10> VAL1{{2, 20}, {4, 40}};
+    static_assert(VAL1.size() == 2);
 
-    static_assert(s1.upper_bound(1)->first == 2);
-    static_assert(s1.upper_bound(2)->first == 4);
-    static_assert(s1.upper_bound(3)->first == 4);
-    static_assert(s1.upper_bound(4) == s1.cend());
-    static_assert(s1.upper_bound(5) == s1.cend());
+    static_assert(VAL1.upper_bound(1)->first == 2);
+    static_assert(VAL1.upper_bound(2)->first == 4);
+    static_assert(VAL1.upper_bound(3)->first == 4);
+    static_assert(VAL1.upper_bound(4) == VAL1.cend());
+    static_assert(VAL1.upper_bound(5) == VAL1.cend());
 }
 
-TEST(FixedMap, UpperBound_TransparentComparator)
+TEST(FixedMap, UpperBoundTransparentComparator)
 {
-    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
+    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> VAL{
         {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
-    constexpr MockBComparableToA b{3};
-    static_assert(s.upper_bound(b)->first == MockAComparableToB{5});
+    constexpr MockBComparableToA KEY_B{3};
+    static_assert(VAL.upper_bound(KEY_B)->first == MockAComparableToB{5});
 }
 
 TEST(FixedMap, EqualRange)
 {
-    constexpr FixedMap<int, int, 10> s1{{2, 20}, {4, 40}};
-    static_assert(s1.size() == 2);
+    constexpr FixedMap<int, int, 10> VAL1{{2, 20}, {4, 40}};
+    static_assert(VAL1.size() == 2);
 
-    static_assert(s1.equal_range(1).first == s1.lower_bound(1));
-    static_assert(s1.equal_range(1).second == s1.upper_bound(1));
+    static_assert(VAL1.equal_range(1).first == VAL1.lower_bound(1));
+    static_assert(VAL1.equal_range(1).second == VAL1.upper_bound(1));
 
-    static_assert(s1.equal_range(2).first == s1.lower_bound(2));
-    static_assert(s1.equal_range(2).second == s1.upper_bound(2));
+    static_assert(VAL1.equal_range(2).first == VAL1.lower_bound(2));
+    static_assert(VAL1.equal_range(2).second == VAL1.upper_bound(2));
 
-    static_assert(s1.equal_range(3).first == s1.lower_bound(3));
-    static_assert(s1.equal_range(3).second == s1.upper_bound(3));
+    static_assert(VAL1.equal_range(3).first == VAL1.lower_bound(3));
+    static_assert(VAL1.equal_range(3).second == VAL1.upper_bound(3));
 
-    static_assert(s1.equal_range(4).first == s1.lower_bound(4));
-    static_assert(s1.equal_range(4).second == s1.upper_bound(4));
+    static_assert(VAL1.equal_range(4).first == VAL1.lower_bound(4));
+    static_assert(VAL1.equal_range(4).second == VAL1.upper_bound(4));
 
-    static_assert(s1.equal_range(5).first == s1.lower_bound(5));
-    static_assert(s1.equal_range(5).second == s1.upper_bound(5));
+    static_assert(VAL1.equal_range(5).first == VAL1.lower_bound(5));
+    static_assert(VAL1.equal_range(5).second == VAL1.upper_bound(5));
 }
 
-TEST(FixedMap, EqualRange_TransparentComparator)
+TEST(FixedMap, EqualRangeTransparentComparator)
 {
-    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> s{
+    constexpr FixedMap<MockAComparableToB, int, 5, std::less<>> VAL{
         {MockAComparableToB{1}, 10}, {MockAComparableToB{3}, 30}, {MockAComparableToB{5}, 50}};
-    constexpr MockBComparableToA b{3};
-    static_assert(s.equal_range(b).first == s.lower_bound(b));
-    static_assert(s.equal_range(b).second == s.upper_bound(b));
+    constexpr MockBComparableToA KEY_B{3};
+    static_assert(VAL.equal_range(KEY_B).first == VAL.lower_bound(KEY_B));
+    static_assert(VAL.equal_range(KEY_B).second == VAL.upper_bound(KEY_B));
 }
 
 TEST(FixedMap, Equality)
 {
     {
-        constexpr FixedMap<int, int, 10> s1{{1, 10}, {4, 40}};
-        constexpr FixedMap<int, int, 11> s2{{4, 40}, {1, 10}};
-        constexpr FixedMap<int, int, 10> s3{{1, 10}, {3, 30}};
-        constexpr FixedMap<int, int, 10> s4{{1, 10}};
+        constexpr FixedMap<int, int, 10> VAL1{{1, 10}, {4, 40}};
+        constexpr FixedMap<int, int, 11> VAL2{{4, 40}, {1, 10}};
+        constexpr FixedMap<int, int, 10> VAL3{{1, 10}, {3, 30}};
+        constexpr FixedMap<int, int, 10> VAL4{{1, 10}};
 
-        static_assert(s1 == s2);
-        static_assert(s2 == s1);
+        static_assert(VAL1 == VAL2);
+        static_assert(VAL2 == VAL1);
 
-        static_assert(s1 != s3);
-        static_assert(s3 != s1);
+        static_assert(VAL1 != VAL3);
+        static_assert(VAL3 != VAL1);
 
-        static_assert(s1 != s4);
-        static_assert(s4 != s1);
+        static_assert(VAL1 != VAL4);
+        static_assert(VAL4 != VAL1);
     }
 
     // Values
     {
-        constexpr FixedMap<int, int, 10> s1{{1, 10}, {4, 40}};
-        constexpr FixedMap<int, int, 10> s2{{1, 10}, {4, 44}};
-        constexpr FixedMap<int, int, 10> s3{{1, 40}, {4, 10}};
+        constexpr FixedMap<int, int, 10> VAL1{{1, 10}, {4, 40}};
+        constexpr FixedMap<int, int, 10> VAL2{{1, 10}, {4, 44}};
+        constexpr FixedMap<int, int, 10> VAL3{{1, 40}, {4, 10}};
 
-        static_assert(s1 != s2);
-        static_assert(s1 != s3);
+        static_assert(VAL1 != VAL2);
+        static_assert(VAL1 != VAL3);
     }
 }
 
 TEST(FixedMap, Ranges)
 {
-    FixedMap<int, int, 10> s1{{1, 10}, {4, 40}};
-    auto f = s1 | ranges::views::filter([](const auto& v) -> bool { return v.second == 10; });
+    FixedMap<int, int, 10> var1{{1, 10}, {4, 40}};
+    auto filtered =
+        var1 | ranges::views::filter([](const auto& entry) -> bool { return entry.second == 10; });
 
-    EXPECT_EQ(1, ranges::distance(f));
-    int first_entry = (*f.begin()).second;  // Can't use arrow with range-v3 because it requires
-                                            // l-value. Note that std::ranges works
+    EXPECT_EQ(1, ranges::distance(filtered));
+    const int first_entry =
+        (*filtered.begin()).second;  // Can't use arrow with range-v3 because it
+                                     // requires l-value. Note that std::ranges works
     EXPECT_EQ(10, first_entry);
 }
 
 TEST(FixedMap, OverloadedAddressOfOperator)
 {
     {
-        FixedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15> v{};
-        v[1] = {};
-        v.at(1) = {};
-        v.insert({2, {}});
-        v.emplace(3, MockFailingAddressOfOperator{});
-        v.erase(3);
-        v.try_emplace(4, MockFailingAddressOfOperator{});
-        v.clear();
-        v.insert_or_assign(2, MockFailingAddressOfOperator{});
-        v.insert_or_assign(2, MockFailingAddressOfOperator{});
-        v.clear();
-        ASSERT_TRUE(v.empty());
+        FixedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15> var{};
+        var[1] = {};
+        var.at(1) = {};
+        var.insert({2, {}});
+        var.emplace(3, MockFailingAddressOfOperator{});
+        var.erase(3);
+        var.try_emplace(4, MockFailingAddressOfOperator{});
+        var.clear();
+        var.insert_or_assign(2, MockFailingAddressOfOperator{});
+        var.insert_or_assign(2, MockFailingAddressOfOperator{});
+        var.clear();
+        ASSERT_TRUE(var.empty());
     }
 
     {
-        constexpr FixedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15> v{
+        constexpr FixedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15> VAL{
             {2, {}}};
-        static_assert(!v.empty());
+        static_assert(!VAL.empty());
     }
 
     {
-        FixedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15> v{
+        FixedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15> var{
             {2, {}},
             {3, {}},
             {4, {}},
         };
-        ASSERT_FALSE(v.empty());
-        auto it = v.begin();
-        it->second.do_nothing();
-        (void)it++;
-        (void)it--;
-        ++it;
-        --it;
-        it->second.do_nothing();
+        ASSERT_FALSE(var.empty());
+        auto iter = var.begin();
+        iter->second.do_nothing();
+        (void)iter++;
+        (void)iter--;
+        ++iter;
+        --iter;
+        iter->second.do_nothing();
     }
 
     {
-        constexpr FixedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15> v{
+        constexpr FixedMap<MockFailingAddressOfOperator, MockFailingAddressOfOperator, 15> VAL{
             {2, {}},
             {3, {}},
             {4, {}},
         };
-        static_assert(!v.empty());
-        auto it = v.cbegin();
-        it->second.do_nothing();
-        (void)it++;
-        (void)it--;
-        ++it;
-        --it;
-        it->second.do_nothing();
+        static_assert(!VAL.empty());
+        auto iter = VAL.cbegin();
+        iter->second.do_nothing();
+        (void)iter++;
+        (void)iter--;
+        ++iter;
+        --iter;
+        iter->second.do_nothing();
     }
 }
 
 TEST(FixedMap, ClassTemplateArgumentDeduction)
 {
     // Compile-only test
-    FixedMap a = FixedMap<int, int, 5>{};
-    (void)a;
+    const FixedMap var1 = FixedMap<int, int, 5>{};
+    (void)var1;
 }
 
 TEST(FixedMap, NonDefaultConstructible)
 {
     {
-        constexpr FixedMap<int, MockNonDefaultConstructible, 10> s1{};
-        static_assert(s1.empty());
+        constexpr FixedMap<int, MockNonDefaultConstructible, 10> VAL1{};
+        static_assert(VAL1.empty());
     }
     {
-        FixedMap<int, MockNonDefaultConstructible, 10> s2{};
-        s2.emplace(1, 3);
+        FixedMap<int, MockNonDefaultConstructible, 10> var2{};
+        var2.emplace(1, 3);
     }
 }
 
 TEST(FixedMap, MoveableButNotCopyable)
 {
     {
-        FixedMap<std::string_view, MockMoveableButNotCopyable, 10> s{};
-        s.emplace("", MockMoveableButNotCopyable{});
+        FixedMap<std::string_view, MockMoveableButNotCopyable, 10> var{};
+        var.emplace("", MockMoveableButNotCopyable{});
     }
 }
 
 TEST(FixedMap, NonAssignable)
 {
     {
-        FixedMap<int, MockNonAssignable, 10> s{};
-        s[1];
-        s[2];
-        s[3];
+        FixedMap<int, MockNonAssignable, 10> var{};
+        var[1];
+        var[2];
+        var[3];
 
-        s.erase(2);
+        var.erase(2);
     }
+}
+
+TEST(FixedMap, ComplexNontrivialCopies)
+{
+    FixedMap<int, MockNonTrivialCopyAssignable, 30> map_1{};
+    for (int i = 0; i < 20; i++)
+    {
+        map_1.try_emplace(i + 100);
+    }
+
+    auto map_2{map_1};
+    for(const auto& pair : map_1)
+    {
+        EXPECT_TRUE(map_2.contains(pair.first));
+    }
+    EXPECT_EQ(map_2.size(), map_1.size());
+    map_2.clear();
+    for (int i = 0; i < 11; i++)
+    {
+        map_2.try_emplace(i + 100);
+    }
+    auto map_3{map_1};
+    for(const auto& pair : map_1)
+    {
+        EXPECT_TRUE(map_3.contains(pair.first));
+    }
+    EXPECT_EQ(map_3.size(), map_1.size());
+    map_3.clear();
+    for (int i = 0; i < 27; i++)
+    {
+        map_3.try_emplace(i + 100);
+    }
+    auto map_4{map_1};
+    for(const auto& pair : map_1)
+    {
+        EXPECT_TRUE(map_4.contains(pair.first));
+    }
+    EXPECT_EQ(map_4.size(), map_1.size());
+
+    map_1 = map_2;
+    for(const auto& pair : map_2)
+    {
+        EXPECT_TRUE(map_1.contains(pair.first));
+    }
+    map_1.clear();
+    map_1 = map_3;
+    for(const auto& pair : map_3)
+    {
+        EXPECT_TRUE(map_1.contains(pair.first));
+    }
+
+    // check that we can still add 3 elements (gets us to capacity)
+    map_1.try_emplace(127);
+    map_1.try_emplace(128);
+    map_1.try_emplace(129);
+    for (int i = 0; i < 30; i++)
+    {
+        EXPECT_TRUE(map_1.contains(i + 100));
+    }
+    EXPECT_EQ(map_1.size(), 30);
+
+    map_1.clear();
+    map_1 = map_4;
+    for(const auto& pair : map_4)
+    {
+        EXPECT_TRUE(map_1.contains(pair.first));
+    }
+    map_1.clear();
+}
+
+TEST(FixedUnorderedMap, ComplexNontrivialMoves)
+{
+    using FM = FixedMap<int, MockMoveableButNotCopyable, 30>;
+    FM map_1{};
+    FM map_1_orig{};
+    for (int i = 0; i < 20; i++)
+    {
+        map_1.try_emplace(i + 100);
+        map_1_orig.try_emplace(i + 100);
+    }
+
+    FM map_2{std::move(map_1)};
+    for(const auto& pair : map_1_orig)
+    {
+        EXPECT_TRUE(map_2.contains(pair.first));
+    }
+    FM map_2_orig{};
+    map_2.clear();
+    for (int i = 0; i < 11; i++)
+    {
+        map_2.try_emplace(i + 100);
+        map_2_orig.try_emplace(i + 100);
+    }
+    FM map_3{};
+    FM map_3_orig{};
+    map_3.clear();
+    for (int i = 0; i < 27; i++)
+    {
+        map_3.try_emplace(i + 100);
+        map_3_orig.try_emplace(i + 100);
+    }
+
+    map_1 = std::move(map_2);
+    for(const auto& pair : map_2_orig)
+    {
+        EXPECT_TRUE(map_1.contains(pair.first));
+    }
+    map_1.clear();
+    map_1 = std::move(map_3);
+    for(const auto& pair : map_3_orig)
+    {
+        EXPECT_TRUE(map_1.contains(pair.first));
+    }
+
+    // check that we can still add 3 elements (gets us to capacity)
+    map_1.try_emplace(127);
+    map_1.try_emplace(128);
+    map_1.try_emplace(129);
+    for (int i = 0; i < 30; i++)
+    {
+        EXPECT_TRUE(map_1.contains(i + 100));
+    }
+    EXPECT_EQ(map_1.size(), 30);
+    map_1.clear();
 }
 
 static constexpr int INT_VALUE_10 = 10;
@@ -1513,63 +1643,63 @@ TEST(FixedMap, ConstRef)
 {
     {
 #if !defined(_LIBCPP_VERSION)
-        std::map<int, const int&> s{{1, INT_VALUE_10}};
-        s.insert({2, INT_VALUE_20});
-        s.emplace(3, INT_VALUE_30);
-        s.erase(3);
+        std::map<int, const int&> var{{1, INT_VALUE_10}};
+        var.insert({2, INT_VALUE_20});
+        var.emplace(3, INT_VALUE_30);
+        var.erase(3);
 
-        auto s_copy = s;
-        s = s_copy;
-        s = std::move(s_copy);
+        auto s_copy = var;
+        var = s_copy;
+        var = std::move(s_copy);
 
-        ASSERT_TRUE(s.contains(1));
-        ASSERT_TRUE(s.contains(2));
-        ASSERT_TRUE(!s.contains(3));
-        ASSERT_TRUE(!s.contains(4));
+        ASSERT_TRUE(var.contains(1));
+        ASSERT_TRUE(var.contains(2));
+        ASSERT_TRUE(!var.contains(3));
+        ASSERT_TRUE(!var.contains(4));
 
-        ASSERT_EQ(INT_VALUE_10, s.at(1));
+        ASSERT_EQ(INT_VALUE_10, var.at(1));
 #endif
     }
 
     {
-        FixedMap<int, const int&, 10> s{{1, INT_VALUE_10}};
-        s.insert({2, INT_VALUE_20});
-        s.emplace(3, INT_VALUE_30);
-        s.erase(3);
+        FixedMap<int, const int&, 10> var{{1, INT_VALUE_10}};
+        var.insert({2, INT_VALUE_20});
+        var.emplace(3, INT_VALUE_30);
+        var.erase(3);
 
-        auto s_copy = s;
-        s = s_copy;
-        s = std::move(s_copy);
+        auto s_copy = var;
+        var = s_copy;
+        var = std::move(s_copy);
 
-        ASSERT_TRUE(s.contains(1));
-        ASSERT_TRUE(s.contains(2));
-        ASSERT_TRUE(!s.contains(3));
-        ASSERT_TRUE(!s.contains(4));
+        ASSERT_TRUE(var.contains(1));
+        ASSERT_TRUE(var.contains(2));
+        ASSERT_TRUE(!var.contains(3));
+        ASSERT_TRUE(!var.contains(4));
 
-        ASSERT_EQ(INT_VALUE_10, s.at(1));
+        ASSERT_EQ(INT_VALUE_10, var.at(1));
     }
 
     {
-        constexpr FixedMap<double, const int&, 10> s1 = []()
+        constexpr FixedMap<double, const int&, 10> VAL1 = []()
         {
-            FixedMap<double, const int&, 10> s{{1.0, INT_VALUE_10}};
-            s.insert({2, INT_VALUE_20});
-            s.emplace(3, INT_VALUE_30);
-            s.erase(3);
+            FixedMap<double, const int&, 10> var{{1.0, INT_VALUE_10}};
+            var.insert({2, INT_VALUE_20});
+            var.emplace(3, INT_VALUE_30);
+            var.erase(3);
 
-            auto s_copy = s;
-            s = s_copy;
-            s = std::move(s_copy);
+            auto s_copy = var;
+            var = s_copy;
+            var = std::move(s_copy);
 
-            return s;
+            return var;
         }();
 
-        static_assert(s1.contains(1));
-        static_assert(s1.contains(2));
-        static_assert(!s1.contains(3));
-        static_assert(!s1.contains(4));
+        static_assert(VAL1.contains(1));
+        static_assert(VAL1.contains(2));
+        static_assert(!VAL1.contains(3));
+        static_assert(!VAL1.contains(4));
 
-        static_assert(s1.at(1) == INT_VALUE_10);
+        static_assert(VAL1.at(1) == INT_VALUE_10);
     }
 
     static_assert(NotTriviallyCopyable<const int&>);
@@ -1593,7 +1723,7 @@ TEST(FixedMap, UsageAsTemplateParameter)
 {
     static constexpr FixedMap<int, int, 5> INSTANCE1{};
     fixed_map_instance_can_be_used_as_a_template_parameter<INSTANCE1>();
-    FixedMapInstanceCanBeUsedAsATemplateParameter<INSTANCE1> my_struct{};
+    const FixedMapInstanceCanBeUsedAsATemplateParameter<INSTANCE1> my_struct{};
     static_cast<void>(my_struct);
 }
 
@@ -1631,29 +1761,29 @@ struct FixedMapInstanceCheckFixture : public ::testing::Test
 TYPED_TEST_SUITE_P(FixedMapInstanceCheckFixture);
 }  // namespace
 
-TYPED_TEST_P(FixedMapInstanceCheckFixture, FixedMap_InstanceCheck)
+TYPED_TEST_P(FixedMapInstanceCheckFixture, FixedMapInstanceCheck)
 {
     using MapOfInstanceCounterType = TypeParam;
     using InstanceCounterType = typename MapOfInstanceCounterType::key_type;
     static_assert(std::is_same_v<typename MapOfInstanceCounterType::key_type,
                                  typename MapOfInstanceCounterType::mapped_type>);
-    MapOfInstanceCounterType v1{};
+    MapOfInstanceCounterType var1{};
 
     // [] l-value
     ASSERT_EQ(0, InstanceCounterType::counter);
     {  // IMPORTANT SCOPE, don't remove.
-        // This will be destroyed when we go out of scope
-        InstanceCounterType aa{1};
+       // This will be destroyed when we go out of scope
+        const InstanceCounterType entry_aa{1};
         ASSERT_EQ(1, InstanceCounterType::counter);
-        v1[aa] = aa;
+        var1[entry_aa] = entry_aa;
         ASSERT_EQ(3, InstanceCounterType::counter);
-        v1[aa] = aa;
-        v1[aa] = aa;
-        v1[aa] = aa;
-        v1[aa] = aa;
-        v1[aa] = aa;
+        var1[entry_aa] = entry_aa;
+        var1[entry_aa] = entry_aa;
+        var1[entry_aa] = entry_aa;
+        var1[entry_aa] = entry_aa;
+        var1[entry_aa] = entry_aa;
         ASSERT_EQ(3, InstanceCounterType::counter);
-        v1.clear();
+        var1.clear();
         ASSERT_EQ(1, InstanceCounterType::counter);
     }
     ASSERT_EQ(0, InstanceCounterType::counter);
@@ -1662,90 +1792,90 @@ TYPED_TEST_P(FixedMapInstanceCheckFixture, FixedMap_InstanceCheck)
     ASSERT_EQ(0, InstanceCounterType::counter);
     {  // IMPORTANT SCOPE, don't remove.
         // This will be destroyed when we go out of scope
-        InstanceCounterType aa{1};
+        const InstanceCounterType entry_aa{1};
         ASSERT_EQ(1, InstanceCounterType::counter);
-        v1.insert({aa, aa});
-        ASSERT_EQ(1, v1.size());
+        var1.insert({entry_aa, entry_aa});
+        ASSERT_EQ(1, var1.size());
         ASSERT_EQ(3, InstanceCounterType::counter);
-        v1.insert({aa, aa});
-        v1.insert({aa, aa});
-        v1.insert({aa, aa});
-        ASSERT_EQ(1, v1.size());
+        var1.insert({entry_aa, entry_aa});
+        var1.insert({entry_aa, entry_aa});
+        var1.insert({entry_aa, entry_aa});
+        ASSERT_EQ(1, var1.size());
         ASSERT_EQ(3, InstanceCounterType::counter);
-        v1.clear();
-        ASSERT_EQ(0, v1.size());
+        var1.clear();
+        ASSERT_EQ(0, var1.size());
         ASSERT_EQ(1, InstanceCounterType::counter);
     }
     ASSERT_EQ(0, InstanceCounterType::counter);
 
     // Double clear
     {
-        v1.clear();
-        v1.clear();
+        var1.clear();
+        var1.clear();
     }
 
     // [] r-value
     ASSERT_EQ(0, InstanceCounterType::counter);
     {  // IMPORTANT SCOPE, don't remove.
         // This will be destroyed when we go out of scope
-        InstanceCounterType aa{1};
-        InstanceCounterType bb{1};
+        InstanceCounterType entry_aa{1};
+        InstanceCounterType entry_bb{1};
         ASSERT_EQ(2, InstanceCounterType::counter);
-        v1[std::move(bb)] = std::move(aa);
-        ASSERT_EQ(1, v1.size());
+        var1[std::move(entry_bb)] = std::move(entry_aa);
+        ASSERT_EQ(1, var1.size());
         ASSERT_EQ(4, InstanceCounterType::counter);
-        v1.clear();
-        ASSERT_EQ(0, v1.size());
+        var1.clear();
+        ASSERT_EQ(0, var1.size());
         ASSERT_EQ(2, InstanceCounterType::counter);
-        v1[InstanceCounterType{}] = InstanceCounterType{};  // With temporary
-        v1[InstanceCounterType{}] = InstanceCounterType{};  // With temporary
-        v1[InstanceCounterType{}] = InstanceCounterType{};  // With temporary
-        ASSERT_EQ(1, v1.size());
+        var1[InstanceCounterType{}] = InstanceCounterType{};  // With temporary
+        var1[InstanceCounterType{}] = InstanceCounterType{};  // With temporary
+        var1[InstanceCounterType{}] = InstanceCounterType{};  // With temporary
+        ASSERT_EQ(1, var1.size());
         ASSERT_EQ(4, InstanceCounterType::counter);
     }
     ASSERT_EQ(2, InstanceCounterType::counter);
-    v1.clear();
+    var1.clear();
     ASSERT_EQ(0, InstanceCounterType::counter);
 
     // insert r-value
     ASSERT_EQ(0, InstanceCounterType::counter);
     {  // IMPORTANT SCOPE, don't remove.
         // This will be destroyed when we go out of scope
-        InstanceCounterType aa{1};
-        InstanceCounterType bb{1};
+        InstanceCounterType entry_aa{1};
+        InstanceCounterType entry_bb{1};
         ASSERT_EQ(2, InstanceCounterType::counter);
-        v1.insert({std::move(bb), std::move(aa)});
-        ASSERT_EQ(1, v1.size());
+        var1.insert({std::move(entry_bb), std::move(entry_aa)});
+        ASSERT_EQ(1, var1.size());
         ASSERT_EQ(4, InstanceCounterType::counter);
-        v1.clear();
-        ASSERT_EQ(0, v1.size());
+        var1.clear();
+        ASSERT_EQ(0, var1.size());
         ASSERT_EQ(2, InstanceCounterType::counter);
-        v1.insert({InstanceCounterType{}, InstanceCounterType{}});  // With temporary
-        v1.insert({InstanceCounterType{}, InstanceCounterType{}});  // With temporary
-        v1.insert({InstanceCounterType{}, InstanceCounterType{}});  // With temporary
-        ASSERT_EQ(1, v1.size());
+        var1.insert({InstanceCounterType{}, InstanceCounterType{}});  // With temporary
+        var1.insert({InstanceCounterType{}, InstanceCounterType{}});  // With temporary
+        var1.insert({InstanceCounterType{}, InstanceCounterType{}});  // With temporary
+        ASSERT_EQ(1, var1.size());
         ASSERT_EQ(4, InstanceCounterType::counter);
     }
     ASSERT_EQ(2, InstanceCounterType::counter);
-    v1.clear();
+    var1.clear();
     ASSERT_EQ(0, InstanceCounterType::counter);
 
     // Emplace
     ASSERT_EQ(0, InstanceCounterType::counter);
     {  // IMPORTANT SCOPE, don't remove.
         // This will be destroyed when we go out of scope
-        InstanceCounterType aa{1};
+        const InstanceCounterType entry_aa{1};
         ASSERT_EQ(1, InstanceCounterType::counter);
-        v1.emplace(aa, aa);
-        ASSERT_EQ(1, v1.size());
+        var1.emplace(entry_aa, entry_aa);
+        ASSERT_EQ(1, var1.size());
         ASSERT_EQ(3, InstanceCounterType::counter);
-        v1.emplace(aa, aa);
-        v1.emplace(aa, aa);
-        v1.emplace(aa, aa);
-        ASSERT_EQ(1, v1.size());
+        var1.emplace(entry_aa, entry_aa);
+        var1.emplace(entry_aa, entry_aa);
+        var1.emplace(entry_aa, entry_aa);
+        ASSERT_EQ(1, var1.size());
         ASSERT_EQ(3, InstanceCounterType::counter);
-        v1.clear();
-        ASSERT_EQ(0, v1.size());
+        var1.clear();
+        ASSERT_EQ(0, var1.size());
         ASSERT_EQ(1, InstanceCounterType::counter);
     }
     ASSERT_EQ(0, InstanceCounterType::counter);
@@ -1754,18 +1884,18 @@ TYPED_TEST_P(FixedMapInstanceCheckFixture, FixedMap_InstanceCheck)
     ASSERT_EQ(0, InstanceCounterType::counter);
     {  // IMPORTANT SCOPE, don't remove.
         // This will be destroyed when we go out of scope
-        InstanceCounterType aa{1};
+        InstanceCounterType entry_aa{1};
         ASSERT_EQ(1, InstanceCounterType::counter);
-        v1.try_emplace(aa, aa);
-        ASSERT_EQ(1, v1.size());
+        var1.try_emplace(entry_aa, entry_aa);
+        ASSERT_EQ(1, var1.size());
         ASSERT_EQ(3, InstanceCounterType::counter);
-        v1.try_emplace(aa, aa);
-        v1.try_emplace(aa, aa);
-        v1.try_emplace(std::move(aa), InstanceCounterType{1});
-        ASSERT_EQ(1, v1.size());
+        var1.try_emplace(entry_aa, entry_aa);
+        var1.try_emplace(entry_aa, entry_aa);
+        var1.try_emplace(std::move(entry_aa), InstanceCounterType{1});
+        ASSERT_EQ(1, var1.size());
         ASSERT_EQ(3, InstanceCounterType::counter);
-        v1.clear();
-        ASSERT_EQ(0, v1.size());
+        var1.clear();
+        ASSERT_EQ(0, var1.size());
         ASSERT_EQ(1, InstanceCounterType::counter);
     }
     ASSERT_EQ(0, InstanceCounterType::counter);
@@ -1774,21 +1904,21 @@ TYPED_TEST_P(FixedMapInstanceCheckFixture, FixedMap_InstanceCheck)
     {
         for (int i = 0; i < 10; i++)
         {
-            v1[InstanceCounterType{i}] = InstanceCounterType{i};
+            var1[InstanceCounterType{i}] = InstanceCounterType{i};
         }
-        ASSERT_EQ(10, v1.size());
+        ASSERT_EQ(10, var1.size());
         ASSERT_EQ(20, InstanceCounterType::counter);
-        v1.erase(v1.begin());
-        ASSERT_EQ(9, v1.size());
+        var1.erase(var1.begin());
+        ASSERT_EQ(9, var1.size());
         ASSERT_EQ(18, InstanceCounterType::counter);
-        v1.erase(std::next(v1.begin(), 2), std::next(v1.begin(), 5));
-        ASSERT_EQ(6, v1.size());
+        var1.erase(std::next(var1.begin(), 2), std::next(var1.begin(), 5));
+        ASSERT_EQ(6, var1.size());
         ASSERT_EQ(12, InstanceCounterType::counter);
-        v1.erase(v1.cbegin());
-        ASSERT_EQ(5, v1.size());
+        var1.erase(var1.cbegin());
+        ASSERT_EQ(5, var1.size());
         ASSERT_EQ(10, InstanceCounterType::counter);
-        v1.erase(v1.begin(), v1.end());
-        ASSERT_EQ(0, v1.size());
+        var1.erase(var1.begin(), var1.end());
+        ASSERT_EQ(0, var1.size());
         ASSERT_EQ(0, InstanceCounterType::counter);
     }
 
@@ -1796,107 +1926,111 @@ TYPED_TEST_P(FixedMapInstanceCheckFixture, FixedMap_InstanceCheck)
     {
         for (int i = 0; i < 10; i++)
         {
-            v1[InstanceCounterType{i}] = InstanceCounterType{i};
+            var1[InstanceCounterType{i}] = InstanceCounterType{i};
         }
-        ASSERT_EQ(10, v1.size());
+        ASSERT_EQ(10, var1.size());
         ASSERT_EQ(20, InstanceCounterType::counter);
-        v1.erase(InstanceCounterType{5});
-        ASSERT_EQ(9, v1.size());
+        var1.erase(InstanceCounterType{5});
+        ASSERT_EQ(9, var1.size());
         ASSERT_EQ(18, InstanceCounterType::counter);
-        v1.erase(InstanceCounterType{995});  // not in map
-        ASSERT_EQ(9, v1.size());
+        var1.erase(InstanceCounterType{995});  // not in map
+        ASSERT_EQ(9, var1.size());
         ASSERT_EQ(18, InstanceCounterType::counter);
-        v1.erase(InstanceCounterType{7});
-        ASSERT_EQ(8, v1.size());
+        var1.erase(InstanceCounterType{7});
+        ASSERT_EQ(8, var1.size());
         ASSERT_EQ(16, InstanceCounterType::counter);
-        v1.clear();
-        ASSERT_EQ(0, v1.size());
+        var1.clear();
+        ASSERT_EQ(0, var1.size());
         ASSERT_EQ(0, InstanceCounterType::counter);
     }
 
     ASSERT_EQ(0, InstanceCounterType::counter);
-    v1[InstanceCounterType{1}] = InstanceCounterType{1};
-    v1[InstanceCounterType{2}] = InstanceCounterType{2};
+    var1[InstanceCounterType{1}] = InstanceCounterType{1};
+    var1[InstanceCounterType{2}] = InstanceCounterType{2};
     ASSERT_EQ(4, InstanceCounterType::counter);
 
     {  // IMPORTANT SCOPE, don't remove.
-        MapOfInstanceCounterType v2{v1};
+        const MapOfInstanceCounterType var2{var1};
+        (void)var2;
         ASSERT_EQ(8, InstanceCounterType::counter);
     }
     ASSERT_EQ(4, InstanceCounterType::counter);
 
     {  // IMPORTANT SCOPE, don't remove.
-        MapOfInstanceCounterType v2 = v1;
+        const MapOfInstanceCounterType var2 = var1;
         ASSERT_EQ(8, InstanceCounterType::counter);
-        v1 = v2;
+        var1 = var2;
         ASSERT_EQ(8, InstanceCounterType::counter);
     }
     ASSERT_EQ(4, InstanceCounterType::counter);
 
     {  // IMPORTANT SCOPE, don't remove.
-        MapOfInstanceCounterType v2{std::move(v1)};
+        const MapOfInstanceCounterType var2{std::move(var1)};
         ASSERT_EQ(4, InstanceCounterType::counter);
     }
     ASSERT_EQ(0, InstanceCounterType::counter);
-    v1[InstanceCounterType{1}] = InstanceCounterType{1};
-    v1[InstanceCounterType{2}] = InstanceCounterType{2};
+    memory::destroy_and_construct_at_address_of(var1);
+
+    var1[InstanceCounterType{1}] = InstanceCounterType{1};
+    var1[InstanceCounterType{2}] = InstanceCounterType{2};
     ASSERT_EQ(4, InstanceCounterType::counter);
 
     {  // IMPORTANT SCOPE, don't remove.
-        MapOfInstanceCounterType v2 = std::move(v1);
+        const MapOfInstanceCounterType var2 = std::move(var1);
         ASSERT_EQ(4, InstanceCounterType::counter);
     }
     ASSERT_EQ(0, InstanceCounterType::counter);
+    memory::destroy_and_construct_at_address_of(var1);
 
     // Lookup
     {
         for (int i = 0; i < 10; i++)
         {
-            v1[InstanceCounterType{i}] = InstanceCounterType{i};
+            var1[InstanceCounterType{i}] = InstanceCounterType{i};
         }
 
-        const auto v2 = v1;
-        ASSERT_EQ(10, v1.size());
-        ASSERT_EQ(10, v2.size());
+        const auto var2 = var1;
+        ASSERT_EQ(10, var1.size());
+        ASSERT_EQ(10, var2.size());
         ASSERT_EQ(40, InstanceCounterType::counter);
 
-        (void)v1.find(InstanceCounterType{5});
-        (void)v1.find(InstanceCounterType{995});
-        (void)v2.find(InstanceCounterType{5});
-        (void)v2.find(InstanceCounterType{995});
-        ASSERT_EQ(10, v1.size());
-        ASSERT_EQ(10, v2.size());
+        (void)var1.find(InstanceCounterType{5});
+        (void)var1.find(InstanceCounterType{995});
+        (void)var2.find(InstanceCounterType{5});
+        (void)var2.find(InstanceCounterType{995});
+        ASSERT_EQ(10, var1.size());
+        ASSERT_EQ(10, var2.size());
         ASSERT_EQ(40, InstanceCounterType::counter);
 
-        (void)v1.contains(InstanceCounterType{5});
-        (void)v1.contains(InstanceCounterType{995});
-        (void)v2.contains(InstanceCounterType{5});
-        (void)v2.contains(InstanceCounterType{995});
-        ASSERT_EQ(10, v1.size());
-        ASSERT_EQ(10, v2.size());
+        (void)var1.contains(InstanceCounterType{5});
+        (void)var1.contains(InstanceCounterType{995});
+        (void)var2.contains(InstanceCounterType{5});
+        (void)var2.contains(InstanceCounterType{995});
+        ASSERT_EQ(10, var1.size());
+        ASSERT_EQ(10, var2.size());
         ASSERT_EQ(40, InstanceCounterType::counter);
 
-        (void)v1.count(InstanceCounterType{5});
-        (void)v1.count(InstanceCounterType{995});
-        (void)v2.count(InstanceCounterType{5});
-        (void)v2.count(InstanceCounterType{995});
-        ASSERT_EQ(10, v1.size());
-        ASSERT_EQ(10, v2.size());
+        (void)var1.count(InstanceCounterType{5});
+        (void)var1.count(InstanceCounterType{995});
+        (void)var2.count(InstanceCounterType{5});
+        (void)var2.count(InstanceCounterType{995});
+        ASSERT_EQ(10, var1.size());
+        ASSERT_EQ(10, var2.size());
         ASSERT_EQ(40, InstanceCounterType::counter);
 
-        v1.clear();
-        ASSERT_EQ(0, v1.size());
+        var1.clear();
+        ASSERT_EQ(0, var1.size());
         ASSERT_EQ(20, InstanceCounterType::counter);
     }
 
     ASSERT_EQ(0, InstanceCounterType::counter);
 
-    v1.clear();
-    ASSERT_EQ(0, v1.size());
+    var1.clear();
+    ASSERT_EQ(0, var1.size());
     ASSERT_EQ(0, InstanceCounterType::counter);
 }
 
-REGISTER_TYPED_TEST_SUITE_P(FixedMapInstanceCheckFixture, FixedMap_InstanceCheck);
+REGISTER_TYPED_TEST_SUITE_P(FixedMapInstanceCheckFixture, FixedMapInstanceCheck);
 
 // We want same semantics as std::map, so run it with std::map as well
 using FixedMapInstanceCheckTypes = testing::Types<
@@ -1917,8 +2051,8 @@ namespace another_namespace_unrelated_to_the_fixed_containers_namespace
 TEST(FixedMap, ArgumentDependentLookup)
 {
     // Compile-only test
-    fixed_containers::FixedMap<int, int, 5> a{};
-    erase_if(a, [](auto&&) { return true; });
-    (void)is_full(a);
+    fixed_containers::FixedMap<int, int, 5> var1{};
+    erase_if(var1, [](auto&&) { return true; });
+    (void)is_full(var1);
 }
 }  // namespace another_namespace_unrelated_to_the_fixed_containers_namespace

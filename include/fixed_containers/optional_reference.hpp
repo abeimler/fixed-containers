@@ -29,11 +29,20 @@ private:
 
 public:
     // Needed for structural type
-    BackingType IMPLEMENTION_DETAIL_DO_NOT_USE_underlying_val_ = nullptr;
+    BackingType IMPLEMENTION_DETAIL_DO_NOT_USE_underlying_val_;
 
 public:
-    // ctors are explicit to highlight the fact we are creating long living reference
-    constexpr OptionalReference() = default;
+    constexpr OptionalReference() noexcept
+      : IMPLEMENTION_DETAIL_DO_NOT_USE_underlying_val_(nullptr)
+    {
+    }
+
+    constexpr OptionalReference(std::nullopt_t /*unused*/) noexcept
+      : OptionalReference()
+    {
+    }
+
+    // ctors is explicit to highlight the fact we are creating long living reference
     explicit constexpr OptionalReference(T& val) noexcept
       : IMPLEMENTION_DETAIL_DO_NOT_USE_underlying_val_(std::addressof(val))
     {
@@ -56,14 +65,15 @@ public:
     // this operator is ambiguous. Seee the open-std link
     constexpr Self& operator=(T) = delete;
 
-    constexpr Self& operator=(std::nullopt_t) noexcept
+    constexpr Self& operator=(std::nullopt_t /*unused*/) noexcept
     {
         this->reset();
         return *this;
     }
 
-    constexpr const_reference value(const std_transition::source_location& loc =
-                                        std_transition::source_location::current()) const noexcept
+    [[nodiscard]] constexpr const_reference value(
+        const std_transition::source_location& loc =
+            std_transition::source_location::current()) const noexcept
     {
         check_bad_optional_access(loc);
         return *val();
@@ -112,7 +122,7 @@ public:
     }
 
 private:
-    constexpr const BackingType& val() const
+    [[nodiscard]] constexpr const BackingType& val() const
     {
         return IMPLEMENTION_DETAIL_DO_NOT_USE_underlying_val_;
     }
@@ -163,21 +173,24 @@ template <typename T,
 constexpr bool operator==(const OptionalReference<T, CheckT>& lhs,
                           const OptionalReference<U, CheckU>& rhs)
 {
-    if (lhs.has_value() && rhs.has_value()) return *lhs == *rhs;
+    if (lhs.has_value() && rhs.has_value())
+    {
+        return *lhs == *rhs;
+    }
     return lhs.has_value() == rhs.has_value();
 }
 
 // Compares OptionalReference with a nullopt. Equivalent to above when comparing to an optional that
 // does not contain a value.
 template <typename T, customize::OptionalReferenceChecking<T> CheckT>
-constexpr auto operator<=>(const OptionalReference<T, CheckT>& lhs, std::nullopt_t)
+constexpr auto operator<=>(const OptionalReference<T, CheckT>& lhs, std::nullopt_t /*unused*/)
 {
     return lhs <=> OptionalReference<T, CheckT>{};
 }
 
 // <=> only gives definition for secondary relational operators (ie. <)
 template <typename T, customize::OptionalReferenceChecking<T> CheckT>
-constexpr bool operator==(const OptionalReference<T, CheckT>& lhs, std::nullopt_t)
+constexpr bool operator==(const OptionalReference<T, CheckT>& lhs, std::nullopt_t /*unused*/)
 {
     return !lhs.has_value();
 }

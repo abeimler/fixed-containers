@@ -3,7 +3,9 @@
 # Adapted from: https://github.com/googleapis/google-cloud-cpp/blob/main/.clang-tidy
 # Configure clang-tidy for this project.
 
-# Here is an explanation for why some of the checks are disabled:
+# Here is an explanation for why some of the checks are disabled (but can be reconsidered):
+#  -google-explicit-constructor: Does not recognize `explicit(false)`
+#      https://github.com/llvm/llvm-project/issues/53115
 #
 #  -google-readability-namespace-comments: the *_CLIENT_NS is a macro, and
 #      clang-tidy fails to match it against the initial value.
@@ -27,30 +29,22 @@
 #      meaningless). It would also warn if `F` accepts by `const&`, which is
 #      another detail that the caller need not care about.
 #
-#  -performance-avoid-endl: we would like to turn this on, but there are too
-#      many legitimate uses in our samples.
-#
 #  -performance-enum-size: Smaller enums may or not may be faster, it depends on
 #      the architechture. If data size was a consideration, we might decide to
 #      enable the warnings.
 #
-#  -readability-redundant-declaration: A friend declaration inside a class
-#      counts as a declaration, so if we also declare that friend outside the
-#      class in order to document it as part of the public API, that will
-#      trigger a redundant declaration warning from this check.
-#
-#  -readability-avoid-return-with-void-value: We believe this is idiomatic
-#    and saves typing, and the intent is obvious.
-#
 #  -readability-function-cognitive-complexity: too many false positives with
 #      clang-tidy-12. We need to disable this check in macros, and that setting
 #      only appears in clang-tidy-13.
+#
+#  -readability-suspicious-call-argument: too many false positives.
 #
 #  -bugprone-easily-swappable-parameters: too many false positives.
 #
 #  -bugprone-unchecked-optional-access: too many false positives in tests.
 #     Despite what the documentation says, this warning appears after
 #     `ASSERT_TRUE(variable)` or `ASSERT_TRUE(variable.has_value())`.
+#  -bugprone-switch-missing-default-case: conflicts with `-Wcovered-switch-default`
 Checks: >
   -*,
   abseil-*,
@@ -61,53 +55,30 @@ Checks: >
   performance-*,
   portability-*,
   readability-*,
-  -google-readability-braces-around-statements,
+  -google-explicit-constructor,
   -google-readability-namespace-comments,
+  -google-readability-todo,
   -misc-non-private-member-variables-in-classes,
-  -misc-const-correctness,
+  -modernize-pass-by-value,
   -modernize-return-braced-init-list,
+  -modernize-use-default-member-init,
   -modernize-use-trailing-return-type,
   -modernize-avoid-c-arrays,
   -performance-move-const-arg,
   -performance-enum-size,
-  -readability-braces-around-statements,
-  -readability-identifier-length,
-  -readability-magic-numbers,
-  -readability-named-parameter,
   -readability-function-cognitive-complexity,
-  -bugprone-easily-swappable-parameters,
-  -bugprone-unchecked-optional-access,
-
-  -bugprone-switch-missing-default-case,
-  -bugprone-use-after-move,
-  -google-explicit-constructor,
-  -google-readability-avoid-underscore-in-googletest-name,
-  -google-readability-todo,
-  -google-runtime-operator,
-  -misc-use-anonymous-namespace,
-  -modernize-loop-convert,
-  -modernize-use-nodiscard,
-  -modernize-pass-by-value,
-  -modernize-use-auto,
-  -modernize-use-default-member-init,
-  -modernize-use-emplace,
-  -modernize-use-transparent-functors,
-  -performance-unnecessary-copy-initialization,
-  -readability-container-size-empty,
-  -readability-function-size,
-  -readability-identifier-naming,
-  -readability-qualified-auto,
+  -readability-magic-numbers,
   -readability-redundant-access-specifiers,
   -readability-redundant-member-init,
-  -readability-redundant-smartptr-get,
   -readability-suspicious-call-argument,
-  -readability-uppercase-literal-suffix,
-  -readability-use-anyofallof
+  -bugprone-easily-swappable-parameters,
+  -bugprone-switch-missing-default-case,
+  -bugprone-unchecked-optional-access,
 
 # Turn all the warnings from the checks above into errors.
 WarningsAsErrors: "*"
 
-HeaderFilterRegex: "(include/).*\\.hpp$"
+HeaderFilterRegex: ".*"
 
 CheckOptions:
   - { key: readability-identifier-naming.NamespaceCase,               value: lower_case   }
@@ -117,6 +88,7 @@ CheckOptions:
   - { key: readability-identifier-naming.ValueTemplateParameterCase,  value: UPPER_CASE   }
   - { key: readability-identifier-naming.FunctionCase,                value: lower_case   }
   - { key: readability-identifier-naming.VariableCase,                value: lower_case   }
+  - { key: readability-identifier-naming.ParameterCase,               value: lower_case   }
   - { key: readability-identifier-naming.ClassMemberCase,             value: lower_case   }
   - { key: readability-identifier-naming.ClassMemberSuffix,           value: _            }
   - { key: readability-identifier-naming.PrivateMemberSuffix,         value: _            }

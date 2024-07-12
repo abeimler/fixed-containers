@@ -87,7 +87,7 @@ struct StructOfPrimitives
 
 TEST(Tuples, AsTupleView)
 {
-    constexpr auto result = []()
+    constexpr auto RESULT = []()
     {
         StructOfPrimitives instance{};
         std::tuple<int&, std::size_t&, double&, std::int64_t&, char&> tuple_view =
@@ -99,74 +99,74 @@ TEST(Tuples, AsTupleView)
         std::get<4>(tuple_view) = 'z';
         return instance;
     }();
-    static_assert(result.a1 == 11);
-    static_assert(result.a2 == 13);
-    static_assert(result.a3 == 2.0);
-    static_assert(result.a4 == 17);
-    static_assert(result.a5 == 'z');
+    static_assert(RESULT.a1 == 11);
+    static_assert(RESULT.a2 == 13);
+    static_assert(RESULT.a3 == 2.0);
+    static_assert(RESULT.a4 == 17);
+    static_assert(RESULT.a5 == 'z');
 }
 
-TEST(Tuples, ForEachEntry_Empty)
+TEST(Tuples, ForEachEntryEmpty)
 {
-    constexpr auto result = []()
+    constexpr auto RESULT = []()
     {
-        std::tuple<> a{};
-        tuples::for_each_entry(a, []<typename T>(T& /*t*/) {});
-        tuples::for_each_entry(a, []<typename T>(T& /*t*/, std::size_t /*i*/) {});
-        return a;
+        std::tuple<> var{};
+        tuples::for_each_entry(var, []<typename T>(T& /*t*/) {});
+        tuples::for_each_entry(var, []<typename T>(T& /*t*/, std::size_t /*i*/) {});
+        return var;
     }();
 
-    static_assert(std::tuple_size_v<decltype(result)> == 0);
+    static_assert(std::tuple_size_v<decltype(RESULT)> == 0);
 }
 
 TEST(Tuples, ForEachEntry)
 {
-    constexpr auto result = []()
+    constexpr auto RESULT = []()
     {
-        std::tuple<int, double> a{1, 2};
-        tuples::for_each_entry(a,
-                               []<typename T>(T& t)
+        std::tuple<int, double> var{1, 2};
+        tuples::for_each_entry(var,
+                               []<typename T>(T& entry)
                                {
-                                   t *= 2;
+                                   entry *= 2;
                                    if constexpr (std::same_as<T, int>)
                                    {
-                                       t += 7;
+                                       entry += 7;
                                    }
                                });
-        return a;
+        return var;
     }();
 
-    static_assert(std::get<0>(result) == 9);
-    static_assert(std::get<1>(result) == 4.0);
+    static_assert(std::get<0>(RESULT) == 9);
+    static_assert(std::get<1>(RESULT) == 4.0);
 }
 
-TEST(Tuples, ForEachEntry_WithIndex)
+TEST(Tuples, ForEachEntryWithIndex)
 {
-    constexpr auto result = []()
+    constexpr auto RESULT = []()
     {
-        std::tuple<int, double> a{1, 2};
-        tuples::for_each_entry(a,
-                               []<typename T>(std::size_t i, T& t)
+        std::tuple<int, double> var{1, 2};
+        tuples::for_each_entry(var,
+                               []<typename T>(std::size_t index, T& entry)
                                {
-                                   if (i == 0)
+                                   if (index == 0)
                                    {
-                                       t *= 2;
+                                       entry *= 2;
                                    }
                                    else
                                    {
-                                       t *= 3;
+                                       entry *= 3;
                                    }
 
                                    if constexpr (std::same_as<T, int>)
                                    {
-                                       t += 7;
+                                       entry += 7;
                                    }
                                });
-        return a;
+        return var;
     }();
 
-    static_assert(std::get<0>(result) == 9);
-    static_assert(std::get<1>(result) == 6.0);
+    static_assert(std::get<0>(RESULT) == 9);
+    static_assert(std::get<1>(RESULT) == 6.0);
 }
 
 }  // namespace fixed_containers

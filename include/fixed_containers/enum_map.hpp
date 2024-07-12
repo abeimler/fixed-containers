@@ -118,7 +118,7 @@ public:
         return std::move(*this);
     }
 
-    constexpr EnumMapType build() const& { return enum_map_; }
+    [[nodiscard]] constexpr EnumMapType build() const& { return enum_map_; }
     constexpr EnumMapType build() && { return std::move(enum_map_); }
 
 private:
@@ -155,11 +155,11 @@ private:
     struct IndexPredicate
     {
         const ArraySetType* array_set_;
-        constexpr bool operator()(const std::size_t i) const {
+        constexpr bool operator()(const std::size_t index) const {
 #ifdef USE_BIT_SET_IN_ENUM_MAP
-            return (*array_set_).contains(i);
+            return (*array_set_).contains(index);
 #else
-            return (*array_set_)[i];
+            return (*array_set_)[index];
 #endif
         }
         constexpr bool operator==(const IndexPredicate&) const = default;
@@ -183,12 +183,12 @@ private:
         {
         }
 
-        constexpr PairProvider(const ArraySetType* array_set_,
+        constexpr PairProvider(const ArraySetType* array_set,
                                ConstOrMutableValueArray* const values,
                                const std::size_t current_index) noexcept
           : present_indices_{CompileTimeIntegerRange<0, ENUM_COUNT>{},
                              current_index,
-                             IndexPredicate{array_set_}}
+                             IndexPredicate{array_set}}
           , values_{values}
         {
         }
@@ -200,20 +200,21 @@ private:
 
         // https://github.com/llvm/llvm-project/issues/62555
         template <bool IS_CONST_2>
-        constexpr PairProvider(const PairProvider<IS_CONST_2>& m) noexcept
+        constexpr PairProvider(const PairProvider<IS_CONST_2>& mutable_other) noexcept
             requires(IS_CONST and !IS_CONST_2)
-          : present_indices_{m.present_indices_}
-          , values_{m.values_}
+          : present_indices_{mutable_other.present_indices_}
+          , values_{mutable_other.values_}
         {
         }
 
         constexpr void advance() noexcept { present_indices_.advance(); }
         constexpr void recede() noexcept { present_indices_.recede(); }
 
-        constexpr std::conditional_t<IS_CONST, const_reference, reference> get() const noexcept
+        [[nodiscard]] constexpr std::conditional_t<IS_CONST, const_reference, reference> get()
+            const noexcept
         {
-            const std::size_t i = present_indices_.get();
-            return {ENUM_VALUES[i], (*values_)[i].get()};
+            const std::size_t index = present_indices_.get();
+            return {ENUM_VALUES[index], (*values_)[index].get()};
         }
 
         template <bool IS_CONST2>
@@ -240,12 +241,12 @@ public:
 
 public:
     template <class Container, class EnumMapType>
-    static constexpr EnumMapType create_with_keys(const Container& sp, const V& value)
+    static constexpr EnumMapType create_with_keys(const Container& container, const V& value)
     {
         EnumMapType output{};
-        for (auto&& k : sp)
+        for (auto&& key : container)
         {
-            output.try_emplace(k, value);
+            output.try_emplace(key, value);
         }
         return output;
     }
@@ -332,12 +333,12 @@ public:
         return OUTPUT;
     }
 
-    template <class EnumMapType, auto Arg0, auto... Args>
-        requires(not HasValueType<decltype(Arg0)>)
+    template <class EnumMapType, auto ARG0, auto... ARGS>
+        requires(not HasValueType<decltype(ARG0)>)
     static consteval auto create_with_all_entries()
     {
-        using T1 = typename decltype(Arg0)::first_type;
-        using T2 = typename decltype(Arg0)::second_type;
+        using T1 = typename decltype(ARG0)::first_type;
+        using T2 = typename decltype(ARG0)::second_type;
 
 #if defined(_GLIBCXX_RELEASE) and _GLIBCXX_RELEASE < 12
         using PairType = Pair<T1, T2>;
@@ -345,7 +346,7 @@ public:
         using PairType = std::pair<T1, T2>;
 #endif
 
-        constexpr std::array<PairType, 1 + sizeof...(Args)> AS_ARRAY{Arg0, Args...};
+        constexpr std::array<PairType, 1 + sizeof...(ARGS)> AS_ARRAY{ARG0, ARGS...};
         return create_with_all_entries<EnumMapType, AS_ARRAY>();
     }
 
@@ -437,42 +438,28 @@ public:
         return unchecked_at(ordinal);
     }
 
-    constexpr const_iterator cbegin() const noexcept {
+    [[nodiscard]] constexpr const_iterator cbegin() const noexcept
+    {
         return create_const_iterator(0);
     }
-    constexpr const_iterator cend() const noexcept {
+    [[nodiscard]] constexpr const_iterator cend() const noexcept
+    {
         return create_const_iterator(ENUM_COUNT);
     }
-    constexpr const_iterator begin() const noexcept {
-        return cbegin();
-    }
-    constexpr iterator begin() noexcept {
-        return create_iterator(0);
-    }
-    constexpr const_iterator end() const noexcept {
-        return cend();
-    }
-    constexpr iterator end() noexcept {
-        return create_iterator(ENUM_COUNT);
-    }
+    [[nodiscard]] constexpr const_iterator begin() const noexcept { return cbegin(); }
+    constexpr iterator begin() noexcept { return create_iterator(0); }
+    [[nodiscard]] constexpr const_iterator end() const noexcept { return cend(); }
+    constexpr iterator end() noexcept { return create_iterator(ENUM_COUNT); }
 
-    constexpr reverse_iterator rbegin() noexcept {
-        return create_reverse_iterator(ENUM_COUNT);
-    }
-    constexpr const_reverse_iterator rbegin() const noexcept {
-        return crbegin();
-    }
-    constexpr const_reverse_iterator crbegin() const noexcept
+    constexpr reverse_iterator rbegin() noexcept { return create_reverse_iterator(ENUM_COUNT); }
+    [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return crbegin(); }
+    [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept
     {
         return create_const_reverse_iterator(ENUM_COUNT);
     }
-    constexpr reverse_iterator rend() noexcept {
-        return create_reverse_iterator(0);
-    }
-    constexpr const_reverse_iterator rend() const noexcept {
-        return crend();
-    }
-    constexpr const_reverse_iterator crend() const noexcept
+    constexpr reverse_iterator rend() noexcept { return create_reverse_iterator(0); }
+    [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return crend(); }
+    [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept
     {
         return create_const_reverse_iterator(0);
     }
@@ -496,8 +483,8 @@ public:
 
     constexpr void clear() noexcept
     {
-        const std::size_t sz = values().size();
-        for (std::size_t i = 0; i < sz; i++)
+        const std::size_t max_sz = max_size();
+        for (std::size_t i = 0; i < max_sz; i++)
         {
 #ifdef USE_BIT_SET_IN_ENUM_MAP
             if (IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(i))
@@ -522,6 +509,7 @@ public:
         {
             return {create_iterator(ordinal), false};
         }
+
         increment_size();
         array_set_unchecked_at(ordinal) = true;
 #endif
@@ -639,28 +627,29 @@ public:
     constexpr iterator erase(const_iterator pos) noexcept
     {
         assert_or_abort(pos != cend());
-        const std::size_t i = EnumAdapterType::ordinal(pos->first);
-        assert_or_abort(contains_at(i));
-        reset_at(i);
-        return create_iterator(i);
+        const std::size_t index = EnumAdapterType::ordinal(pos->first);
+        assert_or_abort(contains_at(index));
+        reset_at(index);
+        return create_iterator(index);
     }
     constexpr iterator erase(iterator pos) noexcept
     {
         assert_or_abort(pos != end());
-        const std::size_t i = EnumAdapterType::ordinal(pos->first);
-        assert_or_abort(contains_at(i));
-        reset_at(i);
-        return create_iterator(i);
+        const std::size_t index = EnumAdapterType::ordinal(pos->first);
+        assert_or_abort(contains_at(index));
+        reset_at(index);
+        return create_iterator(index);
     }
 
     constexpr iterator erase(const_iterator first, const_iterator last) noexcept
     {
-        const std::size_t from =
+        const std::size_t from_inclusive =
             first == cend() ? ENUM_COUNT : EnumAdapterType::ordinal(first->first);
-        const std::size_t to = last == cend() ? ENUM_COUNT : EnumAdapterType::ordinal(last->first);
-        assert_or_abort(from <= to);
+        const std::size_t to_exclusive =
+            last == cend() ? ENUM_COUNT : EnumAdapterType::ordinal(last->first);
+        assert_or_abort(from_inclusive <= to_exclusive);
 
-        for (std::size_t i = from; i < to; i++)
+        for (std::size_t i = from_inclusive; i < to_exclusive; i++)
         {
             if (contains_at(i))
             {
@@ -668,18 +657,18 @@ public:
             }
         }
 
-        return create_iterator(to);
+        return create_iterator(to_exclusive);
     }
 
     constexpr size_type erase(const K& key) noexcept
     {
-        const std::size_t i = EnumAdapterType::ordinal(key);
-        if (!contains_at(i))
+        const std::size_t index = EnumAdapterType::ordinal(key);
+        if (!contains_at(index))
         {
             return 0;
         }
 
-        reset_at(i);
+        reset_at(index);
         return 1;
     }
 
@@ -823,7 +812,8 @@ private:
             std::addressof(array_set()), std::addressof(values()), start_index}};
     }
 
-    constexpr const_iterator create_const_iterator(const std::size_t start_index) const noexcept
+    [[nodiscard]] constexpr const_iterator create_const_iterator(
+        const std::size_t start_index) const noexcept
     {
         return const_iterator{
             PairProvider<true>{std::addressof(array_set()), std::addressof(values()), start_index}};
@@ -835,31 +825,31 @@ private:
             std::addressof(array_set()), std::addressof(values()), start_index}};
     }
 
-    constexpr const_reverse_iterator create_const_reverse_iterator(
+    [[nodiscard]] constexpr const_reverse_iterator create_const_reverse_iterator(
         const std::size_t start_index) const noexcept
     {
         return const_reverse_iterator{
             PairProvider<true>{std::addressof(array_set()), std::addressof(values()), start_index}};
     }
 
-    constexpr void reset_at(const std::size_t i) noexcept
+    constexpr void reset_at(const std::size_t index) noexcept
     {
-        assert_or_abort(contains_at(i));
+        assert_or_abort(contains_at(index));
         if constexpr (NotTriviallyDestructible<V>)  // if-check needed by clang
         {
-            memory::destroy_at_address_of(unchecked_at(i));
+            memory::destroy_at_address_of(unchecked_at(index));
         }
 
 #ifdef USE_BIT_SET_IN_ENUM_MAP
-        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(index);
 #else
-        array_set_unchecked_at(i) = false;
+        array_set_unchecked_at(index) = false;
         decrement_size();
 #endif
     }
 
 protected:  // [WORKAROUND-1]
-    constexpr const auto& array_set() const
+    [[nodiscard]] constexpr const auto& array_set() const
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
     }
@@ -868,43 +858,43 @@ protected:  // [WORKAROUND-1]
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_;
     }
 #ifndef USE_BIT_SET_IN_ENUM_MAP
-    constexpr const bool& array_set_unchecked_at(const std::size_t i) const
+    [[nodiscard]] constexpr const bool& array_set_unchecked_at(const std::size_t index) const
     {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_[i];
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_[index];
     }
-    constexpr bool& array_set_unchecked_at(const std::size_t i)
+    constexpr bool& array_set_unchecked_at(const std::size_t index)
     {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_[i];
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_[index];
     }
 #endif
 
-    constexpr const ValueArrayType& values() const
+    [[nodiscard]] constexpr const ValueArrayType& values() const
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_values_;
     }
     constexpr ValueArrayType& values() { return IMPLEMENTATION_DETAIL_DO_NOT_USE_values_; }
-    constexpr const OptionalV& values_unchecked_at(const std::size_t i) const
+    [[nodiscard]] constexpr const OptionalV& values_unchecked_at(const std::size_t index) const
     {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[i];
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[index];
     }
-    constexpr OptionalV& values_unchecked_at(const std::size_t i)
+    constexpr OptionalV& values_unchecked_at(const std::size_t index)
     {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[i];
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[index];
     }
-    constexpr const V& unchecked_at(const std::size_t i) const
+    [[nodiscard]] constexpr const V& unchecked_at(const std::size_t index) const
     {
-        return optional_storage_detail::get(IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[i]);
+        return optional_storage_detail::get(IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[index]);
     }
-    constexpr V& unchecked_at(const std::size_t i)
+    constexpr V& unchecked_at(const std::size_t index)
     {
-        return optional_storage_detail::get(IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[i]);
+        return optional_storage_detail::get(IMPLEMENTATION_DETAIL_DO_NOT_USE_values_[index]);
     }
-    [[nodiscard]] constexpr bool contains_at(const std::size_t i) const noexcept
+    [[nodiscard]] constexpr bool contains_at(const std::size_t index) const noexcept
     {
 #ifdef USE_BIT_SET_IN_ENUM_MAP
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(i);
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.contains(index);
 #else
-        return array_set_unchecked_at(i);
+        return array_set_unchecked_at(index);
 #endif
     }
 
@@ -937,9 +927,9 @@ public:
     using Builder = enum_map_detail::EnumMapBuilder<K, V, EnumMap<K, V, CheckingType>>;
 
     template <class Container, class EnumMapType = Self>
-    static constexpr EnumMapType create_with_keys(const Container& sp, const V& value = V())
+    static constexpr EnumMapType create_with_keys(const Container& container, const V& value = V())
     {
-        return Base::template create_with_keys<Container, EnumMapType>(sp, value);
+        return Base::template create_with_keys<Container, EnumMapType>(container, value);
     }
 
     template <class CollectionOfPairs, class EnumMapType = Self>
@@ -971,17 +961,17 @@ public:
         return create_with_all_entries<Self, COLLECTION_OF_PAIRS>();
     }
 
-    template <class EnumMapType, auto Arg0, auto... Args>
-        requires(not HasValueType<decltype(Arg0)>)
+    template <class EnumMapType, auto ARG0, auto... ARGS>
+        requires(not HasValueType<decltype(ARG0)>)
     static consteval auto create_with_all_entries()
     {
-        return Base::template create_with_all_entries<EnumMapType, Arg0, Args...>();
+        return Base::template create_with_all_entries<EnumMapType, ARG0, ARGS...>();
     }
-    template <auto Arg0, auto... Args>
-        requires(not HasValueType<decltype(Arg0)>)
+    template <auto ARG0, auto... ARGS>
+        requires(not HasValueType<decltype(ARG0)>)
     static consteval auto create_with_all_entries()
     {
-        return create_with_all_entries<Self, Arg0, Args...>();
+        return create_with_all_entries<Self, ARG0, ARGS...>();
     }
 
     constexpr EnumMap() noexcept
@@ -1108,9 +1098,9 @@ public:
     using Builder = enum_map_detail::EnumMapBuilder<K, V, Self>;
 
     template <class Container, class EnumMapType = Self>
-    static constexpr EnumMapType create_with_keys(const Container& sp, const V& value = V())
+    static constexpr EnumMapType create_with_keys(const Container& container, const V& value = V())
     {
-        return Base::template create_with_keys<Container, EnumMapType>(sp, value);
+        return Base::template create_with_keys<Container, EnumMapType>(container, value);
     }
 
     template <class CollectionOfPairs, class EnumMapType = Self>
@@ -1141,17 +1131,17 @@ public:
     {
         return create_with_all_entries<Self, COLLECTION_OF_PAIRS>();
     }
-    template <class EnumMapType, auto Arg0, auto... Args>
-        requires(not HasValueType<decltype(Arg0)>)
+    template <class EnumMapType, auto ARG0, auto... ARGS>
+        requires(not HasValueType<decltype(ARG0)>)
     static consteval auto create_with_all_entries()
     {
-        return Base::template create_with_all_entries<EnumMapType, Arg0, Args...>();
+        return Base::template create_with_all_entries<EnumMapType, ARG0, ARGS...>();
     }
-    template <auto Arg0, auto... Args>
-        requires(not HasValueType<decltype(Arg0)>)
+    template <auto ARG0, auto... ARGS>
+        requires(not HasValueType<decltype(ARG0)>)
     static consteval auto create_with_all_entries()
     {
-        return create_with_all_entries<Self, Arg0, Args...>();
+        return create_with_all_entries<Self, ARG0, ARGS...>();
     }
 
     template <class EnumMapType = Self>
@@ -1196,9 +1186,9 @@ public:
     using Builder = enum_map_detail::EnumMapBuilder<K, V, Self>;
 
     template <class Container, class EnumMapType = Self>
-    static constexpr EnumMapType create_with_keys(const Container& sp, const V& value = V())
+    static constexpr EnumMapType create_with_keys(const Container& container, const V& value = V())
     {
-        return Base::template create_with_keys<Container, EnumMapType>(sp, value);
+        return Base::template create_with_keys<Container, EnumMapType>(container, value);
     }
 
     template <class CollectionOfPairs, class EnumMapType = Self>
@@ -1229,17 +1219,17 @@ public:
     {
         return create_with_all_entries<Self, COLLECTION_OF_PAIRS>();
     }
-    template <class EnumMapType, auto Arg0, auto... Args>
-        requires(not HasValueType<decltype(Arg0)>)
+    template <class EnumMapType, auto ARG0, auto... ARGS>
+        requires(not HasValueType<decltype(ARG0)>)
     static consteval auto create_with_all_entries()
     {
-        return Base::template create_with_all_entries<EnumMapType, Arg0, Args...>();
+        return Base::template create_with_all_entries<EnumMapType, ARG0, ARGS...>();
     }
-    template <auto Arg0, auto... Args>
-        requires(not HasValueType<decltype(Arg0)>)
+    template <auto ARG0, auto... ARGS>
+        requires(not HasValueType<decltype(ARG0)>)
     static consteval auto create_with_all_entries()
     {
-        return create_with_all_entries<Self, Arg0, Args...>();
+        return create_with_all_entries<Self, ARG0, ARGS...>();
     }
 
     template <class EnumMapType = Self>
@@ -1264,9 +1254,9 @@ public:
 };
 
 template <typename K, typename V, fixed_containers::customize::EnumMapChecking<K> CheckingType>
-[[nodiscard]] constexpr bool is_full(const EnumMap<K, V, CheckingType>& c)
+[[nodiscard]] constexpr bool is_full(const EnumMap<K, V, CheckingType>& container)
 {
-    return c.size() >= c.max_size();
+    return container.size() >= container.max_size();
 }
 
 template <InputIterator InputIt>
@@ -1275,10 +1265,10 @@ EnumMap(InputIt first,
                                  typename std::iterator_traits<InputIt>::value_type::second_type>;
 
 template <class K, class V, customize::EnumMapChecking<K> CheckingType, class Predicate>
-constexpr typename EnumMap<K, V, CheckingType>::size_type erase_if(EnumMap<K, V, CheckingType>& c,
-                                                                   Predicate predicate)
+constexpr typename EnumMap<K, V, CheckingType>::size_type erase_if(
+    EnumMap<K, V, CheckingType>& container, Predicate predicate)
 {
-    return erase_if_detail::erase_if_impl(c, predicate);
+    return erase_if_detail::erase_if_impl(container, predicate);
 }
 
 }  // namespace fixed_containers

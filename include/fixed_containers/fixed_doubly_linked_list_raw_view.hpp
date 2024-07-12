@@ -40,7 +40,10 @@ public:
 
         constexpr void advance() noexcept { current_idx_ = parent_->indices_of(current_idx_).next; }
 
-        constexpr const std::byte* get() const noexcept { return parent_->value_at(current_idx_); }
+        [[nodiscard]] constexpr const std::byte* get() const noexcept
+        {
+            return parent_->value_at(current_idx_);
+        }
 
         constexpr bool operator==(const ReferenceProvider& other) const noexcept = default;
     };
@@ -69,11 +72,11 @@ public:
     {
     }
 
-    Iterator begin() const { return std::next(Iterator{ReferenceProvider{this}}); }
+    [[nodiscard]] Iterator begin() const { return std::next(Iterator{ReferenceProvider{this}}); }
 
-    Iterator end() const { return Iterator{ReferenceProvider{this}}; }
+    [[nodiscard]] Iterator end() const { return Iterator{ReferenceProvider{this}}; }
 
-    IndexType size() const
+    [[nodiscard]] IndexType size() const
     {
         // this is _very_ _very_ brittle and reliant on the size of every field in the
         // `FixedDoublyLinkedList`!
@@ -105,10 +108,11 @@ public:
         return list_ptr_;
     }
 
-    [[nodiscard]] constexpr const std::byte* value_at(IndexType i) const noexcept
+    [[nodiscard]] constexpr const std::byte* value_at(IndexType index) const noexcept
     {
         // this relies on `FixedIndexBasedPoolStorage` starting with its dense array of `Value`
-        return std::next(value_storage_start(), static_cast<std::ptrdiff_t>(elem_size_bytes_ * i));
+        return std::next(value_storage_start(),
+                         static_cast<std::ptrdiff_t>(elem_size_bytes_ * index));
     }
 
     [[nodiscard]] constexpr const ChainEntryType* chain_start() const noexcept
@@ -119,9 +123,9 @@ public:
         return reinterpret_cast<const ChainEntryType*>(std::next(list_ptr_, value_storage_size()));
     }
 
-    [[nodiscard]] constexpr const ChainEntryType& indices_of(IndexType i) const noexcept
+    [[nodiscard]] constexpr const ChainEntryType& indices_of(IndexType index) const noexcept
     {
-        return *std::next(chain_start(), static_cast<std::ptrdiff_t>(i));
+        return *std::next(chain_start(), static_cast<std::ptrdiff_t>(index));
     }
 };
 }  // namespace fixed_containers::fixed_doubly_linked_list_detail

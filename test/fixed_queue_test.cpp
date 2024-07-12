@@ -19,32 +19,32 @@ static_assert(ConstexprDefaultConstructible<QueueType>);
 
 TEST(FixedQueue, DefaultConstructor)
 {
-    constexpr FixedQueue<int, 8> v1{};
-    (void)v1;
+    constexpr FixedQueue<int, 8> VAL1{};
+    (void)VAL1;
 }
 
 TEST(FixedQueue, IteratorConstructor)
 {
-    constexpr FixedQueue<int, 3> s1 = []()
+    constexpr FixedQueue<int, 3> VAL1 = []()
     {
-        FixedVector<int, 3> v1{77, 99};
-        return FixedQueue<int, 3>{v1.begin(), v1.end()};
+        FixedVector<int, 3> var1{77, 99};
+        return FixedQueue<int, 3>{var1.begin(), var1.end()};
     }();
 
-    static_assert(s1.front() == 77);
-    static_assert(s1.size() == 2);
+    static_assert(VAL1.front() == 77);
+    static_assert(VAL1.size() == 2);
 }
 
 TEST(FixedQueue, MaxSize)
 {
     {
-        constexpr FixedQueue<int, 3> v1{};
-        static_assert(v1.max_size() == 3);
+        constexpr FixedQueue<int, 3> VAL1{};
+        static_assert(VAL1.max_size() == 3);
     }
 
     {
-        FixedQueue<int, 3> v1{};
-        EXPECT_EQ(3, v1.max_size());
+        const FixedQueue<int, 3> var1{};
+        EXPECT_EQ(3, var1.max_size());
     }
 
     {
@@ -57,157 +57,157 @@ TEST(FixedQueue, MaxSize)
 
 TEST(FixedQueue, Empty)
 {
-    constexpr auto v1 = []() { return FixedQueue<int, 7>{}; }();
+    constexpr auto VAL1 = []() { return FixedQueue<int, 7>{}; }();
 
-    static_assert(v1.empty());
-    static_assert(v1.max_size() == 7);
+    static_assert(VAL1.empty());
+    static_assert(VAL1.max_size() == 7);
 }
 
 TEST(FixedQueue, Front)
 {
     {
-        constexpr FixedQueue<int, 3> s1 = []()
+        constexpr FixedQueue<int, 3> VAL1 = []()
         {
-            FixedVector<int, 3> v1{77, 99};
-            return FixedQueue<int, 3>{v1.begin(), v1.end()};
+            FixedVector<int, 3> var{77, 99};
+            return FixedQueue<int, 3>{var.begin(), var.end()};
         }();
 
-        static_assert(s1.front() == 77);
-        static_assert(s1.size() == 2);
+        static_assert(VAL1.front() == 77);
+        static_assert(VAL1.size() == 2);
     }
 
     {
-        FixedQueue<int, 3> s1 = []()
+        FixedQueue<int, 3> var1 = []()
         {
-            FixedVector<int, 3> v1{77, 99};
-            return FixedQueue<int, 3>{v1.begin(), v1.end()};
+            FixedVector<int, 3> var{77, 99};
+            return FixedQueue<int, 3>{var.begin(), var.end()};
         }();
 
-        ASSERT_EQ(77, s1.front());
-        ASSERT_EQ(2, s1.size());
+        ASSERT_EQ(77, var1.front());
+        ASSERT_EQ(2, var1.size());
     }
 }
 
 TEST(FixedQueue, Back)
 {
     {
-        constexpr FixedQueue<int, 3> s1 = []()
+        constexpr FixedQueue<int, 3> VAL1 = []()
         {
-            FixedVector<int, 3> v1{77, 99};
-            return FixedQueue<int, 3>{v1.begin(), v1.end()};
+            FixedVector<int, 3> var{77, 99};
+            return FixedQueue<int, 3>{var.begin(), var.end()};
         }();
 
-        static_assert(s1.back() == 99);
-        static_assert(s1.size() == 2);
+        static_assert(VAL1.back() == 99);
+        static_assert(VAL1.size() == 2);
     }
 
     {
-        FixedQueue<int, 3> s1 = []()
+        FixedQueue<int, 3> var1 = []()
         {
-            FixedVector<int, 3> v1{77, 99};
-            return FixedQueue<int, 3>{v1.begin(), v1.end()};
+            FixedVector<int, 3> var{77, 99};
+            return FixedQueue<int, 3>{var.begin(), var.end()};
         }();
 
-        ASSERT_EQ(99, s1.back());
-        ASSERT_EQ(2, s1.size());
+        ASSERT_EQ(99, var1.back());
+        ASSERT_EQ(2, var1.size());
     }
 }
 
 TEST(FixedQueue, Push)
 {
-    constexpr FixedQueue<int, 3> s1 = []()
+    constexpr FixedQueue<int, 3> VAL1 = []()
     {
-        FixedQueue<int, 3> v1{};
-        int my_int = 77;
-        v1.push(my_int);
-        v1.push(99);
-        return v1;
+        FixedQueue<int, 3> var1{};
+        const int my_int = 77;
+        var1.push(my_int);
+        var1.push(99);
+        return var1;
     }();
 
-    static_assert(s1.front() == 77);
-    static_assert(s1.size() == 2);
+    static_assert(VAL1.front() == 77);
+    static_assert(VAL1.size() == 2);
 }
 
 TEST(FixedQueue, Emplace)
 {
-    constexpr FixedQueue<int, 3> s1 = []()
+    constexpr FixedQueue<int, 3> VAL1 = []()
     {
-        FixedQueue<int, 3> v1{};
-        int my_int = 77;
-        v1.emplace(my_int);
-        v1.emplace(99);
-        return v1;
+        FixedQueue<int, 3> var1{};
+        const int my_int = 77;
+        var1.emplace(my_int);
+        var1.emplace(99);
+        return var1;
     }();
 
-    static_assert(s1.front() == 77);
-    static_assert(s1.size() == 2);
+    static_assert(VAL1.front() == 77);
+    static_assert(VAL1.size() == 2);
 }
 
 TEST(FixedQueue, Pop)
 {
-    constexpr FixedQueue<int, 3> s1 = []()
+    constexpr FixedQueue<int, 3> VAL1 = []()
     {
-        FixedVector<int, 3> v1{77, 99};
-        FixedQueue<int, 3> out{v1.begin(), v1.end()};
+        FixedVector<int, 3> var1{77, 99};
+        FixedQueue<int, 3> out{var1.begin(), var1.end()};
         out.pop();
         return out;
     }();
 
-    static_assert(s1.front() == 99);
-    static_assert(s1.size() == 1);
+    static_assert(VAL1.front() == 99);
+    static_assert(VAL1.size() == 1);
 }
 
 TEST(FixedQueue, Equality)
 {
-    static constexpr std::array<int, 2> a1{1, 2};
-    static constexpr std::array<int, 3> a2{1, 2, 3};
+    static constexpr std::array<int, 2> ENTRY_A1{1, 2};
+    static constexpr std::array<int, 3> ENTRY_A2{1, 2, 3};
 
-    constexpr FixedQueue<int, 4> s1{a1.begin(), a1.end()};
-    constexpr FixedQueue<int, 4> s2{a1.begin(), a1.end()};
-    constexpr FixedQueue<int, 4> s3{a2.begin(), a2.end()};
+    constexpr FixedQueue<int, 4> VAL1{ENTRY_A1.begin(), ENTRY_A1.end()};
+    constexpr FixedQueue<int, 4> VAL2{ENTRY_A1.begin(), ENTRY_A1.end()};
+    constexpr FixedQueue<int, 4> VAL3{ENTRY_A2.begin(), ENTRY_A2.end()};
 
-    static_assert(s1 == s2);
-    static_assert(s1 != s3);
+    static_assert(VAL1 == VAL2);
+    static_assert(VAL1 != VAL3);
 }
 
 TEST(FixedQueue, Comparison)
 {
-    static constexpr std::array<int, 2> a1{1, 2};
-    static constexpr std::array<int, 3> a2{1, 3};
+    static constexpr std::array<int, 2> ENTRY_A1{1, 2};
+    static constexpr std::array<int, 3> ENTRY_A2{1, 3};
 
-    constexpr FixedQueue<int, 4> s1{a1.begin(), a1.end()};
-    constexpr FixedQueue<int, 4> s2{a2.begin(), a2.end()};
+    constexpr FixedQueue<int, 4> VAL1{ENTRY_A1.begin(), ENTRY_A1.end()};
+    constexpr FixedQueue<int, 4> VAL2{ENTRY_A2.begin(), ENTRY_A2.end()};
 
-    static_assert(s1 < s2);
-    static_assert(s1 <= s2);
-    static_assert(s2 > s1);
-    static_assert(s2 >= s1);
+    static_assert(VAL1 < VAL2);
+    static_assert(VAL1 <= VAL2);
+    static_assert(VAL2 > VAL1);
+    static_assert(VAL2 >= VAL1);
 }
 
 TEST(FixedQueue, Full)
 {
-    constexpr auto v1 = []()
+    constexpr auto VAL1 = []()
     {
-        FixedQueue<int, 4> v{};
-        v.push(100);
-        v.push(100);
-        v.push(100);
-        v.push(100);
-        return v;
+        FixedQueue<int, 4> var{};
+        var.push(100);
+        var.push(100);
+        var.push(100);
+        var.push(100);
+        return var;
     }();
 
-    static_assert(is_full(v1));
-    static_assert(v1.size() == 4);
-    static_assert(v1.max_size() == 4);
+    static_assert(is_full(VAL1));
+    static_assert(VAL1.size() == 4);
+    static_assert(VAL1.max_size() == 4);
 
-    EXPECT_TRUE(is_full(v1));
+    EXPECT_TRUE(is_full(VAL1));
 }
 
 TEST(FixedQueue, ClassTemplateArgumentDeduction)
 {
     // Compile-only test
-    FixedQueue a = FixedQueue<int, 5>{};
-    (void)a;
+    const FixedQueue var1 = FixedQueue<int, 5>{};
+    (void)var1;
 }
 
 namespace
@@ -227,7 +227,7 @@ TEST(FixedQueue, UsageAsTemplateParameter)
 {
     static constexpr FixedQueue<int, 5> QUEUE1{};
     fixed_queue_instance_can_be_used_as_a_template_parameter<QUEUE1>();
-    FixedQueueInstanceCanBeUsedAsATemplateParameter<QUEUE1> my_struct{};
+    const FixedQueueInstanceCanBeUsedAsATemplateParameter<QUEUE1> my_struct{};
     static_cast<void>(my_struct);
 }
 
@@ -238,7 +238,7 @@ namespace another_namespace_unrelated_to_the_fixed_containers_namespace
 TEST(FixedQueue, ArgumentDependentLookup)
 {
     // Compile-only test
-    fixed_containers::FixedQueue<int, 5> a{};
-    (void)is_full(a);
+    const fixed_containers::FixedQueue<int, 5> var1{};
+    (void)is_full(var1);
 }
 }  // namespace another_namespace_unrelated_to_the_fixed_containers_namespace

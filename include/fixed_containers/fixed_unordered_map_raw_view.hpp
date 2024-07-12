@@ -40,9 +40,9 @@ public:
     {
     }
 
-    const std::byte* key() const { return base_ptr_; }
+    [[nodiscard]] const std::byte* key() const { return base_ptr_; }
 
-    const std::byte* value() const { return std::next(base_ptr_, value_offs_); }
+    [[nodiscard]] const std::byte* value() const { return std::next(base_ptr_, value_offs_); }
 };
 
 class FixedUnorderedMapRawView
@@ -61,9 +61,9 @@ public:  // public for testing
                                                    std::size_t value_size,
                                                    std::size_t value_alignment)
     {
-        std::size_t struct_alignment = std::max(key_alignment, value_alignment);
+        const std::size_t struct_alignment = std::max(key_alignment, value_alignment);
 
-        std::size_t value_offs = static_cast<std::size_t>(
+        auto value_offs = static_cast<std::size_t>(
             MapEntryRawView::get_value_offs(key_size, key_alignment, value_size, value_alignment));
 
         std::size_t struct_size = value_offs + value_size;
@@ -112,7 +112,10 @@ public:  // public for testing
 
         void advance() noexcept { current_ = std::next(current_); }
 
-        MapEntryRawView get() const noexcept { return parent_->get_entry_view(*current_); }
+        [[nodiscard]] MapEntryRawView get() const noexcept
+        {
+            return parent_->get_entry_view(*current_);
+        }
 
         bool operator==(const ReferenceProvider& other) const noexcept = default;
     };
@@ -140,11 +143,17 @@ public:
     {
     }
 
-    const_iterator begin() const { return Iterator{ReferenceProvider{this, list_view_.begin()}}; }
+    [[nodiscard]] const_iterator begin() const
+    {
+        return Iterator{ReferenceProvider{this, list_view_.begin()}};
+    }
 
-    const_iterator end() const { return Iterator{ReferenceProvider{this, list_view_.end()}}; }
+    [[nodiscard]] const_iterator end() const
+    {
+        return Iterator{ReferenceProvider{this, list_view_.end()}};
+    }
 
-    std::size_t size() const { return list_view_.size(); }
+    [[nodiscard]] std::size_t size() const { return list_view_.size(); }
 };
 
 }  // namespace fixed_containers

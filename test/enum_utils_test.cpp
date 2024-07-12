@@ -330,13 +330,13 @@ constexpr void rich_enum_constants_can_be_used_as_a_template_parameter()
 TEST(RichEnum, UsageAsTemplateParameter)
 {
     rich_enum_constants_can_be_used_as_a_template_parameter<TestRichEnum1::C_TWO()>();
-    RichEnumConstantsCanBeUsedAsATemplateParameter<TestRichEnum1::C_TWO()> my_struct{};
+    const RichEnumConstantsCanBeUsedAsATemplateParameter<TestRichEnum1::C_TWO()> my_struct{};
     static_cast<void>(my_struct);
 }
 
 TEST(RichEnum, UsageInSwitchCase)
 {
-    constexpr int result = [](const TestRichEnum1& val)
+    constexpr int RESULT = [](const TestRichEnum1& val)
     {
         switch (val)
         {
@@ -351,7 +351,7 @@ TEST(RichEnum, UsageInSwitchCase)
         }
     }(TestRichEnum1::C_TWO());
 
-    static_assert(22 == result);
+    static_assert(22 == RESULT);
 }
 
 }  // namespace fixed_containers::rich_enums

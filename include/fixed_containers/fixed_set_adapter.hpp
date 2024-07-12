@@ -6,6 +6,7 @@
 #include "fixed_containers/preconditions.hpp"
 #include "fixed_containers/source_location.hpp"
 
+#include <algorithm>
 #include <memory>
 
 namespace fixed_containers
@@ -35,9 +36,9 @@ private:
         TableIteratedIndex current_index_;
 
         constexpr ReferenceProvider(const TableImpl* const table,
-                                    const TableIteratedIndex& value_table_index_)
+                                    const TableIteratedIndex& value_table_index)
           : table_(table)
-          , current_index_(value_table_index_)
+          , current_index_(value_table_index)
         {
         }
 
@@ -50,7 +51,10 @@ private:
 
         constexpr void advance() noexcept { current_index_ = table_->next_of(current_index_); }
 
-        constexpr const_reference get() const noexcept { return table_->key_at(current_index_); }
+        [[nodiscard]] constexpr const_reference get() const noexcept
+        {
+            return table_->key_at(current_index_);
+        }
 
         constexpr bool operator==(const ReferenceProvider& other) const noexcept = default;
     };
@@ -72,9 +76,12 @@ public:
     TableImpl IMPLEMENTATION_DETAIL_DO_NOT_USE_table_;
 
 private:
-    constexpr TableImpl& table() { return IMPLEMENTATION_DETAIL_DO_NOT_USE_table_; }
+    [[nodiscard]] constexpr TableImpl& table() { return IMPLEMENTATION_DETAIL_DO_NOT_USE_table_; }
 
-    constexpr const TableImpl& table() const { return IMPLEMENTATION_DETAIL_DO_NOT_USE_table_; }
+    [[nodiscard]] constexpr const TableImpl& table() const
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_table_;
+    }
 
 public:
     template <typename... Args>
@@ -86,17 +93,17 @@ public:
     constexpr FixedSetAdapter() = default;
 
 public:
-    constexpr const_iterator cbegin() const noexcept
+    [[nodiscard]] constexpr const_iterator cbegin() const noexcept
     {
         return const_iterator{ReferenceProvider{std::addressof(table()), table().begin_index()}};
     }
 
-    constexpr const_iterator cend() const noexcept
+    [[nodiscard]] constexpr const_iterator cend() const noexcept
     {
         return const_iterator{ReferenceProvider{std::addressof(table()), table().end_index()}};
     }
-    constexpr const_iterator begin() const noexcept { return cbegin(); }
-    constexpr const_iterator end() const noexcept { return cend(); }
+    [[nodiscard]] constexpr const_iterator begin() const noexcept { return cbegin(); }
+    [[nodiscard]] constexpr const_iterator end() const noexcept { return cend(); }
 
     [[nodiscard]] constexpr size_type max_size() const noexcept { return static_max_size(); }
     [[nodiscard]] constexpr std::size_t size() const noexcept { return table().size(); }
@@ -232,9 +239,9 @@ public:
     {
         // TODO: shouldn't these be CheckingType:: checks?
         assert_or_abort(pos != cend());
-        TableIndex idx = table().opaque_index_of(*pos);
+        const TableIndex idx = table().opaque_index_of(*pos);
         assert_or_abort(table().exists(idx));
-        TableIteratedIndex next_idx = table().erase(idx);
+        const TableIteratedIndex next_idx = table().erase(idx);
         return iterator{ReferenceProvider{std::addressof(table()), next_idx}};
     }
 
@@ -244,13 +251,14 @@ public:
             first.template private_reference_provider<const ReferenceProvider&>();
         const ReferenceProvider& end =
             last.template private_reference_provider<const ReferenceProvider&>();
-        TableIteratedIndex next_idx = table().erase_range(start.current_index_, end.current_index_);
+        const TableIteratedIndex next_idx =
+            table().erase_range(start.current_index_, end.current_index_);
         return iterator{ReferenceProvider{std::addressof(table()), next_idx}};
     }
 
     constexpr size_type erase(const key_type& key) noexcept
     {
-        TableIndex idx = table().opaque_index_of(key);
+        const TableIndex idx = table().opaque_index_of(key);
         if (!table().exists(idx))
         {
             return 0;
@@ -279,7 +287,7 @@ public:
 
     [[nodiscard]] constexpr bool contains(const K& key) const noexcept
     {
-        TableIndex idx = table().opaque_index_of(key);
+        const TableIndex idx = table().opaque_index_of(key);
         return table().exists(idx);
     }
 
@@ -296,14 +304,8 @@ public:
         {
             return false;
         }
-        for (const auto& key : *this)
-        {
-            if (!other.contains(key))
-            {
-                return false;
-            }
-        }
-        return true;
+        return std::ranges::all_of(*this,
+                                   [&other](const auto& key) { return other.contains(key); });
     }
 
 private:
@@ -334,16 +336,16 @@ private:
 };
 
 template <typename K, typename TableImpl, typename CheckingType>
-[[nodiscard]] constexpr bool is_full(const FixedSetAdapter<K, TableImpl, CheckingType>& c)
+[[nodiscard]] constexpr bool is_full(const FixedSetAdapter<K, TableImpl, CheckingType>& container)
 {
-    return c.size() >= c.max_size();
+    return container.size() >= container.max_size();
 }
 
 template <typename K, typename TableImpl, typename CheckingType, typename Predicate>
 constexpr typename FixedSetAdapter<K, TableImpl, CheckingType>::size_type erase_if(
-    FixedSetAdapter<K, TableImpl, CheckingType>& c, Predicate predicate)
+    FixedSetAdapter<K, TableImpl, CheckingType>& container, Predicate predicate)
 {
-    return erase_if_detail::erase_if_impl(c, predicate);
+    return erase_if_detail::erase_if_impl(container, predicate);
 }
 
 }  // namespace fixed_containers

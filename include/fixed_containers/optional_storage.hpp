@@ -19,10 +19,10 @@ union OptionalStorage
     T value;
     // clang-format off
     constexpr OptionalStorage() noexcept : dummy_generic{} { }
-    explicit constexpr OptionalStorage(const T& v) : value{v} { }
-    explicit constexpr OptionalStorage(T&& v) : value{std::move(v)} { }
+    explicit constexpr OptionalStorage(const T& var) : value{var} { }
+    explicit constexpr OptionalStorage(T&& var) : value{std::move(var)} { }
     template <class... Args>
-    explicit constexpr OptionalStorage(std::in_place_t, Args&&... args) : value(std::forward<Args>(args)...) { }
+    explicit constexpr OptionalStorage(std::in_place_t /*unused*/, Args&&... args) : value(std::forward<Args>(args)...) { }
 
     constexpr OptionalStorage(const OptionalStorage&) requires TriviallyCopyConstructible<T> = default;
     constexpr OptionalStorage(OptionalStorage&&) noexcept requires TriviallyMoveConstructible<T> = default;
@@ -47,7 +47,7 @@ union OptionalStorage
     // track of which member is active.
     constexpr ~OptionalStorage() noexcept {}
 
-    constexpr const T& get() const { return value; }
+    [[nodiscard]] constexpr const T& get() const { return value; }
     constexpr T& get() { return value; }
 };
 
@@ -67,10 +67,10 @@ union OptionalStorage<T>
     T value;
     // clang-format off
     constexpr OptionalStorage() noexcept : dummy_trivially_copyable{} { }
-    explicit constexpr OptionalStorage(const T& v) : value{v} { }
-    explicit constexpr OptionalStorage(T&& v) : value{std::move(v)} { }
+    explicit constexpr OptionalStorage(const T& var) : value{var} { }
+    explicit constexpr OptionalStorage(T&& var) : value{std::move(var)} { }
     template <class... Args>
-    explicit constexpr OptionalStorage(std::in_place_t, Args&&... args) : value(std::forward<Args>(args)...) { }
+    explicit constexpr OptionalStorage(std::in_place_t /*unused*/, Args&&... args) : value(std::forward<Args>(args)...) { }
 
     // clang-format on
     constexpr OptionalStorage(const OptionalStorage&) = default;
@@ -79,7 +79,7 @@ union OptionalStorage<T>
     constexpr OptionalStorage& operator=(OptionalStorage&&) noexcept = default;
     constexpr ~OptionalStorage() noexcept = default;
 
-    constexpr const T& get() const { return value; }
+    [[nodiscard]] constexpr const T& get() const { return value; }
     constexpr T& get() { return value; }
 };
 
@@ -90,8 +90,8 @@ union OptionalStorage<T>
     reference_storage_detail::ReferenceStorage<T> value;
     // clang-format off
     constexpr OptionalStorage() noexcept : dummy_ref{} { }
-    constexpr OptionalStorage(T v) : value{v} { }
-    constexpr OptionalStorage(std::in_place_t, T v) : value(v) { }
+    constexpr OptionalStorage(T var) : value{var} { }
+    constexpr OptionalStorage(std::in_place_t /*unused*/, T var) : value(var) { }
 
     // clang-format on
     constexpr OptionalStorage(const OptionalStorage&) = default;
@@ -100,7 +100,7 @@ union OptionalStorage<T>
     constexpr OptionalStorage& operator=(OptionalStorage&&) noexcept = default;
     constexpr ~OptionalStorage() noexcept = default;
 
-    constexpr const T& get() const { return value.get(); }
+    [[nodiscard]] constexpr const T& get() const { return value.get(); }
     constexpr T& get() { return value.get(); }
 };
 

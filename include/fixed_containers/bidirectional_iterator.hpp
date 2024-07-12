@@ -11,11 +11,11 @@
 namespace fixed_containers
 {
 template <class P>
-concept BidirectionalEntryProvider = DefaultConstructible<P> && requires(P p, P other) {
-    p.advance();
-    p.recede();
-    p.get();
-    { p == other } -> std::same_as<bool>;
+concept BidirectionalEntryProvider = DefaultConstructible<P> && requires(P instance, P other) {
+    instance.advance();
+    instance.recede();
+    instance.get();
+    { instance == other } -> std::same_as<bool>;
 };
 
 template <BidirectionalEntryProvider ConstEntryProvider,
@@ -155,7 +155,7 @@ public:
         return reference_provider_ == other.reference_provider_;
     }
 
-    constexpr ReverseBase base() const noexcept
+    [[nodiscard]] constexpr ReverseBase base() const noexcept
         requires(DIRECTION == IteratorDirection::REVERSE)
     {
         ReverseBase out{reference_provider_};
@@ -167,7 +167,7 @@ public:
     // The ReferenceProvider type is typically private to the iterator-owning class or in some
     // detail namespace.
     template <typename ReturnType>
-    constexpr const ReturnType& private_reference_provider() const
+    [[nodiscard]] constexpr const ReturnType& private_reference_provider() const
     {
         return reference_provider_;
     }

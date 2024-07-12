@@ -13,12 +13,12 @@ struct ReferenceStorage
     using T0 = std::remove_reference_t<T>;
     std::reference_wrapper<T0> value;
 
-    explicit constexpr ReferenceStorage(T v)
-      : value{v}
+    explicit constexpr ReferenceStorage(T value_in_ctor)
+      : value{value_in_ctor}
     {
     }
 
-    constexpr const T& get() const { return value.get(); }
+    [[nodiscard]] constexpr const T& get() const { return value.get(); }
     constexpr T& get() { return value.get(); }
 };
-}  // namespace fixed_containers::value_storage_detail
+}  // namespace fixed_containers::reference_storage_detail

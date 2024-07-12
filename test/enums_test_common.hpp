@@ -32,7 +32,7 @@ class Color : public fixed_containers::rich_enums::SkeletalRichEnum<Color, detai
 public:
     static constexpr const std::array<Color, count()>& values();
 
-    static constexpr const Color& RED()
+    static constexpr const Color& RED()  // NOLINT(readability-identifier-naming)
     {
         return ::fixed_containers::rich_enums_detail::value_of<Color>(BackingEnum::RED).value();
     }
@@ -165,7 +165,7 @@ struct TestRichEnum2InfusedDataProvider
     using EnumType = TestRichEnum2BackingEnum;
     using DataType = TestRichEnum2Data;
 
-    static constexpr const TestRichEnum2Data& get(const EnumType& e) { return VALUES.at(e); }
+    static constexpr const TestRichEnum2Data& get(const EnumType& key) { return VALUES.at(key); }
 };
 
 }  // namespace detail
@@ -187,7 +187,7 @@ public:
     FIXED_CONTAINERS_RICH_ENUM_CONSTANT_GEN_HELPER(TestRichEnum2, C_FOUR)
 
 public:
-    constexpr std::size_t value() const { return enum_data().value; }
+    [[nodiscard]] constexpr std::size_t value() const { return enum_data().value; }
 };
 
 constexpr const std::array<TestRichEnum2, TestRichEnum2::count()>& TestRichEnum2::values()
@@ -222,8 +222,16 @@ private:
     }
 
 public:
-    static constexpr const NonConformingTestRichEnum1& NC_ONE() { return at(BackingEnum::NC_ONE); }
-    static constexpr const NonConformingTestRichEnum1& NC_TWO() { return at(BackingEnum::NC_TWO); }
+    static constexpr const NonConformingTestRichEnum1&
+    NC_ONE()  // NOLINT(readability-identifier-naming)
+    {
+        return at(BackingEnum::NC_ONE);
+    }
+    static constexpr const NonConformingTestRichEnum1&
+    NC_TWO()  // NOLINT(readability-identifier-naming)
+    {
+        return at(BackingEnum::NC_TWO);
+    }
 
 private:
     BackingEnum backing_enum_;
@@ -234,11 +242,14 @@ private:
     }
 
 public:
-    constexpr std::size_t index() const
+    [[nodiscard]] constexpr std::size_t index() const
     {
         return static_cast<std::size_t>(magic_enum::enum_integer(backing_enum_));
     }
-    constexpr std::string_view str() const { return magic_enum::enum_name(backing_enum_); }
+    [[nodiscard]] constexpr std::string_view str() const
+    {
+        return magic_enum::enum_name(backing_enum_);
+    }
 };
 
 class NonConformingTestRichEnum1Values
@@ -305,10 +316,22 @@ private:
     }
 
 public:
-    static constexpr const NonCopyableRichEnum& C_ONE() { return at(BackingEnum::C_ONE); }
-    static constexpr const NonCopyableRichEnum& C_TWO() { return at(BackingEnum::C_TWO); }
-    static constexpr const NonCopyableRichEnum& C_THREE() { return at(BackingEnum::C_THREE); }
-    static constexpr const NonCopyableRichEnum& C_FOUR() { return at(BackingEnum::C_FOUR); }
+    static constexpr const NonCopyableRichEnum& C_ONE()  // NOLINT(readability-identifier-naming)
+    {
+        return at(BackingEnum::C_ONE);
+    }
+    static constexpr const NonCopyableRichEnum& C_TWO()  // NOLINT(readability-identifier-naming)
+    {
+        return at(BackingEnum::C_TWO);
+    }
+    static constexpr const NonCopyableRichEnum& C_THREE()  // NOLINT(readability-identifier-naming)
+    {
+        return at(BackingEnum::C_THREE);
+    }
+    static constexpr const NonCopyableRichEnum& C_FOUR()  // NOLINT(readability-identifier-naming)
+    {
+        return at(BackingEnum::C_FOUR);
+    }
 
 private:
     BackingEnum backing_enum_;
@@ -322,12 +345,15 @@ public:
     constexpr NonCopyableRichEnum& operator=(const NonCopyableRichEnum& other) = delete;
 
 public:
-    constexpr const BackingEnum& backing_enum() const { return backing_enum_; }
-    constexpr std::size_t ordinal() const
+    [[nodiscard]] constexpr const BackingEnum& backing_enum() const { return backing_enum_; }
+    [[nodiscard]] constexpr std::size_t ordinal() const
     {
         return static_cast<std::size_t>(magic_enum::enum_integer(backing_enum_));
     }
-    constexpr std::string_view to_string() const { return magic_enum::enum_name(backing_enum_); }
+    [[nodiscard]] constexpr std::string_view to_string() const
+    {
+        return magic_enum::enum_name(backing_enum_);
+    }
 };
 
 class NonCopyableRichEnumValues

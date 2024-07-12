@@ -149,15 +149,15 @@ public:
     }
 
     template <typename Key>
-    [[nodiscard]] constexpr std::uint64_t hash(const Key& k) const
+    [[nodiscard]] constexpr std::uint64_t hash(const Key& key) const
     {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_hash_(k);
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_hash_(key);
     }
 
     template <typename K1, typename K2>
-    [[nodiscard]] constexpr bool key_equal(const K1& k1, const K2& k2) const
+    [[nodiscard]] constexpr bool key_equal(const K1& key1, const K2& key2) const
     {
-        return IMPLEMENTATION_DETAIL_DO_NOT_USE_key_equal_(k1, k2);
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_key_equal_(key1, key2);
     }
 
     [[nodiscard]] static constexpr SizeType bucket_index_from_hash(std::uint64_t hash)
@@ -167,7 +167,7 @@ public:
         // would tend to be totally useless as it encodes information that the resident index of the
         // bucket also encodes. This does not restrict the size of the table because we store the
         // value_index in 32 bits, so the 56 left in this hash are plenty for our needs.
-        std::uint64_t shifted_hash = hash >> Bucket::FINGERPRINT_BITS;
+        const std::uint64_t shifted_hash = hash >> Bucket::FINGERPRINT_BITS;
         return static_cast<SizeType>(shifted_hash % INTERNAL_TABLE_SIZE);
     }
 
@@ -193,9 +193,9 @@ public:
         bucket_at(table_loc) = bucket;
     }
 
-    constexpr void erase_bucket(const OpaqueIndexType& i)
+    constexpr void erase_bucket(const OpaqueIndexType& index)
     {
-        SizeType table_loc = i.bucket_index;
+        SizeType table_loc = index.bucket_index;
 
         // shift down until either empty or an element with correct spot is found
         SizeType next_loc = next_bucket_index(table_loc);
@@ -209,7 +209,7 @@ public:
 
     constexpr SizeType erase_value(SizeType value_index)
     {
-        SizeType next =
+        const SizeType next =
             IMPLEMENTATION_DETAIL_DO_NOT_USE_value_storage_.delete_at_and_return_next_index(
                 value_index);
 
@@ -245,12 +245,12 @@ public:
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_value_storage_.prev_of(value_index);
     }
 
-    constexpr const K& key_at(const OpaqueIteratedType& value_index) const
+    [[nodiscard]] constexpr const K& key_at(const OpaqueIteratedType& value_index) const
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_value_storage_.at(value_index).key();
     }
 
-    constexpr const V& value_at(const OpaqueIteratedType& value_index) const
+    [[nodiscard]] constexpr const V& value_at(const OpaqueIteratedType& value_index) const
         requires PairType::HAS_ASSOCIATED_VALUE
     {
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_value_storage_.at(value_index).value();
@@ -262,23 +262,24 @@ public:
         return IMPLEMENTATION_DETAIL_DO_NOT_USE_value_storage_.at(value_index).value();
     }
 
-    constexpr OpaqueIteratedType iterated_index_from(const OpaqueIndexType& i) const
+    [[nodiscard]] constexpr OpaqueIteratedType iterated_index_from(
+        const OpaqueIndexType& index) const
     {
-        return bucket_at(i.bucket_index).value_index_;
+        return bucket_at(index.bucket_index).value_index_;
     }
 
-    constexpr OpaqueIndexType opaque_index_of(const K& k) const
+    [[nodiscard]] constexpr OpaqueIndexType opaque_index_of(const K& key) const
     {
-        std::uint64_t h = hash(k);
+        const std::uint64_t key_hash = hash(key);
         Bucket::DistAndFingerprintType dist_and_fingerprint =
-            Bucket::dist_and_fingerprint_from_hash(h);
-        SizeType table_loc = bucket_index_from_hash(h);
+            Bucket::dist_and_fingerprint_from_hash(key_hash);
+        SizeType table_loc = bucket_index_from_hash(key_hash);
         Bucket bucket = bucket_at(table_loc);
 
         while (true)
         {
             if (bucket.dist_and_fingerprint_ == dist_and_fingerprint &&
-                key_equal(k, key_at(bucket.value_index_)))
+                key_equal(key, key_at(bucket.value_index_)))
             {
                 return {table_loc, 0};
             }
@@ -296,45 +297,46 @@ public:
         }
     }
 
-    constexpr bool exists(const OpaqueIndexType& i) const
+    [[nodiscard]] constexpr bool exists(const OpaqueIndexType& index) const
     {
         // TODO: should we check if the index makes sense/points to a real place?
-        return i.dist_and_fingerprint == 0;
+        return index.dist_and_fingerprint == 0;
     }
 
-    constexpr const V& value(const OpaqueIndexType& i) const
+    [[nodiscard]] constexpr const V& value(const OpaqueIndexType& index) const
         requires PairType::HAS_ASSOCIATED_VALUE
     {
         // no safety checks
-        return value_at(bucket_at(i.bucket_index).value_index_);
+        return value_at(bucket_at(index.bucket_index).value_index_);
     }
 
-    constexpr V& value(const OpaqueIndexType& i)
+    constexpr V& value(const OpaqueIndexType& index)
         requires PairType::HAS_ASSOCIATED_VALUE
     {
         // no safety checks
-        return value_at(bucket_at(i.bucket_index).value_index_);
+        return value_at(bucket_at(index.bucket_index).value_index_);
     }
 
     template <typename... Args>
-    constexpr OpaqueIndexType emplace(const OpaqueIndexType& i, Args&&... args)
+    constexpr OpaqueIndexType emplace(const OpaqueIndexType& index, Args&&... args)
     {
-        SizeType value_loc =
+        const SizeType value_loc =
             IMPLEMENTATION_DETAIL_DO_NOT_USE_value_storage_.emplace_back_and_return_index(
                 std::forward<Args>(args)...);
 
         // place the bucket at the correct location
-        place_and_shift_up(Bucket{i.dist_and_fingerprint, static_cast<std::uint32_t>(value_loc)},
-                           i.bucket_index);
-        return {i.bucket_index, 0};
+        place_and_shift_up(
+            Bucket{index.dist_and_fingerprint, static_cast<std::uint32_t>(value_loc)},
+            index.bucket_index);
+        return {index.bucket_index, 0};
     }
 
-    constexpr OpaqueIteratedType erase(const OpaqueIndexType& i)
+    constexpr OpaqueIteratedType erase(const OpaqueIndexType& index)
     {
-        SizeType value_index = bucket_at(i.bucket_index).value_index_;
+        const SizeType value_index = bucket_at(index.bucket_index).value_index_;
 
-        erase_bucket(i);
-        SizeType next_index = erase_value(value_index);
+        erase_bucket(index);
+        const SizeType next_index = erase_value(value_index);
 
         return next_index;
     }

@@ -7,13 +7,8 @@ namespace fixed_containers
 TEST(ConstructAtAddressOf, CArray)
 {
 #if !defined(_MSC_VER)
-    int a[5]{};
-    memory::destroy_at_address_of(a);
-#if 0
-    int* result = memory::construct_at_address_of(a);
-    result[0] = 99;
-    ASSERT_TRUE(result == static_cast<int*>(a));
-#endif
+    int arr[5]{};
+    memory::destroy_at_address_of(arr);
 #endif
 }
 }  // namespace fixed_containers

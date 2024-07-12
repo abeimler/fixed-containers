@@ -71,56 +71,56 @@ TEST(MacroCountermeasures, DummyUsagesOfContainers)
     // Dummy usages are not necessary, this is mostly a compile-only test.
     // Counters tools that remove unused headers.
     {
-        EnumArray<Color, int> s{};
-        (void)s;
+        const EnumArray<Color, int> instance{};
+        (void)instance;
     }
     {
-        EnumMap<Color, int> s{};
-        (void)s;
+        const EnumMap<Color, int> instance{};
+        (void)instance;
     }
     {
-        EnumSet<Color> s{};
-        (void)s;
+        const EnumSet<Color> instance{};
+        (void)instance;
     }
     {
-        FixedCircularDeque<int, 5> s{};
-        (void)s;
+        const FixedCircularDeque<int, 5> instance{};
+        (void)instance;
     }
     {
-        FixedCircularQueue<int, 5> s{};
-        (void)s;
+        const FixedCircularQueue<int, 5> instance{};
+        (void)instance;
     }
     {
-        FixedDeque<int, 5> s{};
-        (void)s;
+        const FixedDeque<int, 5> instance{};
+        (void)instance;
     }
     {
-        FixedMap<int, int, 5> s{};
-        (void)s;
+        const FixedMap<int, int, 5> instance{};
+        (void)instance;
     }
     {
-        FixedSet<int, 5> s{};
-        (void)s;
+        const FixedSet<int, 5> instance{};
+        (void)instance;
     }
     {
-        FixedStack<int, 5> s{};
-        (void)s;
+        const FixedStack<int, 5> instance{};
+        (void)instance;
     }
     {
-        FixedString<5> s{};
-        (void)s;
+        const FixedString<5> instance{};
+        (void)instance;
     }
     {
-        FixedUnorderedMap<int, int, 5> s{};
-        (void)s;
+        const FixedUnorderedMap<int, int, 5> instance{};
+        (void)instance;
     }
     {
-        FixedUnorderedSet<int, 5> s{};
-        (void)s;
+        const FixedUnorderedSet<int, 5> instance{};
+        (void)instance;
     }
     {
-        FixedVector<int, 5> s{};
-        (void)s;
+        const FixedVector<int, 5> instance{};
+        (void)instance;
     }
 }
 }  // namespace fixed_containers

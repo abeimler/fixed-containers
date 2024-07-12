@@ -7,6 +7,7 @@
 #include "fixed_containers/preconditions.hpp"
 #include "fixed_containers/source_location.hpp"
 
+#include <algorithm>
 #include <memory>
 
 namespace fixed_containers
@@ -40,9 +41,9 @@ private:
         TableIteratedIndex current_index_;
 
         constexpr PairProvider(ConstOrMutableTable* const table,
-                               const TableIteratedIndex& value_table_index_)
+                               const TableIteratedIndex& value_table_index)
           : table_(table)
-          , current_index_(value_table_index_)
+          , current_index_(value_table_index)
         {
         }
 
@@ -60,15 +61,16 @@ private:
 
         // https://github.com/llvm/llvm-project/issues/62555
         template <bool IS_CONST_2>
-        constexpr PairProvider(const PairProvider<IS_CONST_2>& m) noexcept
+        constexpr PairProvider(const PairProvider<IS_CONST_2>& mutable_other) noexcept
             requires(IS_CONST and !IS_CONST_2)
-          : PairProvider{m.table_, m.current_index_}
+          : PairProvider{mutable_other.table_, mutable_other.current_index_}
         {
         }
 
         constexpr void advance() noexcept { current_index_ = table_->next_of(current_index_); }
 
-        constexpr std::conditional_t<IS_CONST, const_reference, reference> get() const noexcept
+        [[nodiscard]] constexpr std::conditional_t<IS_CONST, const_reference, reference> get()
+            const noexcept
         {
             // auto for auto const/mut
             return {table_->key_at(current_index_), table_->value_at(current_index_)};
@@ -100,7 +102,10 @@ public:
 private:
     constexpr TableImpl& table() { return IMPLEMENTATION_DETAIL_DO_NOT_USE_table_; }
 
-    constexpr const TableImpl& table() const { return IMPLEMENTATION_DETAIL_DO_NOT_USE_table_; }
+    [[nodiscard]] constexpr const TableImpl& table() const
+    {
+        return IMPLEMENTATION_DETAIL_DO_NOT_USE_table_;
+    }
 
 public:
     template <typename... Args>
@@ -116,7 +121,7 @@ public:
                                   const std_transition::source_location& loc =
                                       std_transition::source_location::current()) noexcept
     {
-        TableIndex idx = table().opaque_index_of(key);
+        const TableIndex idx = table().opaque_index_of(key);
         if (!table().exists(idx))
         {
             CheckingType::out_of_range(key, size(), loc);
@@ -129,7 +134,7 @@ public:
         const std_transition::source_location& loc =
             std_transition::source_location::current()) const noexcept
     {
-        TableIndex idx = table().opaque_index_of(key);
+        const TableIndex idx = table().opaque_index_of(key);
         if (!table().exists(idx))
         {
             CheckingType::out_of_range(key, size(), loc);
@@ -159,21 +164,21 @@ public:
         return table().value(idx);
     }
 
-    constexpr const_iterator cbegin() const noexcept
+    [[nodiscard]] constexpr const_iterator cbegin() const noexcept
     {
         return const_iterator{PairProvider<true>{std::addressof(table()), table().begin_index()}};
     }
 
-    constexpr const_iterator cend() const noexcept
+    [[nodiscard]] constexpr const_iterator cend() const noexcept
     {
         return const_iterator{PairProvider<true>{std::addressof(table()), table().end_index()}};
     }
-    constexpr const_iterator begin() const noexcept { return cbegin(); }
+    [[nodiscard]] constexpr const_iterator begin() const noexcept { return cbegin(); }
     constexpr iterator begin() noexcept
     {
         return iterator{PairProvider<false>{std::addressof(table()), table().begin_index()}};
     }
-    constexpr const_iterator end() const noexcept { return cend(); }
+    [[nodiscard]] constexpr const_iterator end() const noexcept { return cend(); }
     constexpr iterator end() noexcept
     {
         return iterator{PairProvider<false>{std::addressof(table()), table().end_index()}};
@@ -360,9 +365,9 @@ public:
     {
         // TODO: shouldn't these be CheckingType:: checks?
         assert_or_abort(pos != cend());
-        TableIndex idx = table().opaque_index_of(pos->first);
+        const TableIndex idx = table().opaque_index_of(pos->first);
         assert_or_abort(table().exists(idx));
-        TableIteratedIndex next_idx = table().erase(idx);
+        const TableIteratedIndex next_idx = table().erase(idx);
         return iterator{PairProvider<false>{std::addressof(table()), next_idx}};
     }
 
@@ -372,13 +377,14 @@ public:
             first.template private_reference_provider<const PairProvider<true>&>();
         const PairProvider<true>& end =
             last.template private_reference_provider<const PairProvider<true>&>();
-        TableIteratedIndex next_idx = table().erase_range(start.current_index_, end.current_index_);
+        const TableIteratedIndex next_idx =
+            table().erase_range(start.current_index_, end.current_index_);
         return iterator{PairProvider<false>{std::addressof(table()), next_idx}};
     }
 
     constexpr size_type erase(const key_type& key) noexcept
     {
-        TableIndex idx = table().opaque_index_of(key);
+        const TableIndex idx = table().opaque_index_of(key);
         if (!table().exists(idx))
         {
             return 0;
@@ -389,13 +395,13 @@ public:
 
     [[nodiscard]] constexpr iterator find(const K& key) noexcept
     {
-        TableIndex idx = table().opaque_index_of(key);
+        const TableIndex idx = table().opaque_index_of(key);
         return create_checked_iterator(idx);
     }
 
     [[nodiscard]] constexpr const_iterator find(const K& key) const noexcept
     {
-        TableIndex idx = table().opaque_index_of(key);
+        const TableIndex idx = table().opaque_index_of(key);
         if (!table().exists(idx))
         {
             return cend();
@@ -407,7 +413,7 @@ public:
 
     [[nodiscard]] constexpr bool contains(const K& key) const noexcept
     {
-        TableIndex idx = table().opaque_index_of(key);
+        const TableIndex idx = table().opaque_index_of(key);
         return table().exists(idx);
     }
 
@@ -427,15 +433,13 @@ public:
         {
             return false;
         }
-        for (const auto& pair : *this)
-        {
-            typename Other::const_iterator other_it = other.find(pair.first);
-            if (other_it == other.end() || other_it->second != pair.second)
+        return std::ranges::all_of(
+            *this,
+            [&other](const auto& pair)
             {
-                return false;
-            }
-        }
-        return true;
+                const typename Other::const_iterator other_it = other.find(pair.first);
+                return other_it != other.end() && other_it->second == pair.second;
+            });
     }
 
 private:
@@ -456,7 +460,8 @@ private:
             PairProvider<false>{std::addressof(table()), table().iterated_index_from(start_index)}};
     }
 
-    constexpr const_iterator create_const_iterator(const TableIndex& start_index) const noexcept
+    [[nodiscard]] constexpr const_iterator create_const_iterator(
+        const TableIndex& start_index) const noexcept
     {
         return const_iterator{
             PairProvider<true>{std::addressof(table()), table().iterated_index_from(start_index)}};
@@ -472,16 +477,17 @@ private:
 };
 
 template <typename K, typename V, typename TableImpl, typename CheckingType>
-[[nodiscard]] constexpr bool is_full(const FixedMapAdapter<K, V, TableImpl, CheckingType>& c)
+[[nodiscard]] constexpr bool is_full(
+    const FixedMapAdapter<K, V, TableImpl, CheckingType>& container)
 {
-    return c.size() >= c.max_size();
+    return container.size() >= container.max_size();
 }
 
 template <typename K, typename V, typename TableImpl, typename CheckingType, typename Predicate>
 constexpr typename FixedMapAdapter<K, V, TableImpl, CheckingType>::size_type erase_if(
-    FixedMapAdapter<K, V, TableImpl, CheckingType>& c, Predicate predicate)
+    FixedMapAdapter<K, V, TableImpl, CheckingType>& container, Predicate predicate)
 {
-    return erase_if_detail::erase_if_impl(c, predicate);
+    return erase_if_detail::erase_if_impl(container, predicate);
 }
 
 }  // namespace fixed_containers

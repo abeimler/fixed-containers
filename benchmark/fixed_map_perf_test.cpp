@@ -13,8 +13,10 @@
 
 namespace fixed_containers
 {
+namespace
+{
 using V = std::array<std::array<int, 3>, 30>;
-static constexpr std::size_t CAP = 130;
+constexpr std::size_t CAP = 130;
 
 template <class K, class V, std::size_t MAXIMUM_SIZE>
 using CompactPoolFixedMap =
@@ -62,17 +64,17 @@ static_assert(consteval_compare::equal<52032, sizeof(DedicatedColorBitPoolFixedM
 static_assert(
     consteval_compare::equal<52032, sizeof(DedicatedColorBitContiguousFixedMap<int, V, CAP>)>);
 
-template <typename MAP_TYPE>
-static void benchmark_map_lookup(benchmark::State& state)
+template <typename MapType>
+void benchmark_map_lookup(benchmark::State& state)
 {
-    using KeyType = typename MAP_TYPE::key_type;
-    MAP_TYPE instance{};
+    using KeyType = typename MapType::key_type;
+    MapType instance{};
     for (std::size_t i = 0; i < 100; i++)
     {
         instance.try_emplace(static_cast<KeyType>(i));
     }
 
-    for (auto _ : state)
+    for (auto unused : state)
     {
         auto& entry = instance.at(7);
         benchmark::DoNotOptimize(entry);
@@ -81,5 +83,5 @@ static void benchmark_map_lookup(benchmark::State& state)
 
 BENCHMARK(benchmark_map_lookup<std::map<int, int>>);
 BENCHMARK(benchmark_map_lookup<FixedMap<int, int, 200>>);
-
+}  // namespace
 }  // namespace fixed_containers

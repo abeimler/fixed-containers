@@ -18,53 +18,39 @@ template <class T>
 concept has_enum_typename = requires() { typename T::Enum; };
 
 template <typename T>
-concept has_member_std_string_view_to_string_void_const = requires(T t) {
-    {
-        t.to_string()
-    } -> std::same_as<std::string_view>;
+concept has_member_std_string_view_to_string_void_const = requires(T instance) {
+    { instance.to_string() } -> std::same_as<std::string_view>;
 };
 
 template <typename T>
-concept has_member_sizet_ordinal_void_const = requires(T t) {
-    {
-        t.ordinal()
-    } -> std::same_as<std::size_t>;
+concept has_member_sizet_ordinal_void_const = requires(T instance) {
+    { instance.ordinal() } -> std::same_as<std::size_t>;
 };
 
 template <typename T>
-concept has_backing_enum_typename_and_member_backing_enum_void_const = requires(T t) {
+concept has_backing_enum_typename_and_member_backing_enum_void_const = requires(T instance) {
     typename T::BackingEnum;
-    {
-        t.backing_enum()
-    } -> std::same_as<const typename T::BackingEnum&>;
+    { instance.backing_enum() } -> std::same_as<const typename T::BackingEnum&>;
 };
 
 template <typename T>
 concept has_static_sizet_count_void = requires() {
-    {
-        T::count()
-    } -> std::same_as<std::size_t>;
+    { T::count() } -> std::same_as<std::size_t>;
 };
 
 template <typename T, typename EnumType, std::size_t ENTRY_COUNT>
 concept has_static_const_ref_array_values_void = requires() {
-    {
-        T::values()
-    } -> std::same_as<const std::array<EnumType, ENTRY_COUNT>&>;
+    { T::values() } -> std::same_as<const std::array<EnumType, ENTRY_COUNT>&>;
 };
 
 template <typename T, typename R>
-concept has_static_std_string_view_to_string_r = requires(const R r) {
-    {
-        T::to_string(r)
-    } -> std::same_as<std::string_view>;
+concept has_static_std_string_view_to_string_r = requires(const R r_instance) {
+    { T::to_string(r_instance) } -> std::same_as<std::string_view>;
 };
 
 template <typename T, typename R>
-concept has_static_sizet_ordinal_r = requires(const R r) {
-    {
-        T::ordinal(r)
-    } -> std::same_as<std::size_t>;
+concept has_static_sizet_ordinal_r = requires(const R r_instance) {
+    { T::ordinal(r_instance) } -> std::same_as<std::size_t>;
 };
 
 template <class T>
@@ -111,7 +97,7 @@ constexpr bool has_zero_based_and_sorted_contiguous_ordinal(const ValuesArray& v
                                                             const OrdinalProvider& ordinal)
 {
     return is_zero_based_contiguous_and_sorted(
-        values_array.size(), [&](const std::size_t i) { return ordinal(values_array[i]); });
+        values_array.size(), [&](const std::size_t index) { return ordinal(values_array[index]); });
 }
 
 template <is_enum T>
@@ -163,11 +149,11 @@ template <class RichEnum>
 constexpr std::optional<std::reference_wrapper<const RichEnum>> value_of(
     const std::string_view& name)
 {
-    for (const RichEnum& v : RichEnum::values())
+    for (const RichEnum& rich_enum_val : RichEnum::values())
     {
-        if (v.to_string() == name)
+        if (rich_enum_val.to_string() == name)
         {
-            return v;
+            return rich_enum_val;
         }
     }
 
@@ -187,20 +173,20 @@ constexpr std::optional<std::reference_wrapper<const RichEnum>> value_of(
         const auto maybe_enum_index = static_cast<std::size_t>(backing_enum);
         if (maybe_enum_index < rich_enum_values.size())
         {
-            const RichEnum& v = rich_enum_values.at(maybe_enum_index);
-            if (v.backing_enum() == backing_enum)
+            const RichEnum& rich_enum_val = rich_enum_values.at(maybe_enum_index);
+            if (rich_enum_val.backing_enum() == backing_enum)
             {
-                return v;
+                return rich_enum_val;
             }
         }
     }
 
     // If the above fails, linearly search the array
-    for (const RichEnum& v : rich_enum_values)
+    for (const RichEnum& rich_enum_val : rich_enum_values)
     {
-        if (v.backing_enum() == backing_enum)
+        if (rich_enum_val.backing_enum() == backing_enum)
         {
-            return v;
+            return rich_enum_val;
         }
     }
 
@@ -232,12 +218,8 @@ concept IsRichEnumStorage = requires(const T& const_s, const T& const_s2) {
     typename T::UnderlyingType;
     const_s == const_s2;
 
-    {
-        const_s.has_value()
-    } -> std::same_as<bool>;
-    {
-        const_s.value()
-    } -> std::same_as<const typename T::UnderlyingType&>;
+    { const_s.has_value() } -> std::same_as<bool>;
+    { const_s.value() } -> std::same_as<const typename T::UnderlyingType&>;
 };
 
 template <typename T>
@@ -432,14 +414,12 @@ template <class T>
 concept has_enum_adapter = is_enum_adapter<EnumAdapter<T>>;
 
 template <class T>
-concept IsInfusedDataProvider = requires(const T& provider, const typename T::EnumType& e) {
-    typename T::EnumType;
-    typename T::DataType;
-
-    {
-        T::get(e)
-    } -> std::convertible_to<typename T::DataType>;
-};
+concept IsInfusedDataProvider =
+    requires(const T& provider, const typename T::EnumType& enum_constant) {
+        typename T::EnumType;
+        typename T::DataType;
+        { T::get(enum_constant) } -> std::convertible_to<typename T::DataType>;
+    };
 
 template <class RichEnumType>
 class SkeletalRichEnumValues
@@ -450,7 +430,7 @@ class SkeletalRichEnumValues
 
     template <std::size_t N, std::size_t... I>
     static constexpr std::array<RichEnumType, N> wrap_array_impl(
-        const std::array<BackingEnumType, N>& input, std::index_sequence<I...>) noexcept
+        const std::array<BackingEnumType, N>& input, std::index_sequence<I...> /*unused*/) noexcept
         requires(std::is_empty_v<InfusedData>)
     {
         return {
@@ -460,7 +440,7 @@ class SkeletalRichEnumValues
 
     template <std::size_t N, std::size_t... I>
     static constexpr std::array<RichEnumType, N> wrap_array_impl(
-        const std::array<BackingEnumType, N>& input, std::index_sequence<I...>) noexcept
+        const std::array<BackingEnumType, N>& input, std::index_sequence<I...> /*unused*/) noexcept
         requires(!std::is_empty_v<InfusedData>)
     {
         return {
@@ -547,7 +527,10 @@ public:
     constexpr SkeletalRichEnumLite& operator=(const SkeletalRichEnumLite&) noexcept = default;
     constexpr SkeletalRichEnumLite& operator=(SkeletalRichEnumLite&&) noexcept = default;
 
-    constexpr const BackingEnum& backing_enum() const { return this->detail_backing_enum.value(); }
+    [[nodiscard]] constexpr const BackingEnum& backing_enum() const
+    {
+        return this->detail_backing_enum.value();
+    }
     explicit(false) constexpr operator BackingEnum() const
     {
         return this->detail_backing_enum.value();
@@ -575,7 +558,7 @@ protected:
     // Intentionally non-virtual. Polymorphism breaks standard layout.
     constexpr ~SkeletalRichEnumLite() noexcept = default;
 
-    constexpr const InfusedData& enum_data() const
+    [[nodiscard]] constexpr const InfusedData& enum_data() const
         requires(!std::is_empty_v<InfusedData>)
     {
         return this->detail_enum_data;
