@@ -366,11 +366,11 @@ public:
         assert_or_abort(pos != cend());
         const std::size_t index = EnumAdapterType::ordinal(*pos);
 #ifdef USE_BIT_SET_FOR_ENUM_SET
-        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(i);
+        IMPLEMENTATION_DETAIL_DO_NOT_USE_array_set_.erase(index);
         return create_const_iterator(index);
 #else
         assert_or_abort(contains_at(index));
-        reset_at(i);
+        reset_at(index);
         return create_const_iterator(index);
 #endif
     }

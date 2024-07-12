@@ -397,7 +397,7 @@ public:
         {
             if(size() < max_size() && !view.empty()) {
                 const auto available_space = vec().max_size() - vec().size() - 1;
-                if (t.length() >= available_space) {
+                if (view.length() >= available_space) {
                     vec().insert(vec().cend(), view.begin(), std::next(view.begin(), available_space), loc);
                     IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_ = true;
                     //null_terminate(available_space+1);
@@ -413,7 +413,7 @@ public:
         }
         else
         {
-            vec().insert(vec().cend(), view.begin(), t.end(), loc);
+            vec().insert(vec().cend(), view.begin(), view.end(), loc);
             null_terminate(loc);
         }
         return *this;
