@@ -6,6 +6,7 @@
 #include "fixed_containers/preconditions.hpp"
 #include "fixed_containers/sequence_container_checking.hpp"
 #include "fixed_containers/source_location.hpp"
+#include "fixed_containers/wyhash.hpp"
 
 #include <array>
 #include <cstddef>
@@ -667,16 +668,43 @@ template <std::size_t MAXIMUM_LENGTH,
               customize::SequenceContainerAbortChecking<char, MAXIMUM_LENGTH>>
 using FixedStringTruncable = FixedString<MAXIMUM_LENGTH, CheckingType, customize::StringTruncationIsError::NoError>;
 
+namespace wyhash {
+
+template <std::size_t MAXIMUM_LENGTH,
+          fixed_containers::customize::SequenceContainerChecking CheckingType,
+          fixed_containers::customize::StringTruncationIsError STRING_TRUNCATION_IS_ERROR>
+struct hash<FixedString<MAXIMUM_LENGTH, CheckingType, STRING_TRUNCATION_IS_ERROR>>
+{
+    std::uint64_t operator()(FixedString<MAXIMUM_LENGTH, CheckingType, STRING_TRUNCATION_IS_ERROR> const& str) const noexcept
+    {
+        return hash<std::string_view>{}(std::string_view{str.data(), str.length()});
+    }
+};
+
+}
+
 }  // namespace fixed_containers
 
 // Specializations
 namespace std
 {
 template <std::size_t MAXIMUM_LENGTH,
-          fixed_containers::customize::SequenceContainerChecking CheckingType>
-struct tuple_size<fixed_containers::FixedString<MAXIMUM_LENGTH, CheckingType>>
+          fixed_containers::customize::SequenceContainerChecking CheckingType,
+          fixed_containers::customize::StringTruncationIsError STRING_TRUNCATION_IS_ERROR>
+struct tuple_size<fixed_containers::FixedString<MAXIMUM_LENGTH, CheckingType, STRING_TRUNCATION_IS_ERROR>>
   : std::integral_constant<std::size_t, 0>
 {
     // Implicit Structured Binding due to the fields being public is disabled
+};
+
+template <std::size_t MAXIMUM_LENGTH,
+          fixed_containers::customize::SequenceContainerChecking CheckingType,
+          fixed_containers::customize::StringTruncationIsError STRING_TRUNCATION_IS_ERROR>
+struct hash<fixed_containers::FixedString<MAXIMUM_LENGTH, CheckingType, STRING_TRUNCATION_IS_ERROR>>
+{
+    auto operator()(fixed_containers::FixedString<MAXIMUM_LENGTH, CheckingType, STRING_TRUNCATION_IS_ERROR> const& v) const noexcept
+    {
+        return hash<std::string_view>{}(std::string_view{v.data(), v.length()});
+    }
 };
 }  // namespace std
