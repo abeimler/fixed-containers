@@ -1,10 +1,13 @@
 #define MAGIC_ENUM_RANGE_MIN (-1)
 #define MAGIC_ENUM_RANGE_MAX 254
 
+#include "RandomLookUpBenchmark.h"
+
 #include "fixed_containers/enum_map.hpp"
-#include "LookUpBenchmark.h"
+
 #include <benchmark/benchmark.h>
 #include <magic_enum.hpp>
+
 #include <map>
 #include <unordered_map>
 
@@ -46,6 +49,8 @@ struct MyComponent {
     RangeEnumMap ranges{};
 };
 
+constexpr std::size_t MAX_RUNS = 8 << 13;
+
 static void BM_std_map_construct(benchmark::State& state) {
     for (auto _ : state) {
         for (int i = 0; i < state.range(0); ++i)
@@ -65,8 +70,9 @@ static void BM_std_map_construct(benchmark::State& state) {
         {Keys::Baz, 3 * state.range(0) / 4},
     };
     state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_std_map_construct)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_map_construct)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 static void BM_std_unordered_map_construct(benchmark::State& state) {
     for (auto _ : state) {
@@ -87,8 +93,9 @@ static void BM_std_unordered_map_construct(benchmark::State& state) {
         {Keys::Baz, 3 * state.range(0) / 4},
     };
     state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_std_unordered_map_construct)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_unordered_map_construct)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 static void BM_fixed_enum_map_construct(benchmark::State& state) {
     for (auto _ : state) {
@@ -109,8 +116,9 @@ static void BM_fixed_enum_map_construct(benchmark::State& state) {
         {Keys::Baz, 3 * state.range(0) / 4},
     };
     state.counters["sizeof"] = sizeof(v);
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_fixed_enum_map_construct)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_fixed_enum_map_construct)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 
 static void BM_fixed_enum_map_construct_SmallIntEnumMap(benchmark::State& state) {
@@ -124,8 +132,9 @@ static void BM_fixed_enum_map_construct_SmallIntEnumMap(benchmark::State& state)
     }
     SmallIntEnumMap v;
     state.counters["sizeof"] = sizeof(v);
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_fixed_enum_map_construct_SmallIntEnumMap)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_fixed_enum_map_construct_SmallIntEnumMap)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 static void BM_fixed_enum_map_construct_IntEnumMap(benchmark::State& state) {
     for (auto _ : state) {
@@ -153,7 +162,7 @@ static void BM_fixed_enum_map_construct_RangeEnumMap(benchmark::State& state) {
     RangeEnumMap v;
     state.counters["sizeof"] = sizeof(v);
 }
-BENCHMARK(BM_fixed_enum_map_construct_RangeEnumMap)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_fixed_enum_map_construct_RangeEnumMap)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 
 static void BM_fixed_enum_map_construct_MyComponent(benchmark::State& state) {
@@ -168,4 +177,4 @@ static void BM_fixed_enum_map_construct_MyComponent(benchmark::State& state) {
     MyComponent v;
     state.counters["sizeof"] = sizeof(v);
 }
-BENCHMARK(BM_fixed_enum_map_construct_MyComponent)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_fixed_enum_map_construct_MyComponent)->RangeMultiplier(2)->Range(8U, MAX_RUNS);

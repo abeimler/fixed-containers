@@ -1,12 +1,15 @@
+#include "RandomLookUpBenchmark.h"
+
 #include "fixed_containers/fixed_vector.hpp"
-#include "LookUpBenchmark.h"
+
 #include <benchmark/benchmark.h>
+
 #include <vector>
 
-static inline constexpr size_t MaxSize = 8U<<12U;
+static inline constexpr size_t MAX_SIZE = 8U<<13U;
 
 static void BM_std_vector_push_back_with_reserve(benchmark::State& state) {
-    LookUpBenchmarkSuit suit (state.range(0));
+    RandomLookUpBenchmarkSuit suit (state.range(0));
     std::vector<int> v;
     v.reserve(state.range(0));
     for (auto _ : state) {
@@ -24,7 +27,7 @@ static void BM_std_vector_push_back_with_reserve(benchmark::State& state) {
         state.ResumeTiming();
     }
 }
-BENCHMARK(BM_std_vector_push_back_with_reserve)->RangeMultiplier(2)->Range(8U, MaxSize);
+BENCHMARK(BM_std_vector_push_back_with_reserve)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
 
 
 static void BM_std_vector_push_back_single(benchmark::State& state) {
@@ -39,7 +42,7 @@ static void BM_std_vector_push_back_single(benchmark::State& state) {
 }
 BENCHMARK(BM_std_vector_push_back_single);
 static void BM_std_vector_push_back(benchmark::State& state) {
-    LookUpBenchmarkSuit suit (state.range(0));
+    RandomLookUpBenchmarkSuit suit (state.range(0));
     std::vector<int> v;
     for (auto _ : state) {
         auto data = v.data();
@@ -59,7 +62,7 @@ static void BM_std_vector_push_back(benchmark::State& state) {
 BENCHMARK(BM_std_vector_push_back)->RangeMultiplier(2)->Range(8U, 8U<<12U);
 
 static void BM_std_vector_emplace_back(benchmark::State& state) {
-    LookUpBenchmarkSuit suit (state.range(0));
+    RandomLookUpBenchmarkSuit suit (state.range(0));
     std::vector<int> v;
     for (auto _ : state) {
         auto data = v.data();
@@ -76,7 +79,7 @@ static void BM_std_vector_emplace_back(benchmark::State& state) {
         state.ResumeTiming();
     }
 }
-BENCHMARK(BM_std_vector_emplace_back)->RangeMultiplier(2)->Range(8U, MaxSize);
+BENCHMARK(BM_std_vector_emplace_back)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
 
 
 static void BM_fixed_vector_push_back_single(benchmark::State& state) {
@@ -90,8 +93,8 @@ static void BM_fixed_vector_push_back_single(benchmark::State& state) {
 }
 BENCHMARK(BM_fixed_vector_push_back_single);
 static void BM_fixed_vector_push_back(benchmark::State& state) {
-    LookUpBenchmarkSuit suit (state.range(0));
-    fixed_containers::FixedVector<int, MaxSize> v;
+    RandomLookUpBenchmarkSuit suit (state.range(0));
+    fixed_containers::FixedVector<int, MAX_SIZE> v;
     for (auto _ : state) {
         auto data = v.data();
         benchmark::DoNotOptimize(data);
@@ -107,4 +110,4 @@ static void BM_fixed_vector_push_back(benchmark::State& state) {
         state.ResumeTiming();
     }
 }
-BENCHMARK(BM_fixed_vector_push_back)->RangeMultiplier(2)->Range(8U, MaxSize);
+BENCHMARK(BM_fixed_vector_push_back)->RangeMultiplier(2)->Range(8U, MAX_SIZE);

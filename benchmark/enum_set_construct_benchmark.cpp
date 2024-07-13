@@ -1,7 +1,10 @@
+#include "RandomLookUpBenchmark.h"
+
 #include "fixed_containers/enum_set.hpp"
-#include "LookUpBenchmark.h"
+
 #include <benchmark/benchmark.h>
 #include <magic_enum.hpp>
+
 #include <map>
 #include <unordered_map>
 
@@ -31,6 +34,8 @@ enum class MoreKeys : uint8_t {
 using SmallIntEnumSet = fixed_containers::EnumSet<Keys>;
 using IntEnumSet = fixed_containers::EnumSet<MoreKeys>;
 
+constexpr std::size_t MAX_RUNS = 8 << 13;
+
 static void BM_std_map_bool_construct(benchmark::State& state) {
     for (auto _ : state) {
         for (int i = 0; i < state.range(0); ++i)
@@ -52,8 +57,9 @@ static void BM_std_map_bool_construct(benchmark::State& state) {
         {Keys::Baz, true},
     };
     state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_std_map_bool_construct)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_map_bool_construct)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 static void BM_std_unordered_map_bool_construct(benchmark::State& state) {
     for (auto _ : state) {
@@ -76,8 +82,9 @@ static void BM_std_unordered_map_bool_construct(benchmark::State& state) {
         {Keys::Baz, true},
     };
     state.counters["sizeof_approx"] = sizeof(v) + v.size() * (sizeof(decltype(v)::key_type) + sizeof(decltype(v)::mapped_type));
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_std_unordered_map_bool_construct)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_unordered_map_bool_construct)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 static void BM_std_array_bool_construct(benchmark::State& state) {
     for (auto _ : state) {
@@ -100,8 +107,9 @@ static void BM_std_array_bool_construct(benchmark::State& state) {
         true,
     };
     state.counters["sizeof"] = sizeof(v);
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_std_array_bool_construct)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_array_bool_construct)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 static void BM_std_vector_bool_construct(benchmark::State& state) {
     for (auto _ : state) {
@@ -124,8 +132,9 @@ static void BM_std_vector_bool_construct(benchmark::State& state) {
         true,
     };
     state.counters["sizeof"] = sizeof(v) + (v.size() * sizeof(decltype(v)::value_type));
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_std_vector_bool_construct)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_std_vector_bool_construct)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 
 static void BM_fixed_enum_set_construct(benchmark::State& state) {
@@ -147,8 +156,9 @@ static void BM_fixed_enum_set_construct(benchmark::State& state) {
         Keys::Baz,
     };
     state.counters["sizeof"] = sizeof(v);
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_fixed_enum_set_construct)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_fixed_enum_set_construct)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 
 static void BM_fixed_enum_set_construct_SmallEnumSet(benchmark::State& state) {
@@ -162,8 +172,9 @@ static void BM_fixed_enum_set_construct_SmallEnumSet(benchmark::State& state) {
     }
     SmallIntEnumSet v;
     state.counters["sizeof"] = sizeof(v);
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_fixed_enum_set_construct_SmallEnumSet)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_fixed_enum_set_construct_SmallEnumSet)->RangeMultiplier(2)->Range(8U, MAX_RUNS);
 
 static void BM_fixed_enum_set_construct_IntEnumSet(benchmark::State& state) {
     for (auto _ : state) {
@@ -176,5 +187,6 @@ static void BM_fixed_enum_set_construct_IntEnumSet(benchmark::State& state) {
     }
     IntEnumSet v;
     state.counters["sizeof"] = sizeof(v);
+    state.counters["size"] = v.size();
 }
-BENCHMARK(BM_fixed_enum_set_construct_IntEnumSet)->RangeMultiplier(2)->Range(8U, 8U<<12U);
+BENCHMARK(BM_fixed_enum_set_construct_IntEnumSet)->RangeMultiplier(2)->Range(8U, MAX_RUNS);

@@ -69,7 +69,7 @@ void benchmark_map_lookup(benchmark::State& state)
 {
     using KeyType = typename MapType::key_type;
     MapType instance{};
-    for (std::size_t i = 0; i < 100; i++)
+    for (std::size_t i = 0; i < CAP; i++)
     {
         instance.try_emplace(static_cast<KeyType>(i));
     }
@@ -79,6 +79,10 @@ void benchmark_map_lookup(benchmark::State& state)
         auto& entry = instance.at(7);
         benchmark::DoNotOptimize(entry);
     }
+
+    state.counters["size"] = instance.size();
+    state.counters["sizeof_V"] = sizeof(V);
+    state.counters["sizeof"] = sizeof(instance);
 }
 
 BENCHMARK(benchmark_map_lookup<std::map<int, int>>);

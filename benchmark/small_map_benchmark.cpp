@@ -8,7 +8,7 @@
 #include <map>
 #include <unordered_map>
 
-static inline constexpr size_t MAX_SIZE = 8U<<14U;
+static inline constexpr size_t MAX_SIZE = 8U<<4U;
 
 template<class MapType>
 static void BM_access_single_miss(benchmark::State& state) {
