@@ -77,7 +77,7 @@ template <typename MapType>
 
 
 template<class MapType>
-static void BM_access_single_miss(benchmark::State& state) {
+static void BM_map_access_single_miss(benchmark::State& state) {
     RandomLookUpBenchmarkSuit suit (10);
     MapType v{};
     const auto key = suit.random_index1;
@@ -90,7 +90,7 @@ static void BM_access_single_miss(benchmark::State& state) {
 }
 
 template<class MapType>
-static void BM_access_single(benchmark::State& state) {
+static void BM_map_access_single(benchmark::State& state) {
     RandomLookUpBenchmarkSuit suit (1);
     MapType v{};
     const auto key = suit.random_index1;
@@ -101,7 +101,7 @@ static void BM_access_single(benchmark::State& state) {
 }
 
 template<class MapType>
-static void BM_random_access(benchmark::State& state) {
+static void BM_map_random_access(benchmark::State& state) {
     RandomLookUpBenchmarkSuit suit (state.range(0));
     MapType v{};
     for (int i = 0; i < state.range(0); ++i) {
@@ -118,7 +118,7 @@ static void BM_random_access(benchmark::State& state) {
 }
 
 template<class MapType, bool is_allocated_map, size_t MAX_SIZE = 0>
-static void BM_lookup(benchmark::State& state) {
+static void BM_map_lookup(benchmark::State& state) {
     RandomLookUpBenchmarkSuit suit (state.range(0));
     MapType v{};
     for (int i = 0; i < state.range(0); ++i) {
@@ -140,6 +140,176 @@ static void BM_lookup(benchmark::State& state) {
         state.counters["sizeof"] = sizeof(v);
     }
     state.counters["size"] = v.size();
+}
+
+
+template<class VectorType, bool is_allocated_vector>
+void BM_array_random_access_no_push_back(benchmark::State& state) {
+    RandomLookUpBenchmarkSuit suit (state.range(0));
+    VectorType v{};
+    assert(v.size() >= state.range(0));
+    for (auto _ : state) {
+        for (auto index : suit.indexes) {
+            benchmark::DoNotOptimize(v[index]);
+        }
+    }
+
+    if constexpr (is_allocated_vector)
+    {
+        const size_t element_size = sizeof(typename decltype(v)::value_type) * v.size();
+        const size_t capacity_size = sizeof(typename decltype(v)::value_type) * v.capacity();
+        const size_t overhead_size = sizeof(v) + (capacity_size - element_size);
+        state.counters["sizeof_approx"] = element_size + overhead_size;
+    } else {
+        state.counters["MaxSize"] = v.max_size();
+        state.counters["sizeof"] = sizeof(v);
+    }
+    state.counters["size"] = v.size();
+}
+
+template<class VectorType>
+void BM_queue_pop(benchmark::State& state) {
+    RandomLookUpBenchmarkSuit suit (state.range(0));
+    for (auto _ : state) {
+        state.PauseTiming();
+        VectorType v{};
+        for (const auto& value : suit.values) {
+            v.push(value);
+        }
+        state.ResumeTiming();
+        for (size_t i = 0; i < suit.size();i++) {
+            v.pop();
+        }
+        benchmark::DoNotOptimize(v);
+    }
+}
+
+template<class VectorType, bool is_allocated_vector>
+void BM_array_random_access(benchmark::State& state) {
+    RandomLookUpBenchmarkSuit suit (state.range(0));
+    VectorType v{};
+    for (const auto& value : suit.values) {
+        v.push_back(value);
+    }
+    for (auto _ : state) {
+        for (auto index : suit.indexes) {
+            benchmark::DoNotOptimize(v[index]);
+        }
+    }
+
+    if constexpr (is_allocated_vector)
+    {
+        const size_t element_size = sizeof(typename decltype(v)::value_type) * v.size();
+        const size_t overhead_size = sizeof(v) + element_size;
+        state.counters["sizeof_approx"] = element_size + overhead_size;
+    } else {
+        state.counters["MaxSize"] = v.max_size();
+        state.counters["sizeof"] = sizeof(v);
+    }
+    state.counters["size"] = v.size();
+}
+
+template<class VectorType, bool is_allocated_vector>
+void BM_set_random_access_insert(benchmark::State& state) {
+    RandomLookUpBenchmarkSuit suit (state.range(0));
+    VectorType v{};
+    for (const auto& value : suit.indexes) {
+        v.insert(value);
+    }
+    for (auto _ : state) {
+        for (auto val : v) {
+            benchmark::DoNotOptimize(val);
+        }
+    }
+
+    if constexpr (is_allocated_vector)
+    {
+        const size_t element_size = sizeof(typename decltype(v)::value_type) * v.size();
+        const size_t overhead_size = sizeof(v) + element_size;
+        state.counters["sizeof_approx"] = element_size + overhead_size;
+    } else {
+        state.counters["MaxSize"] = v.max_size();
+        state.counters["sizeof"] = sizeof(v);
+    }
+    state.counters["size"] = v.size();
+}
+
+template<class VectorType>
+void BM_vector_push_back_with_reserve(benchmark::State& state) {
+    RandomLookUpBenchmarkSuit suit (state.range(0));
+    VectorType v{};
+    v.reserve(state.range(0));
+    for (auto _ : state) {
+        for (const auto& value : suit.values) {
+            v.push_back(value);
+            benchmark::ClobberMemory();
+        }
+        state.PauseTiming();
+        v.clear();
+        state.ResumeTiming();
+    }
+}
+
+template<class VectorType>
+void BM_array_push_back(benchmark::State& state) {
+    RandomLookUpBenchmarkSuit suit (state.range(0));
+    VectorType v{};
+    for (auto _ : state) {
+        for (const auto& value : suit.values) {
+            v.push_back(value);
+            benchmark::ClobberMemory();
+        }
+        state.PauseTiming();
+        v.clear();
+        state.ResumeTiming();
+    }
+}
+
+template<class VectorType>
+void BM_set_insert(benchmark::State& state) {
+    RandomLookUpBenchmarkSuit suit (state.range(0));
+    VectorType v{};
+    for (auto _ : state) {
+        for (const auto& value : suit.indexes) {
+            v.insert(value);
+            benchmark::ClobberMemory();
+        }
+        state.PauseTiming();
+        v.clear();
+        state.ResumeTiming();
+    }
+}
+
+template<class VectorType>
+void BM_deque_push_front(benchmark::State& state) {
+    RandomLookUpBenchmarkSuit suit (state.range(0));
+    VectorType v{};
+    for (auto _ : state) {
+        for (const auto& value : suit.values) {
+            v.push_back(value);
+            benchmark::ClobberMemory();
+        }
+        state.PauseTiming();
+        v.clear();
+        state.ResumeTiming();
+    }
+}
+
+template<class VectorType>
+static void BM_array_emplace_back(benchmark::State& state) {
+    VectorType v{};
+    for (auto _ : state) {
+        state.PauseTiming();
+        RandomLookUpBenchmarkSuit suit (state.range(0));
+        state.ResumeTiming();
+        for (auto&& value : suit.values) {
+            v.emplace_back(value);
+            benchmark::ClobberMemory();
+        }
+        state.PauseTiming();
+        v.clear();
+        state.ResumeTiming();
+    }
 }
 
 

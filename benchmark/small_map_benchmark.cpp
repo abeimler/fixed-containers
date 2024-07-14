@@ -8,7 +8,7 @@
 #include <map>
 #include <unordered_map>
 
-static inline constexpr size_t MAX_SIZE = 8U<<4U;
+static inline constexpr size_t MAX_SIZE = 8U<<6U;
 
 BENCHMARK(BM_access_single_miss<std::map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
 BENCHMARK(BM_access_single<std::map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
