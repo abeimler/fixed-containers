@@ -251,6 +251,62 @@ TEST(FixedString, AssignStringView)
         EXPECT_EQ(var2, "99");
         EXPECT_EQ(2, var2.size());
     }
+    {
+        auto var2 = []()
+        {
+            FixedStringTruncable<4> var{"012"};
+            const std::string_view entry_sv{"99999"};
+            var.assign(entry_sv);
+            return var;
+        }();
+
+        EXPECT_EQ(var2, "9999");
+        EXPECT_EQ(4, var2.size());
+    }
+}
+
+TEST(FixedString, AssignRawString)
+{
+    {
+        const auto val1 = []()
+        {
+            FixedString<7> var{"012"};
+            const char* str{"99"};
+            const auto len = std::strlen(str);
+            var.assign(str, len);
+            return var;
+        }();
+
+        EXPECT_EQ(val1, "99");
+        EXPECT_EQ(val1.size(), 2);
+        EXPECT_EQ(val1.max_size(), 7);
+    }
+    {
+        auto var2 = []()
+        {
+            FixedString<7> var{"012"};
+            const char* str{"99"};
+            const auto len = std::strlen(str);
+            var.assign(str, len);
+            return var;
+        }();
+
+        EXPECT_EQ(var2, "99");
+        EXPECT_EQ(2, var2.size());
+    }
+    {
+        auto var2 = []()
+        {
+            FixedStringTruncable<4> var{"012"};
+            const char* str{"9999"};
+            const auto len = std::strlen(str);
+            var.assign(str, len);
+            return var;
+        }();
+
+        EXPECT_EQ(var2, "9999");
+        EXPECT_EQ(4, var2.size());
+    }
 }
 
 TEST(FixedString, Fill)

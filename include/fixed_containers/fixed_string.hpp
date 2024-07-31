@@ -194,6 +194,24 @@ public:
         return *this;
     }
 
+    constexpr FixedString& assign(
+        const CharT* data, size_t length,
+        const std_transition::source_location& loc = std_transition::source_location::current())
+    {
+        if constexpr (STRING_TRUNCATION_IS_ERROR == customize::StringTruncationIsError::NoError)
+        {
+            vec().assign(data, std::next(data, std::min(vec().max_size()-1, length)), loc);
+            IMPLEMENTATION_DETAIL_DO_NOT_USE_truncated_ = length > vec().max_size();
+            null_terminate_at_max_length();
+        }
+        else
+        {
+            vec().assign(data, std::next(data, length), loc);
+            null_terminate(loc);
+        }
+        return *this;
+    }
+
     [[nodiscard]] constexpr reference operator[](size_type index) noexcept
     {
         // Cannot capture real source_location for operator[]
