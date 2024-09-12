@@ -23,5 +23,5 @@ BENCHMARK(BM_array_random_access<fixed_containers::FixedDeque<int, MAX_SIZE>, fa
 BENCHMARK(BM_queue_pop<std::queue<int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
 BENCHMARK(BM_queue_pop<fixed_containers::FixedQueue<int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
 
-BENCHMARK(BM_array_push_back<std::vector<int>, true>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_array_push_back<std::vector<int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
 BENCHMARK(BM_array_push_back<fixed_containers::FixedVector<int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);

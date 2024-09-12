@@ -10,22 +10,22 @@
 
 static inline constexpr size_t MAX_SIZE = 8U<<14U;
 
-BENCHMARK(BM_access_single_miss<std::map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_access_single<std::map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_random_access<std::map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_lookup<std::map<int, int>, true>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_access_single_miss<std::map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_access_single<std::map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_random_access<std::map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_lookup<std::map<int, int>, true>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
 
-BENCHMARK(BM_access_single_miss<std::unordered_map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_access_single<std::unordered_map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_random_access<std::unordered_map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_lookup<std::unordered_map<int, int>, true>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_access_single_miss<std::unordered_map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_access_single<std::unordered_map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_random_access<std::unordered_map<int, int>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_lookup<std::unordered_map<int, int>, true>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
 
-BENCHMARK(BM_access_single_miss<fixed_containers::FixedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_access_single<fixed_containers::FixedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_random_access<fixed_containers::FixedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_lookup<fixed_containers::FixedMap<int, int, MAX_SIZE>, false>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_access_single_miss<fixed_containers::FixedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_access_single<fixed_containers::FixedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_random_access<fixed_containers::FixedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_lookup<fixed_containers::FixedMap<int, int, MAX_SIZE>, false>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
 
-BENCHMARK(BM_access_single_miss<fixed_containers::FixedUnorderedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_access_single<fixed_containers::FixedUnorderedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_random_access<fixed_containers::FixedUnorderedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
-BENCHMARK(BM_lookup<fixed_containers::FixedUnorderedMap<int, int, MAX_SIZE>, false>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_access_single_miss<fixed_containers::FixedUnorderedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_access_single<fixed_containers::FixedUnorderedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_random_access<fixed_containers::FixedUnorderedMap<int, int, MAX_SIZE>>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);
+BENCHMARK(BM_map_lookup<fixed_containers::FixedUnorderedMap<int, int, MAX_SIZE>, false>)->RangeMultiplier(2)->Range(8U, MAX_SIZE);

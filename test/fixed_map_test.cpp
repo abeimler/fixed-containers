@@ -12,9 +12,6 @@
 #include "fixed_containers/memory.hpp"
 
 #include <gtest/gtest.h>
-#include <range/v3/iterator/concepts.hpp>
-#include <range/v3/iterator/operations.hpp>
-#include <range/v3/view/filter.hpp>
 
 #include <algorithm>
 #include <array>
@@ -24,6 +21,7 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -73,8 +71,8 @@ static_assert(std::is_same_v<typename std::iterator_traits<ES_1::const_iterator>
 static_assert(std::is_same_v<ES_1::reference, ES_1::iterator::reference>);
 
 using STD_MAP_INT_INT = std::map<int, int>;
-static_assert(ranges::bidirectional_iterator<STD_MAP_INT_INT::iterator>);
-static_assert(ranges::bidirectional_iterator<STD_MAP_INT_INT::const_iterator>);
+static_assert(std::bidirectional_iterator<STD_MAP_INT_INT::iterator>);
+static_assert(std::bidirectional_iterator<STD_MAP_INT_INT::const_iterator>);
 
 }  // namespace
 
@@ -1406,13 +1404,11 @@ TEST(FixedMap, Equality)
 TEST(FixedMap, Ranges)
 {
     FixedMap<int, int, 10> var1{{1, 10}, {4, 40}};
-    auto filtered =
-        var1 | ranges::views::filter([](const auto& entry) -> bool { return entry.second == 10; });
+    auto filtered = var1 | std::ranges::views::filter([](const auto& entry) -> bool
+                                                      { return entry.second == 10; });
 
-    EXPECT_EQ(1, ranges::distance(filtered));
-    const int first_entry =
-        (*filtered.begin()).second;  // Can't use arrow with range-v3 because it
-                                     // requires l-value. Note that std::ranges works
+    EXPECT_EQ(1, std::ranges::distance(filtered));
+    const int first_entry = filtered.begin()->second;
     EXPECT_EQ(10, first_entry);
 }
 
@@ -1520,7 +1516,7 @@ TEST(FixedMap, ComplexNontrivialCopies)
     }
 
     auto map_2{map_1};
-    for(const auto& pair : map_1)
+    for (const auto& pair : map_1)
     {
         EXPECT_TRUE(map_2.contains(pair.first));
     }
@@ -1531,7 +1527,7 @@ TEST(FixedMap, ComplexNontrivialCopies)
         map_2.try_emplace(i + 100);
     }
     auto map_3{map_1};
-    for(const auto& pair : map_1)
+    for (const auto& pair : map_1)
     {
         EXPECT_TRUE(map_3.contains(pair.first));
     }
@@ -1542,20 +1538,20 @@ TEST(FixedMap, ComplexNontrivialCopies)
         map_3.try_emplace(i + 100);
     }
     auto map_4{map_1};
-    for(const auto& pair : map_1)
+    for (const auto& pair : map_1)
     {
         EXPECT_TRUE(map_4.contains(pair.first));
     }
     EXPECT_EQ(map_4.size(), map_1.size());
 
     map_1 = map_2;
-    for(const auto& pair : map_2)
+    for (const auto& pair : map_2)
     {
         EXPECT_TRUE(map_1.contains(pair.first));
     }
     map_1.clear();
     map_1 = map_3;
-    for(const auto& pair : map_3)
+    for (const auto& pair : map_3)
     {
         EXPECT_TRUE(map_1.contains(pair.first));
     }
@@ -1572,7 +1568,7 @@ TEST(FixedMap, ComplexNontrivialCopies)
 
     map_1.clear();
     map_1 = map_4;
-    for(const auto& pair : map_4)
+    for (const auto& pair : map_4)
     {
         EXPECT_TRUE(map_1.contains(pair.first));
     }
@@ -1591,7 +1587,7 @@ TEST(FixedUnorderedMap, ComplexNontrivialMoves)
     }
 
     FM map_2{std::move(map_1)};
-    for(const auto& pair : map_1_orig)
+    for (const auto& pair : map_1_orig)
     {
         EXPECT_TRUE(map_2.contains(pair.first));
     }
@@ -1612,13 +1608,13 @@ TEST(FixedUnorderedMap, ComplexNontrivialMoves)
     }
 
     map_1 = std::move(map_2);
-    for(const auto& pair : map_2_orig)
+    for (const auto& pair : map_2_orig)
     {
         EXPECT_TRUE(map_1.contains(pair.first));
     }
     map_1.clear();
     map_1 = std::move(map_3);
-    for(const auto& pair : map_3_orig)
+    for (const auto& pair : map_3_orig)
     {
         EXPECT_TRUE(map_1.contains(pair.first));
     }

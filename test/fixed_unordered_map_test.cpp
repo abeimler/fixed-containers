@@ -13,9 +13,6 @@
 #include "fixed_containers/memory.hpp"
 
 #include <gtest/gtest.h>
-#include <range/v3/iterator/concepts.hpp>
-#include <range/v3/iterator/operations.hpp>
-#include <range/v3/view/filter.hpp>
 
 #include <algorithm>
 #include <array>
@@ -23,6 +20,7 @@
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -71,8 +69,8 @@ static_assert(std::is_same_v<typename std::iterator_traits<ES_1::const_iterator>
 static_assert(std::is_same_v<ES_1::reference, ES_1::iterator::reference>);
 
 using STD_UNORDERED_MAP_INT_INT = std::unordered_map<int, int>;
-static_assert(ranges::forward_iterator<STD_UNORDERED_MAP_INT_INT::iterator>);
-static_assert(ranges::forward_iterator<STD_UNORDERED_MAP_INT_INT::const_iterator>);
+static_assert(std::forward_iterator<STD_UNORDERED_MAP_INT_INT::iterator>);
+static_assert(std::forward_iterator<STD_UNORDERED_MAP_INT_INT::const_iterator>);
 
 }  // namespace
 
@@ -408,6 +406,21 @@ TEST(FixedUnorderedMap, InsertOrAssignExceedsCapacity)
         var1.insert_or_assign(4, 42);
         const int key = 6;
         EXPECT_DEATH(var1.insert_or_assign(key, 60), "");
+    }
+}
+
+TEST(FixedUnorderedMap, ZeroCapacityBehavior)
+{
+    {
+        constexpr FixedUnorderedMap<int, int, 0> VAL1{};
+        static_assert(VAL1.empty());
+        static_assert(VAL1.max_size() == 0);
+
+        static_assert(VAL1.find(1) == VAL1.cend());
+    }
+    {
+        FixedUnorderedMap<int, int, 0> var1{};
+        EXPECT_DEATH(var1.insert_or_assign(1, 1), "");
     }
 }
 
@@ -1266,13 +1279,11 @@ TEST(FixedUnorderedMap, Equality)
 TEST(FixedUnorderedMap, Ranges)
 {
     FixedUnorderedMap<int, int, 10> var1{{1, 10}, {4, 40}};
-    auto filtered =
-        var1 | ranges::views::filter([](const auto& entry) -> bool { return entry.second == 10; });
+    auto filtered = var1 | std::ranges::views::filter([](const auto& entry) -> bool
+                                                      { return entry.second == 10; });
 
-    EXPECT_EQ(1, ranges::distance(filtered));
-    const int first_entry =
-        (*filtered.begin()).second;  // Can't use arrow with range-v3 because it
-                                     // requires l-value. Note that std::ranges works
+    EXPECT_EQ(1, std::ranges::distance(filtered));
+    const int first_entry = filtered.begin()->second;
     EXPECT_EQ(10, first_entry);
 }
 
@@ -1368,7 +1379,6 @@ TEST(FixedUnorderedMap, NonAssignable)
     }
 }
 
-
 TEST(FixedUnorderedMap, ComplexNontrivialCopies)
 {
     FixedUnorderedMap<int, MockNonTrivialCopyAssignable, 30> map_1{};
@@ -1378,7 +1388,7 @@ TEST(FixedUnorderedMap, ComplexNontrivialCopies)
     }
 
     auto map_2{map_1};
-    for(const auto& pair : map_1)
+    for (const auto& pair : map_1)
     {
         EXPECT_TRUE(map_2.contains(pair.first));
     }
@@ -1389,7 +1399,7 @@ TEST(FixedUnorderedMap, ComplexNontrivialCopies)
         map_2.try_emplace(i + 100);
     }
     auto map_3{map_1};
-    for(const auto& pair : map_1)
+    for (const auto& pair : map_1)
     {
         EXPECT_TRUE(map_3.contains(pair.first));
     }
@@ -1400,20 +1410,20 @@ TEST(FixedUnorderedMap, ComplexNontrivialCopies)
         map_3.try_emplace(i + 100);
     }
     auto map_4{map_1};
-    for(const auto& pair : map_1)
+    for (const auto& pair : map_1)
     {
         EXPECT_TRUE(map_4.contains(pair.first));
     }
     EXPECT_EQ(map_4.size(), map_1.size());
 
     map_1 = map_2;
-    for(const auto& pair : map_2)
+    for (const auto& pair : map_2)
     {
         EXPECT_TRUE(map_1.contains(pair.first));
     }
     map_1.clear();
     map_1 = map_3;
-    for(const auto& pair : map_3)
+    for (const auto& pair : map_3)
     {
         EXPECT_TRUE(map_1.contains(pair.first));
     }
@@ -1429,11 +1439,13 @@ TEST(FixedUnorderedMap, ComplexNontrivialCopies)
     EXPECT_EQ(map_1.size(), 30);
 
     // make sure the underlying storage agrees that we're full
-    EXPECT_TRUE(map_1.IMPLEMENTATION_DETAIL_DO_NOT_USE_table_.IMPLEMENTATION_DETAIL_DO_NOT_USE_value_storage_.IMPLEMENTATION_DETAIL_DO_NOT_USE_storage_.full());
+    EXPECT_TRUE(map_1.IMPLEMENTATION_DETAIL_DO_NOT_USE_table_
+                    .IMPLEMENTATION_DETAIL_DO_NOT_USE_value_storage_
+                    .IMPLEMENTATION_DETAIL_DO_NOT_USE_storage_.full());
 
     map_1.clear();
     map_1 = map_4;
-    for(const auto& pair : map_4)
+    for (const auto& pair : map_4)
     {
         EXPECT_TRUE(map_1.contains(pair.first));
     }
@@ -1452,7 +1464,7 @@ TEST(FixedUnorderedMap, ComplexNontrivialMoves)
     }
 
     FUM map_2{std::move(map_1)};
-    for(const auto& pair : map_1_orig)
+    for (const auto& pair : map_1_orig)
     {
         EXPECT_TRUE(map_2.contains(pair.first));
     }
@@ -1473,13 +1485,13 @@ TEST(FixedUnorderedMap, ComplexNontrivialMoves)
     }
 
     map_1 = std::move(map_2);
-    for(const auto& pair : map_2_orig)
+    for (const auto& pair : map_2_orig)
     {
         EXPECT_TRUE(map_1.contains(pair.first));
     }
     map_1.clear();
     map_1 = std::move(map_3);
-    for(const auto& pair : map_3_orig)
+    for (const auto& pair : map_3_orig)
     {
         EXPECT_TRUE(map_1.contains(pair.first));
     }
@@ -1495,7 +1507,9 @@ TEST(FixedUnorderedMap, ComplexNontrivialMoves)
     EXPECT_EQ(map_1.size(), 30);
 
     // make sure the underlying storage agrees that we're full
-    EXPECT_TRUE(map_1.IMPLEMENTATION_DETAIL_DO_NOT_USE_table_.IMPLEMENTATION_DETAIL_DO_NOT_USE_value_storage_.IMPLEMENTATION_DETAIL_DO_NOT_USE_storage_.full());
+    EXPECT_TRUE(map_1.IMPLEMENTATION_DETAIL_DO_NOT_USE_table_
+                    .IMPLEMENTATION_DETAIL_DO_NOT_USE_value_storage_
+                    .IMPLEMENTATION_DETAIL_DO_NOT_USE_storage_.full());
 
     map_1.clear();
 }

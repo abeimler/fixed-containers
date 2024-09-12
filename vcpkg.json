@@ -5,7 +5,6 @@
   "dependencies": [
     "benchmark",
     "magic-enum",
-    "range-v3",
     "benchmark",
     "gtest"
   ]

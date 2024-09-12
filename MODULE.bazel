@@ -1,0 +1,38 @@
+module(
+    name = "fixed-containers",
+)
+
+bazel_dep(name = "magic_enum", repo_name = "com_github_neargye_magic_enum")
+archive_override(
+    module_name = "magic_enum",
+    integrity = "sha256-mysXiN1lH+q4i8/7Cyrj3tTCcUKildbt6ILI/IoyejU=",
+    strip_prefix = "magic_enum-d63a9d63717640705c6c9654d68fa6575d39bab8",
+    urls = ["https://github.com/Neargye/magic_enum/archive/d63a9d63717640705c6c9654d68fa6575d39bab8.tar.gz"],
+)
+
+bazel_dep(name = "googletest", dev_dependency = True, repo_name = "com_google_googletest")
+archive_override(
+    module_name = "googletest",
+    integrity = "sha256-WSQxGdI8Gbrxi7QGRkTliUsVaxW9AZHqMEbbnEp+4Ow=",
+    strip_prefix = "googletest-eff443c6ef5eb6ab598bfaae27f9427fdb4f6af7",
+    urls = ["https://github.com/google/googletest/archive/eff443c6ef5eb6ab598bfaae27f9427fdb4f6af7.tar.gz"],
+)
+
+bazel_dep(name = "google_benchmark", dev_dependency = True, repo_name = "com_google_benchmark")
+archive_override(
+    module_name = "google_benchmark",
+    integrity = "sha256-3xI14ONyl+mQu4M8cjzT3sYfyVxJUfZL3Vxy0c6n9Pk=",
+    strip_prefix = "benchmark-447752540c71f34d5d71046e08192db181e9b02b",
+    urls = ["https://github.com/google/benchmark/archive/447752540c71f34d5d71046e08192db181e9b02b.tar.gz"],
+)
+
+# Hedron's Compile Commands Extractor for Bazel
+# https://github.com/hedronvision/bazel-compile-commands-extractor
+bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+git_override(
+    module_name = "hedron_compile_commands",
+    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
+    commit = "a14ad3a64e7bf398ab48105aaa0348e032ac87f8",
+    # Replace the commit hash (above) with the latest (https://github.com/hedronvision/bazel-compile-commands-extractor/commits/main).
+    # Even better, set up Renovate and let it do the work for you (see "Suggestion: Updates" in the README).
+)
